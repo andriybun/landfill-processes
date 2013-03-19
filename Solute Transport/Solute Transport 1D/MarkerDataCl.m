@@ -1,6 +1,3 @@
-%% TODO:    For zero and positive velocities problem exists
-%%
-
 classdef MarkerDataCl
 	properties (Access = public)
         % Maximum volume of one marker particle
@@ -47,6 +44,17 @@ classdef MarkerDataCl
     methods (Access = public)
         %% Constructor
         function self = MarkerDataCl(thetaN, nSolutes, ModelDim, SoilPar, SimulationPar, InitialC)
+            % Define diffusion coefficient
+            self.d = SoilPar.d;
+            
+            % Structures
+            self.ModelDim = ModelDim;
+            self.SoilPar = SoilPar;
+            self.SimulationPar = SimulationPar;
+            
+            % Tolerance
+            self.EPSILON = SimulationPar.EPSILON;
+            
             % Fraction of mobile volume
             if isfield(ModelDim, 'mobileFraction')
                 self.mobileFraction = ModelDim.mobileFraction;
@@ -56,8 +64,11 @@ classdef MarkerDataCl
             
             % Calculate amounts of fluid in each node
             vN = thetaN .* abs(ModelDim.dzin) .* self.mobileFraction;
+            % Calculate internodal moisture contents to distribute volumes of markers
+            % proportionally
+            thetaIn = InterNodalValues(self, thetaN);
             % Calculate number of markers needed for each node
-            nMarkPerN = ceil(vN / self.dvMax);
+            nMarkPerN = ceil(vN / self.dvMax); % 10 * ones(ModelDim.znn, 1); % 
             
             % Initialize some numbers
             self.nTotal = sum(nMarkPerN);
@@ -71,12 +82,13 @@ classdef MarkerDataCl
             iPos = 1;
             % We process node by node because properties are different
             for iNode = 1:ModelDim.znn
-                % Volume of each marker in node is equal to volume of fluid in node divided by
-                % number of markers in that node
-                self.dv(iPos:iPos + nMarkPerN(iNode) - 1) = vN(iNode) / nMarkPerN(iNode);
-                % Distribute markers uniformly over node
+                % Distribute markers over the node
                 self.z(iPos:iPos + nMarkPerN(iNode) - 1) = ModelDim.zin(iNode) + ...
                     ModelDim.dzin(iNode) * ((1:nMarkPerN(iNode))' - 0.5) / nMarkPerN(iNode);
+                % Distribute volumes of markers proportionally to moisture content
+                self.dv(iPos:iPos + nMarkPerN(iNode) - 1) = ...
+                    self.DistributeVolumes(iNode, vN(iNode), thetaIn, ...
+                    self.z(iPos:iPos + nMarkPerN(iNode) - 1));
                 % Set indices of nodes to which markers belong
                 self.node(iPos:iPos + nMarkPerN(iNode) - 1) = iNode;
                 % Update index of first marker for the next node
@@ -92,17 +104,6 @@ classdef MarkerDataCl
                     'Specified diffusion coefficients nSolutes don''t correspond to nSolutes.');
             end
             
-            % Define diffusion coefficient
-            self.d = SoilPar.d;
-            
-            % Structures
-            self.ModelDim = ModelDim;
-            self.SoilPar = SoilPar;
-            self.SimulationPar = SimulationPar;
-            
-            % Tolerance
-            self.EPSILON = SimulationPar.EPSILON;
-            
             % Set flags
             self.isSorted;
             self.hasNodalConcentrationsComputed = false;
@@ -112,15 +113,14 @@ classdef MarkerDataCl
         %% Advect markers
         function [self, deltaT, vOut, mSoluteOut] = Advect(...
                 self, t, deltaT, qIn, thetaN, BoundaryPar)
+            nZn = self.ModelDim.znn;
+            nZin = self.ModelDim.znin;
+            
             thetaN = thetaN .* self.mobileFraction;
-            thetaIn = zeros(self.ModelDim.znin, 1);
-            thetaIn(2:self.ModelDim.znin-1) = ...
-                (thetaN(1:self.ModelDim.znn-1) + thetaN(2:self.ModelDim.znn)) / 2;
-            thetaIn(1) = thetaN(1);
-            thetaIn(self.ModelDim.znin) = thetaN(self.ModelDim.znn);
+            thetaIn = InterNodalValues(self, thetaN);
                         
             % Velocity of particles
-            qVelIn = qIn ./ thetaIn; %cat(1, thetaN(1), thetaN);
+            qVelIn = qIn ./ thetaIn;
             
             % Calculate maximum time step
             dzIn = -cat(1, self.ModelDim.dzin(1), self.ModelDim.dzin);
@@ -135,10 +135,9 @@ classdef MarkerDataCl
             % positive velocities. Here positions (zIn - q / Theta) are calculated. Particles 
             % between those points are advected with linearly interpolated velocities.
             % Coordinates of those points where particles start switching to next nodes:
-            zSwitch = zeros(self.ModelDim.znin, 1);
+            zSwitch = zeros(nZin, 1);
             zSwitch(1) = self.ModelDim.zin(1);
-            zSwitch(2:self.ModelDim.znin) = ...
-                self.ModelDim.zin(2:self.ModelDim.znin) - qVelIn(2:self.ModelDim.znin);
+            zSwitch(2:nZin) = self.ModelDim.zin(2:nZin) - qVelIn(2:nZin);
             zInterv = cat(1, zSwitch(2:end), self.ModelDim.zin);
             qInterv = cat(1, qVelIn(2:end), qVelIn);
             [zInterv, sIdx] = sort(zInterv, 'descend');
@@ -147,10 +146,10 @@ classdef MarkerDataCl
             % Add particles with zero volume at the top and bottom of column. This is to avoid
             % errors while no particles stay in the first node or no particles leave the system
             % during time step
-            self.z = cat(1, self.ModelDim.zin(1), self.z, self.ModelDim.zin(self.ModelDim.znin));
+            self.z = cat(1, self.ModelDim.zin(1), self.z, self.ModelDim.zin(nZin));
             self.dv = cat(1, 0, self.dv, 0);
             self.c = cat(1, zeros(1, self.nSolutes), self.c, zeros(1, self.nSolutes));
-            self.node =cat(1, 1, self.node, self.ModelDim.znn);
+            self.node =cat(1, 1, self.node, nZn);
             self.nTotal = self.nTotal + 2;
             
             % Velocities of particles
@@ -161,7 +160,7 @@ classdef MarkerDataCl
             zNext = self.z + qMark;
 
             % Particles that pass to next cells:
-            for iNode = 1:self.ModelDim.znn
+            for iNode = 1:nZn
                 % Check direction of flow (downwards - negative, upwards - positive)
                 fluxDirection = sign(qIn(iNode + 1));
                 
@@ -173,7 +172,7 @@ classdef MarkerDataCl
                     isBeforeNextNode = RealGe(self.z, self.ModelDim.zin(iNode + 1), 0);
                     % Index of particle that crosses internode last (with te lowest coordinate)
                     iMarkFirstSwitch = find(isAfterSwitchPoint, true, 'first');
-                elseif (iNode == self.ModelDim.znn)
+                elseif (iNode == nZn)
                     % Leave the loop if water flows upwards at bottom
                     break
                 else
@@ -216,7 +215,7 @@ classdef MarkerDataCl
             
             % Remove markers that left system and calculate amounts of fluid and solutes that
             % leave the system
-            isOut = (self.z < self.ModelDim.zin(self.ModelDim.znin));
+            isOut = (self.z < self.ModelDim.zin(nZin));
             if any(isOut)
                 % Calculate discharge rate, masses of solutes
                 vOut = sum(self.dv(isOut));
@@ -249,9 +248,8 @@ classdef MarkerDataCl
             if RealLt(qIn(1), 0, self.EPSILON)
                 self = self.InjectFluid(t, 1, qIn, BoundaryPar.cTop, thetaIn);
             end
-            if RealGt(qIn(self.ModelDim.znin), 0, self.EPSILON)
-                self = self.InjectFluid(t, self.ModelDim.znin, ...
-                    qIn, zeros(1, self.nSolutes), thetaIn);
+            if RealGt(qIn(nZin), 0, self.EPSILON)
+                self = self.InjectFluid(t, nZin, qIn, zeros(1, self.nSolutes), thetaIn);
             end
 
             % Reset flags
@@ -275,16 +273,19 @@ classdef MarkerDataCl
             nMarkInj = ceil(abs(vInj) / self.dvMax);
             % Update total number of markers
             self.nTotal = self.nTotal + nMarkInj;
-            % Update volumes of markers
-            self.dv = cat(1, repmat(abs(vInj) / nMarkInj, [nMarkInj, 1]), self.dv);
             % Distribute injected particles uniformly over the volume 0:vInj
-            self.z = cat(1, ...
-                zInj + ((1:nMarkInj) - 0.5)' * vInj / thetaIn(nodeInj) / nMarkInj, ...
-                self.z);
+            zMarkInj = zInj + ((1:nMarkInj) - 0.5)' * vInj / thetaIn(nodeInj) / nMarkInj;
+            % Calculate volumes of injected markers
+            dvMarkInj = ...
+                self.DistributeVolumes(nodeInj - isUpwardFlow, abs(vInj), thetaIn, zMarkInj);
+            % Append injected markers to existing arrays
+            self.z = cat(1, zMarkInj, self.z);
+            self.dv = cat(1, dvMarkInj, self.dv);
+            
             % Assign boundary concentration
             self.c = cat(1, repmat(cBound, [nMarkInj, 1]), self.c);
             
-            % Locate new markers in first node
+            % Locate new markers in first or last node
             self.node = cat(1, (nodeInj - isUpwardFlow) * ones(nMarkInj, 1), self.node);
             
             % Reset flags
@@ -378,7 +379,6 @@ classdef MarkerDataCl
         end
         
         %% Compute nodal values
-        
         % Concentrations
         function [self, cNodes] = NodalConcentrations(self)
             if ~self.hasNodalConcentrationsComputed
@@ -495,16 +495,38 @@ classdef MarkerDataCl
             self.dv(iMarkAcceptor) = dvMarkAcceptor;
             self.dv(iMarkDonor) = dvMarkDonor;
             
-            %% TODO: Check for recursion
-            %%
-            if (dvMarkDonor < 0)
-                inc = iMarkDonor - iMarkAcceptor;
-                self = self.LocalMassExchange(t, iMarkDonor, iMarkDonor + inc, dvMarkDonor);
-                warning('RuntimeCheck:InconsistentAdvection', ...
-                    't = %5.3f: badly organized advection: negative volume of marker #%d', ...
-                    t, iMarkDonor);
-            end
+%             %% TODO: Check for recursion
+%             %%
+%             if (dvMarkDonor < 0)
+%                 inc = iMarkDonor - iMarkAcceptor;
+%                 self = self.LocalMassExchange(t, iMarkDonor, iMarkDonor + inc, dvMarkDonor);
+%                 warning('RuntimeCheck:InconsistentAdvection', ...
+%                     't = %5.3f: badly organized advection: negative volume of marker #%d', ...
+%                     t, iMarkDonor);
+%             end
         end
+        
+        %% Compute internodal values
+        function valIn = InterNodalValues(self, valN)
+            nZn = self.ModelDim.znn;
+            nZin = self.ModelDim.znin;
+            
+            valN = valN .* self.mobileFraction;
+            valIn = zeros(nZin, 1);
+            valIn(2:nZin-1) = (valN(1:nZn-1) + valN(2:nZn)) / 2;
+            valIn(1) = valN(1) + (valN(1) - valIn(2));
+            valIn(nZin) = valN(nZn) + (valN(nZn) - valIn(nZin-1));
+        end            
+        
+        %% Initially distribute volumes of markers 
+        %  correspondingly to moisture content for one node with given boundaries and moisture
+        %  content at boundaries
+        function dvIni = DistributeVolumes(self, iNode, vN, thetaIn, zMark)
+            thetaMarkNode = interp1(self.ModelDim.zin(iNode:iNode+1), thetaIn(iNode:iNode+1), ...
+                zMark);
+            dvFraction = thetaMarkNode / sum(thetaMarkNode);
+            dvIni = vN * dvFraction;
+         end
         
         %% Some correctness checking procedures
         function CheckMoistureContentPerCell(self, t)

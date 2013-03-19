@@ -33,7 +33,7 @@ BoundaryPar.cTop = zeros(1, nSolutes);
 BoundaryPar.qTop = @qBoundary;
 BoundaryPar.kSurf = 1e-2;
 BoundaryPar.hAmb = -0.025;
-BoundaryPar.zRef = 0; %-0.2;        % Height of phreatic surface for initial condition
+BoundaryPar.zRef = -0.2;        % Height of phreatic surface for initial condition
 BoundaryPar.hBot = zBottom;
 
 % Time discretization
@@ -70,15 +70,18 @@ tic
 [qOutR, thetaOutR, hOutR, tRangeR] = ...
     Richards(tRange, dtMax, ModelDim, SoilPar, BoundaryPar);
 
-% %% For validation
-% qOutR = -0.7e-2 * ones(size(qOutR));
-% thetaOutR = SoilPar.thetaS * ones(size(thetaOutR));
-% inFlow = min(min(qOutR)) / SoilPar.thetaS;
-% doDisplayAnalyticalSolution = true;
-% %% 
 
-doDisplayAnalyticalSolution = false;
-inFlow = min(BoundaryPar.qTop(tRange)) / SoilPar.thetaS;
+%% Validation
+validationMode = true;
+if validationMode
+    qOutR = -0.7e-2 * ones(size(qOutR));
+    thetaOutR = SoilPar.thetaS * ones(size(thetaOutR));
+    inFlow = min(min(qOutR)) / SoilPar.thetaS;
+    doDisplayAnalyticalSolution = true;
+else
+    doDisplayAnalyticalSolution = false;
+    inFlow = min(BoundaryPar.qTop(tRange)) / SoilPar.thetaS;
+end
 toc
 
 %% Initialize markers object
@@ -150,7 +153,6 @@ while abs(t - tEnd) > SimulationPar.TIME_EPSILON,
         warning('ResultValidation:MassBalance', 't = %5.3f: Solute mass balance error: %5.3e', ...
             t - dtCalc, abs(balance));
     end
-
 
     % Check if time step was reduced during advection
     if (~RealEq(dtCalc, dtRemaining, SimulationPar.EPSILON))
