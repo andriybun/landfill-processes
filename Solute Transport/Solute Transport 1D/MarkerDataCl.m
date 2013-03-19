@@ -138,10 +138,6 @@ classdef MarkerDataCl
             zSwitch = zeros(nZin, 1);
             zSwitch(1) = self.ModelDim.zin(1);
             zSwitch(2:nZin) = self.ModelDim.zin(2:nZin) - qVelIn(2:nZin);
-            zInterv = cat(1, zSwitch(2:end), self.ModelDim.zin);
-            qInterv = cat(1, qVelIn(2:end), qVelIn);
-            [zInterv, sIdx] = sort(zInterv, 'descend');
-            qInterv = qInterv(sIdx);
             
             % Add particles with zero volume at the top and bottom of column. This is to avoid
             % errors while no particles stay in the first node or no particles leave the system
@@ -153,8 +149,7 @@ classdef MarkerDataCl
             self.nTotal = self.nTotal + 2;
             
             % Velocities of particles
-%             qMark = self.MarkerValues(zSwitch, qVelIn, 'linear');
-            qMark = self.MarkerValues(zInterv, qInterv, 'linear');
+            qMark = self.MarkerValues(zSwitch, qVelIn, 'linear');
             
             % Advect (dzMark = qMark)
             zNext = self.z + qMark;
