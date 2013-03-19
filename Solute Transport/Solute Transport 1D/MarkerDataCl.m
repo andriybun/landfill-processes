@@ -130,78 +130,118 @@ classdef MarkerDataCl
             qIn = qIn * deltaT;
             qVelIn = qVelIn * deltaT;
             
-            % We advect particles within ranges [zIn - q / Theta; zIn] for each internode with
-            % negative velocity q and within ranges [zIn; zIn - q / Theta] for internodes with
-            % positive velocities. Here positions (zIn - q / Theta) are calculated. Particles 
-            % between those points are advected with linearly interpolated velocities.
-            % Coordinates of those points where particles start switching to next nodes:
-            zSwitch = zeros(nZin, 1);
-            zSwitch(1) = self.ModelDim.zin(1);
-            zSwitch(2:nZin) = self.ModelDim.zin(2:nZin) - qVelIn(2:nZin);
-            
-            % Add particles with zero volume at the top and bottom of column. This is to avoid
-            % errors while no particles stay in the first node or no particles leave the system
-            % during time step
-            self.z = cat(1, self.ModelDim.zin(1), self.z, self.ModelDim.zin(nZin));
-            self.dv = cat(1, 0, self.dv, 0);
-            self.c = cat(1, zeros(1, self.nSolutes), self.c, zeros(1, self.nSolutes));
-            self.node =cat(1, 1, self.node, nZn);
-            self.nTotal = self.nTotal + 2;
-            
-            % Velocities of particles
-            qMark = self.MarkerValues(zSwitch, qVelIn, 'linear');
-            
-            % Advect (dzMark = qMark)
-            zNext = self.z + qMark;
+%             % We advect particles within ranges [zIn - q / Theta; zIn] for each internode with
+%             % negative velocity q and within ranges [zIn; zIn - q / Theta] for internodes with
+%             % positive velocities. Here positions (zIn - q / Theta) are calculated. Particles 
+%             % between those points are advected with linearly interpolated velocities.
+%             % Coordinates of those points where particles start switching to next nodes:
+%             zSwitch = zeros(nZin, 1);
+%             zSwitch(1) = self.ModelDim.zin(1);
+%             zSwitch(2:nZin) = self.ModelDim.zin(2:nZin) - qVelIn(2:nZin);
+%             
+%             % Add particles with zero volume at the top and bottom of column. This is to avoid
+%             % errors while no particles stay in the first node or no particles leave the system
+%             % during time step
+%             self.z = cat(1, self.ModelDim.zin(1), self.z, self.ModelDim.zin(nZin));
+%             self.dv = cat(1, 0, self.dv, 0);
+%             self.c = cat(1, zeros(1, self.nSolutes), self.c, zeros(1, self.nSolutes));
+%             self.node =cat(1, 1, self.node, nZn);
+%             self.nTotal = self.nTotal + 2;
+%             
+%             % Velocities of particles
+%             qMark = self.MarkerValues(zSwitch, qVelIn, 'linear');
+%             
+%             % Advect (dzMark = qMark)
+%             zNext = self.z + qMark;
 
+            qInterpMark = zeros(nZin + 1, 1);
+            zInterpMark = zeros(nZin + 1, 1);
+            qInterpMark(1) = qVelIn(1);
+            zInterpMark(1) = self.ModelDim.zin(1);
+            qInterpMark(nZin + 1) = qVelIn(nZin);
+            zInterpMark(nZin + 1) = self.ModelDim.zin(nZin);
+
+            chIni = self.dv' * self.c;
+            
             % Particles that pass to next cells:
             for iNode = 1:nZn
                 % Check direction of flow (downwards - negative, upwards - positive)
                 fluxDirection = sign(qIn(iNode + 1));
                 
-                if (fluxDirection <= 0)
-                    % Flux downwards
-                    % Beginning of interval where particles pass to the next node
-                    isAfterSwitchPoint = RealLt(zNext, self.ModelDim.zin(iNode + 1), 0);
-                    % End of the current node
-                    isBeforeNextNode = RealGe(self.z, self.ModelDim.zin(iNode + 1), 0);
-                    % Index of particle that crosses internode last (with te lowest coordinate)
-                    iMarkFirstSwitch = find(isAfterSwitchPoint, true, 'first');
-                elseif (iNode == nZn)
-                    % Leave the loop if water flows upwards at bottom
-                    break
-                else
-                    % Flux upwards
-                    % End of interval where particles pass to current node from the next one
-                    isAfterSwitchPoint = RealGe(zNext, self.ModelDim.zin(iNode + 1), 0);
-                    % Beginning of the next node
-                    isBeforeNextNode = RealLt(self.z, self.ModelDim.zin(iNode + 1), 0);
-                    % Index of particle that crosses internode last (with te lowest coordinate)
-                    iMarkFirstSwitch = find(isAfterSwitchPoint, true, 'last');
+                % Markers belonging to current node
+                isInCurrNode = (self.node == iNode);
+                % Last marker in this node
+                iLastMark = find(isInCurrNode, true, 'last');
+                iMarkWalker = iLastMark;
+                
+                dvCum = 0;
+                diffV = fluxDirection * (qIn(iNode + 1) - fluxDirection * dvCum);
+                while (diffV > 0)
+                    dvCum = dvCum + self.dv(iMarkWalker);
+                    diffV = fluxDirection * (qIn(iNode + 1) - fluxDirection * dvCum);
+                    iMarkWalker = iMarkWalker + fluxDirection;
+                    %% TODO: add check to make sure we don't go to next node
                 end
+                iMarkLastStay = iMarkWalker;
+                iMarkFirstSwitch = iMarkWalker - fluxDirection;
                 
-                % Indices of markers staying in current cell and moving further
-                % doStayInThisNode = isAfterThisNode & (~isAfterSwitchPoint);
-                doLeaveThisNode = isAfterSwitchPoint & isBeforeNextNode;
-                % Index of first particle that doesn't cross internode
-                iMarkLastStay = iMarkFirstSwitch + fluxDirection;
-                
-                % Redistrubute fluid to keep mass of fluid flowing through internode correct
-                % Compute difference between desired and actual flux
-                diffV = fluxDirection * (qIn(iNode + 1) - ...
-                    fluxDirection * sum(self.dv(doLeaveThisNode)));
-                
+                qInterpMark(iNode + 1) = self.ModelDim.zin(iNode + 1) - self.z(iMarkWalker);
+                zInterpMark(iNode + 1) = self.z(iMarkWalker);
+
+%                 if (fluxDirection <= 0)
+%                     % Flux downwards
+%                     % Beginning of interval where particles pass to the next node
+%                     isAfterSwitchPoint = RealLt(zNext, self.ModelDim.zin(iNode + 1), 0);
+%                     % End of the current node
+%                     isBeforeNextNode = self.node <= iNode;
+%                     % Index of particle that crosses internode last (with te lowest coordinate)
+%                     iMarkFirstSwitch = find(isAfterSwitchPoint, true, 'first');
+%                 elseif (iNode == nZn)
+%                     % Leave the loop if water flows upwards at bottom
+%                     break
+%                 else
+%                     % Flux upwards
+%                     % End of interval where particles pass to current node from the next one
+%                     isAfterSwitchPoint = RealGe(zNext, self.ModelDim.zin(iNode + 1), 0);
+%                     % Beginning of the next node
+%                     isBeforeNextNode = self.node > iNode;
+%                     % Index of particle that crosses internode last (with te lowest coordinate)
+%                     iMarkFirstSwitch = find(isAfterSwitchPoint, true, 'last');
+%                 end
+%                 
+%                 % Indices of markers staying in current cell and moving further
+%                 % doStayInThisNode = isAfterThisNode & (~isAfterSwitchPoint);
+%                 doLeaveThisNode = isAfterSwitchPoint & isBeforeNextNode;
+%                 % Index of first particle that doesn't cross internode
+%                 iMarkLastStay = iMarkFirstSwitch + fluxDirection;
+%                 
+%                 % Redistrubute fluid to keep mass of fluid flowing through internode correct
+%                 % Compute difference between desired and actual flux
+%                 diffV = fluxDirection * (qIn(iNode + 1) - ...
+%                     fluxDirection * sum(self.dv(doLeaveThisNode)));
+
                 % Exchange fluid
                 self = self.LocalMassExchange(t, iMarkLastStay, iMarkFirstSwitch, diffV);
                 
-                % Update nodes of markers that move forward / backward
-                self.node(doLeaveThisNode) = self.node(doLeaveThisNode) - fluxDirection;
+                iLeaveNode = iLastMark:fluxDirection:iMarkFirstSwitch;
+                self.node(iLeaveNode) = self.node(iLeaveNode) - fluxDirection;
+                
+% disp([iNode, self.dv' * self.c, chIni - self.dv' * self.c])
+% 
+%                 % Update nodes of markers that move forward / backward
+%                 self.node(doLeaveThisNode) = self.node(doLeaveThisNode) - fluxDirection;
             end
+
+            qMark = self.MarkerValues(zInterpMark, qInterpMark, 'linear');
             
+            % Advect (dzMark = qMark)
+            self.z = self.z + qMark;
+            
+            % Consistency check
             self.CheckMarkersVolume(t);
             
-            % Update positions of markers
-            self.z = zNext;
+%             % Update positions of markers
+%             self.z = zNext;
             
             % Volume of fluid that leave system
             vOut = 0;
@@ -210,7 +250,7 @@ classdef MarkerDataCl
             
             % Remove markers that left system and calculate amounts of fluid and solutes that
             % leave the system
-            isOut = (self.z < self.ModelDim.zin(nZin));
+            isOut = (self.node > nZn);
             if any(isOut)
                 % Calculate discharge rate, masses of solutes
                 vOut = sum(self.dv(isOut));

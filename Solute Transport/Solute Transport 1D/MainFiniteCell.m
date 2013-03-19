@@ -33,7 +33,7 @@ BoundaryPar.cTop = zeros(1, nSolutes);
 BoundaryPar.qTop = @qBoundary;
 BoundaryPar.kSurf = 1e-2;
 BoundaryPar.hAmb = -0.025;
-BoundaryPar.zRef = -0.2;        % Height of phreatic surface for initial condition
+BoundaryPar.zRef = 0.2;        % Height of phreatic surface for initial condition
 BoundaryPar.hBot = zBottom;
 
 % Time discretization
@@ -52,7 +52,7 @@ kSat = 1e-2;                             % m^3 water per m^2 soil per day
 SoilPar = InitializeSoilProperties(kSat, ModelDim);
 
 % Diffusion coefficients
-SoilPar.d = 0 * 5e-3; %[1e-3, 1e-4];
+SoilPar.d = 1e-3; %[1e-3, 1e-4];
 
 %% 
 tic
@@ -72,9 +72,9 @@ tic
 
 
 %% Validation
-validationMode = true;
+validationMode = false;
 if validationMode
-    qOutR = -0.7e-2 * ones(size(qOutR));
+    qOutR = -1e-2 * ones(size(qOutR));
     thetaOutR = SoilPar.thetaS * ones(size(thetaOutR));
     inFlow = min(min(qOutR)) / SoilPar.thetaS;
     doDisplayAnalyticalSolution = true;
