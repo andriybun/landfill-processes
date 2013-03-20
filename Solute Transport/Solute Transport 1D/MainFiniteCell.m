@@ -126,6 +126,7 @@ while abs(t - tEnd) > SimulationPar.TIME_EPSILON,
     end
     
     % Advect markers, inject new markers, recompute concentrations
+    t
     [MarkerData, dtCalc, vOut, mSoluteOut] = ...
         MarkerData.Advect(t, dtRemaining, qIn, thetaN, BoundaryPar);
     [MarkerData, thetaNewN] = MarkerData.NodalThetas();
