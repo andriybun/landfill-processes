@@ -568,9 +568,11 @@ classdef MarkerDataCl
         %  correspondingly to moisture content for one node with given boundaries and moisture
         %  content at boundaries
         function dvIni = DistributeVolumes(self, iNode, vN, thetaIn, zMark)
-            thetaMarkNode = interp1(self.ModelDim.zin(iNode:iNode+1), thetaIn(iNode:iNode+1), ...
-                zMark);
-            dvFraction = thetaMarkNode / sum(thetaMarkNode);
+%             thetaMarkNode = interp1(self.ModelDim.zin(iNode:iNode+1), thetaIn(iNode:iNode+1), ...
+%                 zMark);
+%             dvFraction = thetaMarkNode / sum(thetaMarkNode);
+            nMark = numel(zMark);
+            dvFraction = ones(nMark, 1) / nMark;
             dvIni = vN * dvFraction;
          end
         
