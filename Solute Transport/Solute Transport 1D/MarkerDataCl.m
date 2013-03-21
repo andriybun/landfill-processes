@@ -114,20 +114,51 @@ classdef MarkerDataCl
                 self, t, deltaT, qIn, thetaN, BoundaryPar)
             nZn = self.ModelDim.znn;
             nZin = self.ModelDim.znin;
-            
-            thetaN = thetaN .* self.mobileFraction;
-            thetaIn = InterNodalValues(self, thetaN);
-                        
+
             % Velocity of particles
+            thetaIn = cat(1, thetaN(1), thetaN);
             qVelIn = qIn ./ thetaIn;
             
             % Calculate maximum time step
-            dzIn = -cat(1, self.ModelDim.dzin(1), self.ModelDim.dzin);
-            deltaT = min(deltaT, 0.95 * min(abs(dzIn ./ qVelIn)));
+            dzIn = cat(1, self.ModelDim.dzin(1), self.ModelDim.dzin);
+            isZero = RealEq(qVelIn, 0, self.EPSILON);
+            deltaT = min(deltaT, 0.95 * min(dzIn(~isZero) ./ qVelIn(~isZero)));
 
             % Calculate flux over time interval
             qIn = qIn * deltaT;
             qVelIn = qVelIn * deltaT;
+            
+            % Having fluxes between nodes we advect particles within the ranges
+            % [zIn - q / Theta; zIn] for each internode with velocity q. Particles between
+            % those intervals are advected with interpolated velocities.
+            % Velocities for intervals [zIn - q / Theta; zIn]:
+            qConst = qVelIn(2:self.ModelDim.znin);
+            % Coordinates of points where those intervals begin:
+            zConstBegin = self.ModelDim.zin(2:self.ModelDim.znin) - qVelIn(2:self.ModelDim.znin);
+            % Coordinates of all intervals' boundaries [0, b1, e1, b2, e2, ..., bZin, eZin]
+            zInterv = zeros(2 * self.ModelDim.znn + 1, 1);
+            zInterv(1:2:end) = self.ModelDim.zin;
+            zInterv(2:2:end-1) = zConstBegin;
+            % Velocities of fluid in corresponding points
+            qInterv = zeros(2 * self.ModelDim.znn + 1, 1);
+            qInterv(1:2:end) = cat(1, qVelIn(1), qConst);
+            qInterv(2:2:end-1) = qConst;
+            
+%             thetaN = thetaN .* self.mobileFraction;
+% %             thetaIn = InterNodalValues(self, thetaN);
+%             thetaIn = cat(1, thetaN, thetaN(nZn));
+% %             thetaIn = cat(1, thetaN(1), thetaN);
+%                         
+% %             % Velocity of particles
+%             qVelIn = qIn ./ thetaIn;
+%             
+%             % Calculate maximum time step
+%             dzIn = -cat(1, self.ModelDim.dzin(1), self.ModelDim.dzin);
+%             deltaT = min(deltaT, 0.95 * min(abs(dzIn ./ qVelIn)));
+% 
+%             % Calculate flux over time interval
+%             qIn = qIn * deltaT;
+%             qVelIn = qVelIn * deltaT;
             
             % Inject new particles at the top
             if RealLt(qIn(1), 0, self.EPSILON)
@@ -147,14 +178,24 @@ classdef MarkerDataCl
                 self.node   = cat(1, self.node, nZin);
             end
 
-            % Coordinates of those points from which particles start switching to next nodes:
-            zSwitch = self.ModelDim.zin - qVelIn;
-            
-            %% TODO: try velocity constant for all markers within range [zSwitch; zSwitch + 1]
-            %% 
-            
             % Velocities of particles
-            qMark = self.MarkerValues(zSwitch, qVelIn, 'linear');
+            qMark = self.MarkerValues(zInterv, qInterv, 'linear');
+            
+%             % Coordinates of those points from which particles start switching to next nodes:
+%             zSwitch = self.ModelDim.zin - qVelIn;
+%             
+%             %% TODO: try velocity constant for all markers within range [zSwitch; zSwitch + 1]
+%             %% 
+%             
+%             zInterv = cat(1, zSwitch, self.ModelDim.zin);
+%             qInterv = cat(1, qVelIn, qVelIn(2:nZin), qVelIn(nZin));
+%             [zInterv, iSort] = sort(zInterv, 'descend');
+%             qInterv = qInterv(iSort);
+%             qMark = self.MarkerValues(zInterv, qInterv, 'linear');
+%             %% TODO END #
+            
+%             % Velocities of particles
+%             qMark = self.MarkerValues(zSwitch, qVelIn, 'linear');
             
             % Advect (dzMark = qMark)
             zNext = self.z + qMark;
