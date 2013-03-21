@@ -136,14 +136,22 @@ classdef MarkerDataCl
             % ... and bottom
             if RealGt(qIn(nZin), 0, self.EPSILON)
                 self = self.InjectFluid(t, nZin, qIn, zeros(1, self.nSolutes), thetaIn);
+            else
+                % Create one extra marker with zero volume and mass at the bottom. This
+                % prevents crashes when flux at the bottom is too low, and no markers leave the
+                % system, but volume is expected to flow outside.
+                self.nTotal = self.nTotal + 1;
+                self.z      = cat(1, self.z, self.ModelDim.zin(nZin));
+                self.dv     = cat(1, self.dv, 0);
+                self.c      = cat(1, self.c, zeros(1, self.nSolutes));
+                self.node   = cat(1, self.node, nZin);
             end
 
-            % We advect particles within ranges [zIn - q / Theta; zIn] for each internode with
-            % negative velocity q and within ranges [zIn; zIn - q / Theta] for internodes with
-            % positive velocities. Here positions (zIn - q / Theta) are calculated. Particles 
-            % between those points are advected with linearly interpolated velocities.
-            % Coordinates of those points where particles start switching to next nodes:
+            % Coordinates of those points from which particles start switching to next nodes:
             zSwitch = self.ModelDim.zin - qVelIn;
+            
+            %% TODO: try velocity constant for all markers within range [zSwitch; zSwitch + 1]
+            %% 
             
             % Velocities of particles
             qMark = self.MarkerValues(zSwitch, qVelIn, 'linear');
@@ -151,6 +159,9 @@ classdef MarkerDataCl
             % Advect (dzMark = qMark)
             zNext = self.z + qMark;
 
+            % Updated locations of markers
+            nodeNext = self.node;
+            
             % Particles that pass to next cells:
             for iNode = 0:nZn
                 % Check direction of flow (downwards - negative, upwards - positive)
@@ -160,10 +171,8 @@ classdef MarkerDataCl
                     % Flux downwards
                     % Beginning of interval where particles pass to the next node
                     isAfterSwitchPoint = RealLt(zNext, self.ModelDim.zin(iNode + 1), 0);
-                    % End of the current node
-                    isBeforeNextNode = self.node <= iNode;
-                    % Index of particle that crosses internode last (with te lowest coordinate)
-                    iMarkFirstSwitch = find(isAfterSwitchPoint, true, 'first');
+                    % Markers in the node from which water flows
+                    isSourceNode = (self.node == iNode);
                 elseif (iNode == nZn)
                     % Leave the loop if water flows upwards at bottom
                     break
@@ -171,17 +180,16 @@ classdef MarkerDataCl
                     % Flux upwards
                     % End of interval where particles pass to current node from the next one
                     isAfterSwitchPoint = RealGe(zNext, self.ModelDim.zin(iNode + 1), 0);
-                    % Beginning of the next node
-                    isBeforeNextNode = self.node > iNode;
-                    % Index of particle that crosses internode last (with te lowest coordinate)
-                    iMarkFirstSwitch = find(isAfterSwitchPoint, true, 'last');
+                    % Markers in the node from which water flows
+                    isSourceNode = (self.node == iNode + 1);
                 end
                 
                 % Indices of markers staying in current cell and moving further
-                % doStayInThisNode = isAfterThisNode & (~isAfterSwitchPoint);
-                doLeaveThisNode = isAfterSwitchPoint & isBeforeNextNode;
-                % Index of first particle that doesn't cross internode
-                iMarkLastStay = iMarkFirstSwitch + fluxDirection;
+                doLeaveThisNode = isAfterSwitchPoint & isSourceNode;
+                doStayInThisNode = isSourceNode & (~doLeaveThisNode);
+                
+                % Updated nodes of markers that move forward / backward
+                nodeNext(doLeaveThisNode) = self.node(doLeaveThisNode) - fluxDirection;
                 
                 % Redistrubute fluid to keep mass of fluid flowing through internode correct
                 % Compute difference between desired and actual flux
@@ -189,14 +197,55 @@ classdef MarkerDataCl
                     fluxDirection * sum(self.dv(doLeaveThisNode)));
 
                 % Exchange fluid
-                self = self.LocalMassExchange(t, iMarkLastStay, iMarkFirstSwitch, diffV);
-                
-                % Update nodes of markers that move forward / backward
-                self.node(doLeaveThisNode) = self.node(doLeaveThisNode) - fluxDirection;
+                if ~RealEq(diffV, 0, self.EPSILON)
+                    if any(doLeaveThisNode)
+                        if fluxDirection <= 0
+                            iMarkSwitch = find(doLeaveThisNode, true, 'first');
+                        else
+                            iMarkSwitch = find(doLeaveThisNode, true, 'last');
+                        end
+                    else
+                        if fluxDirection <= 0
+                            iMarkSwitch = find(doStayInThisNode, true, 'last') + 1;
+                        else
+                            iMarkSwitch = find(doStayInThisNode, true, 'first') - 1;
+                        end
+                    end
+                    
+                    iMarkStay = iMarkSwitch + fluxDirection;
+                    doStayInThisNode(:) = 0;
+                    doStayInThisNode(iMarkStay) = true;
+                    doLeaveThisNode(:) = 0;
+                    doLeaveThisNode(iMarkSwitch) = true;
+%                     % If all markers proceed to the next node, then exchange with the nearest
+%                     % marker from previous node
+%                     if (~any(doStayInThisNode))
+%                         if fluxDirection <= 0
+%                             iMarkPrev = find(doLeaveThisNode, true, 'first') - 1;
+%                         else
+%                             iMarkPrev = find(doLeaveThisNode, true, 'last') + 1;
+%                         end
+%                         doStayInThisNode(iMarkPrev) = true;
+%                     end
+%                     
+%                     % If no marker is supposed to leave the system, but flux is expected
+%                     % between nodes, we exchange with the first marer from the next downstream
+%                     % node.
+%                     if ~any(doLeaveThisNode)
+%                         if fluxDirection <= 0
+%                             iMarkNext = find(doStayInThisNode, true, 'last') + 1;
+%                         else
+%                             iMarkNext = find(doStayInThisNode, true, 'first') - 1;
+%                         end
+%                         doLeaveThisNode(iMarkNext) = true;
+%                     end
+                    self = self.LocalMassExchange(t, doStayInThisNode, doLeaveThisNode, diffV);
+                end
             end
 
             % Update positions of markers
             self.z = zNext;
+            self.node = nodeNext;
             
             % Consistency check
             self.CheckMarkersVolume(t);
@@ -429,64 +478,42 @@ classdef MarkerDataCl
             end
         end
         
-        %% Perform local mass exchange between two neighbouring markers
-        function self = LocalMassExchange(self, t, iMarkLastStay, iMarkFirstSwitch, diff)
-            % Check if the first marker also changes node. This is to prevent particles from
-            % moving too far forward
-            if (isempty(iMarkLastStay) || iMarkLastStay == 0)
-                % If yes, we check what is the balance between markers existing in current node
-                % and flux to the next node. If diff is non-zero, the time stem must be
-                % reduced. Otherwise mass exchange is not needed.
-                if (abs(diff) > self.EPSILON)
-                    error('RuntimeCheck:WrongMassExchange', ...
-                        ['t = %5.3f: Local mass exchange expected ' ...
-                        'with no marker to exchagne with.'], t);
-                else
-                    return
-                end
-            end
-            
+        %% Perform local mass exchange between markers
+        function self = LocalMassExchange(self, t, doStayInThisNode, doLeaveThisNode, diff)
             %  Compute corresponding masses of solutes exchanged and exchange mass
             if (diff > 0)
                 % Less fluid flows to next cell than calculated. We remove some fluid from
-                % previous particle and add it to the last particle in the next cell
-                iMarkDonor = iMarkLastStay;
-                iMarkAcceptor = iMarkFirstSwitch;
-                dvMarkAcceptor = self.dv(iMarkFirstSwitch) + diff;
-                dvMarkDonor = self.dv(iMarkLastStay) - diff;
+                % the particles that stayed and distribute it over the particle in the next cell
+                isMarkDonor = doStayInThisNode;
+                isMarkAcceptor = doLeaveThisNode;
             else
-                % More fluid flows than expected. We remove some fluid from the last marker
-                % that changed node and attach this to previous particle
-                iMarkDonor = iMarkFirstSwitch;
-                iMarkAcceptor = iMarkLastStay;
-                dvMarkAcceptor = self.dv(iMarkLastStay) - diff;
-                dvMarkDonor = self.dv(iMarkFirstSwitch) + diff;
+                % More fluid flows than expected. We remove some fluid from the markers that
+                % switched to the next node and attach it to previous particles
+                isMarkDonor = doLeaveThisNode;
+                isMarkAcceptor = doStayInThisNode;
             end
 
-            % Masses of solutes to be exchanged:
-            mEx = self.c(iMarkDonor, :) * abs(diff);
-            
-            % Mass of solutes already present in target particle
-            mSolMark = self.c(iMarkAcceptor, :) * self.dv(iMarkAcceptor);
-            if RealEq(dvMarkAcceptor, 0, self.EPSILON)
-                self.c(iMarkAcceptor, :) = 0;
-            else
-                self.c(iMarkAcceptor, :) = (mSolMark + mEx) / dvMarkAcceptor;
-            end
-            
-            % Update volumes after exchange
-            self.dv(iMarkAcceptor) = dvMarkAcceptor;
-            self.dv(iMarkDonor) = dvMarkDonor;
-            
-%             %% TODO: Check for recursion
-%             %%
-%             if (dvMarkDonor < 0)
-%                 inc = iMarkDonor - iMarkAcceptor;
-%                 self = self.LocalMassExchange(t, iMarkDonor, iMarkDonor + inc, dvMarkDonor);
-%                 warning('RuntimeCheck:InconsistentAdvection', ...
-%                     't = %5.3f: badly organized advection: negative volume of marker #%d', ...
-%                     t, iMarkDonor);
-%             end
+            [self, dmTotal] = self.DetachVolume(isMarkDonor, abs(diff));
+            self = self.AttachVolume(isMarkAcceptor, abs(diff), dmTotal);
+        end
+        
+        % Detach total volume specified by dvTotal from markers defined by logical indexing with 
+        % isMarkDonor. Returns masses of solutes removed from the system. System is updated.
+        function [self, dmTotal] = DetachVolume(self, isMarkDonor, dvTotal)
+            nMarkDonors = sum(isMarkDonor);
+            dvMark = dvTotal / nMarkDonors;
+            self.dv(isMarkDonor) = self.dv(isMarkDonor) - dvMark;
+            dmTotal = sum(dvMark * self.c(isMarkDonor));
+        end
+        
+        % Distribute volume (dvTotal) containing total masses (mTotal) of solutes over markers
+        % defined with logical indices isMarkAcceptor.
+        function self = AttachVolume(self, isMarkAcceptor, dvTotal, dmTotal)
+            nMarkAcceptors = sum(isMarkAcceptor);
+            dvMark = dvTotal / nMarkAcceptors;
+            mMark = self.dv(isMarkAcceptor) .* self.c(isMarkAcceptor) + dmTotal / nMarkAcceptors;
+            self.dv(isMarkAcceptor) = self.dv(isMarkAcceptor) + dvMark;
+            self.c(isMarkAcceptor) = mMark ./ self.dv(isMarkAcceptor);
         end
         
         %% Compute internodal values
