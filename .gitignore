@@ -1,4 +1,6 @@
 .*/
+Results/
+.directory
 *.*~
 try_*
 *.mat
@@ -6,3 +8,4 @@ try_*
 *.tif
 .~lock.*
 *.bak
+*.fig
