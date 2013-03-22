@@ -33,7 +33,7 @@ BoundaryPar.cTop = zeros(1, nSolutes);
 BoundaryPar.qTop = @qBoundary;
 BoundaryPar.kSurf = 1e-2;
 BoundaryPar.hAmb = -0.025;
-BoundaryPar.zRef = 0.2;        % Height of phreatic surface for initial condition
+BoundaryPar.zRef = -0.2;        % Height of phreatic surface for initial condition
 BoundaryPar.hBot = zBottom;
 
 % Time discretization

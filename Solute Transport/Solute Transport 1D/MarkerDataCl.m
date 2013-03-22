@@ -117,7 +117,6 @@ classdef MarkerDataCl
 
             thetaN = thetaN .* self.mobileFraction;
             thetaIn = InterNodalValues(self, thetaN);
-%             thetaIn = cat(1, thetaN(1), thetaN);
                         
             % Velocity of particles
             qVelIn = qIn ./ thetaIn;
@@ -150,16 +149,6 @@ classdef MarkerDataCl
             
             % Coordinates of those points from which particles start switching to next nodes:
             zSwitch = self.ModelDim.zin - qVelIn;
-            
-%             %% TODO: try velocity constant for all markers within range [zSwitch; zSwitch + 1]
-%             %% 
-%             
-%             zInterv = cat(1, zSwitch, self.ModelDim.zin);
-%             qInterv = cat(1, qVelIn, qVelIn(2:nZin), qVelIn(nZin));
-%             [zInterv, iSort] = sort(zInterv, 'descend');
-%             qInterv = qInterv(iSort);
-%             qMark = self.MarkerValues(zInterv, qInterv, 'linear');
-%             %% TODO END #
             
             % Velocities of particles
             qMark = self.MarkerValues(zSwitch, qVelIn, 'linear');
@@ -230,8 +219,8 @@ classdef MarkerDataCl
             self.z = zNext;
             self.node = nodeNext;
             
-%             % Consistency check
-%             self.CheckMarkersVolume(t);
+            % Consistency check
+            self.CheckMarkersVolume(t);
             
             % Volume of fluid that leave system
             vOut = 0;
@@ -294,7 +283,7 @@ classdef MarkerDataCl
                 self.z = cat(1, self.z, zMarkInj);
                 self.dv = cat(1, self.dv, dvMarkInj);
                 self.c = cat(1, self.c, repmat(cBound, [nMarkInj, 1]));
-                self.node = cat(1, self.node, (nodeInj - isUpwardFlow) * ones(nMarkInj, 1));
+                self.node = cat(1, self.node, (nodeInj - fluxDirection) * ones(nMarkInj, 1));
             else
                 % If downwards flow - append markers at the beginning
                 self.z = cat(1, zMarkInj, self.z);
