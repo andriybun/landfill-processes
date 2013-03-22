@@ -52,7 +52,7 @@ kSat = 1e-2;                             % m^3 water per m^2 soil per day
 SoilPar = InitializeSoilProperties(kSat, ModelDim);
 
 % Diffusion coefficients
-SoilPar.d = 0 * 1e-3; %[1e-3, 1e-4];
+SoilPar.d = 1e-3; %[1e-3, 1e-4];
 
 %% 
 tic

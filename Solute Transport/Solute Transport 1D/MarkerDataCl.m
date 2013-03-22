@@ -115,50 +115,20 @@ classdef MarkerDataCl
             nZn = self.ModelDim.znn;
             nZin = self.ModelDim.znin;
 
+            thetaN = thetaN .* self.mobileFraction;
+            thetaIn = InterNodalValues(self, thetaN);
+%             thetaIn = cat(1, thetaN(1), thetaN);
+                        
             % Velocity of particles
-            thetaIn = cat(1, thetaN(1), thetaN);
             qVelIn = qIn ./ thetaIn;
             
             % Calculate maximum time step
-            dzIn = cat(1, self.ModelDim.dzin(1), self.ModelDim.dzin);
-            isZero = RealEq(qVelIn, 0, self.EPSILON);
-            deltaT = min(deltaT, 0.95 * min(dzIn(~isZero) ./ qVelIn(~isZero)));
+            dzIn = -cat(1, self.ModelDim.dzin(1), self.ModelDim.dzin);
+            deltaT = min(deltaT, 0.95 * min(abs(dzIn ./ qVelIn)));
 
             % Calculate flux over time interval
             qIn = qIn * deltaT;
             qVelIn = qVelIn * deltaT;
-            
-            % Having fluxes between nodes we advect particles within the ranges
-            % [zIn - q / Theta; zIn] for each internode with velocity q. Particles between
-            % those intervals are advected with interpolated velocities.
-            % Velocities for intervals [zIn - q / Theta; zIn]:
-            qConst = qVelIn(2:self.ModelDim.znin);
-            % Coordinates of points where those intervals begin:
-            zConstBegin = self.ModelDim.zin(2:self.ModelDim.znin) - qVelIn(2:self.ModelDim.znin);
-            % Coordinates of all intervals' boundaries [0, b1, e1, b2, e2, ..., bZin, eZin]
-            zInterv = zeros(2 * self.ModelDim.znn + 1, 1);
-            zInterv(1:2:end) = self.ModelDim.zin;
-            zInterv(2:2:end-1) = zConstBegin;
-            % Velocities of fluid in corresponding points
-            qInterv = zeros(2 * self.ModelDim.znn + 1, 1);
-            qInterv(1:2:end) = cat(1, qVelIn(1), qConst);
-            qInterv(2:2:end-1) = qConst;
-            
-%             thetaN = thetaN .* self.mobileFraction;
-% %             thetaIn = InterNodalValues(self, thetaN);
-%             thetaIn = cat(1, thetaN, thetaN(nZn));
-% %             thetaIn = cat(1, thetaN(1), thetaN);
-%                         
-% %             % Velocity of particles
-%             qVelIn = qIn ./ thetaIn;
-%             
-%             % Calculate maximum time step
-%             dzIn = -cat(1, self.ModelDim.dzin(1), self.ModelDim.dzin);
-%             deltaT = min(deltaT, 0.95 * min(abs(dzIn ./ qVelIn)));
-% 
-%             % Calculate flux over time interval
-%             qIn = qIn * deltaT;
-%             qVelIn = qVelIn * deltaT;
             
             % Inject new particles at the top
             if RealLt(qIn(1), 0, self.EPSILON)
@@ -177,13 +147,10 @@ classdef MarkerDataCl
                 self.c      = cat(1, self.c, zeros(1, self.nSolutes));
                 self.node   = cat(1, self.node, nZin);
             end
-
-            % Velocities of particles
-            qMark = self.MarkerValues(zInterv, qInterv, 'linear');
             
-%             % Coordinates of those points from which particles start switching to next nodes:
-%             zSwitch = self.ModelDim.zin - qVelIn;
-%             
+            % Coordinates of those points from which particles start switching to next nodes:
+            zSwitch = self.ModelDim.zin - qVelIn;
+            
 %             %% TODO: try velocity constant for all markers within range [zSwitch; zSwitch + 1]
 %             %% 
 %             
@@ -194,8 +161,8 @@ classdef MarkerDataCl
 %             qMark = self.MarkerValues(zInterv, qInterv, 'linear');
 %             %% TODO END #
             
-%             % Velocities of particles
-%             qMark = self.MarkerValues(zSwitch, qVelIn, 'linear');
+            % Velocities of particles
+            qMark = self.MarkerValues(zSwitch, qVelIn, 'linear');
             
             % Advect (dzMark = qMark)
             zNext = self.z + qMark;
@@ -254,33 +221,8 @@ classdef MarkerDataCl
                     end
                     
                     iMarkStay = iMarkSwitch + fluxDirection;
-                    doStayInThisNode(:) = 0;
-                    doStayInThisNode(iMarkStay) = true;
-                    doLeaveThisNode(:) = 0;
-                    doLeaveThisNode(iMarkSwitch) = true;
-%                     % If all markers proceed to the next node, then exchange with the nearest
-%                     % marker from previous node
-%                     if (~any(doStayInThisNode))
-%                         if fluxDirection <= 0
-%                             iMarkPrev = find(doLeaveThisNode, true, 'first') - 1;
-%                         else
-%                             iMarkPrev = find(doLeaveThisNode, true, 'last') + 1;
-%                         end
-%                         doStayInThisNode(iMarkPrev) = true;
-%                     end
-%                     
-%                     % If no marker is supposed to leave the system, but flux is expected
-%                     % between nodes, we exchange with the first marer from the next downstream
-%                     % node.
-%                     if ~any(doLeaveThisNode)
-%                         if fluxDirection <= 0
-%                             iMarkNext = find(doStayInThisNode, true, 'last') + 1;
-%                         else
-%                             iMarkNext = find(doStayInThisNode, true, 'first') - 1;
-%                         end
-%                         doLeaveThisNode(iMarkNext) = true;
-%                     end
-                    self = self.LocalMassExchange(t, doStayInThisNode, doLeaveThisNode, diffV);
+
+                    self = self.LocalMassExchange(t, iMarkStay, iMarkSwitch, fluxDirection, diffV);
                 end
             end
 
@@ -288,8 +230,8 @@ classdef MarkerDataCl
             self.z = zNext;
             self.node = nodeNext;
             
-            % Consistency check
-            self.CheckMarkersVolume(t);
+%             % Consistency check
+%             self.CheckMarkersVolume(t);
             
             % Volume of fluid that leave system
             vOut = 0;
@@ -520,41 +462,55 @@ classdef MarkerDataCl
         end
         
         %% Perform local mass exchange between markers
-        function self = LocalMassExchange(self, t, doStayInThisNode, doLeaveThisNode, diff)
+        function self = LocalMassExchange(self, t, iMarkStay, iMarkSwitch, fluxDirection, diff)
             %  Compute corresponding masses of solutes exchanged and exchange mass
             if (diff > 0)
                 % Less fluid flows to next cell than calculated. We remove some fluid from
                 % the particles that stayed and distribute it over the particle in the next cell
-                isMarkDonor = doStayInThisNode;
-                isMarkAcceptor = doLeaveThisNode;
+                iMarkDonor = iMarkStay;
+                iMarkAcceptor = iMarkSwitch;
             else
                 % More fluid flows than expected. We remove some fluid from the markers that
                 % switched to the next node and attach it to previous particles
-                isMarkDonor = doLeaveThisNode;
-                isMarkAcceptor = doStayInThisNode;
+                iMarkDonor = iMarkSwitch;
+                iMarkAcceptor = iMarkStay;
             end
 
-            [self, dmTotal] = self.DetachVolume(isMarkDonor, abs(diff));
-            self = self.AttachVolume(isMarkAcceptor, abs(diff), dmTotal);
+            % This flag defines from which direction donors must be added ("plus" - downwards,
+            % "minus" - upwards
+            appendDonor = sign(diff) * fluxDirection;
+            
+            % Perform matterial exchange
+            [self, dmTotal] = self.DetachVolume(iMarkDonor, abs(diff), appendDonor);
+            self = self.AttachVolume(iMarkAcceptor, abs(diff), dmTotal);
         end
         
         % Detach total volume specified by dvTotal from markers defined by logical indexing with 
         % isMarkDonor. Returns masses of solutes removed from the system. System is updated.
-        function [self, dmTotal] = DetachVolume(self, isMarkDonor, dvTotal)
-            nMarkDonors = sum(isMarkDonor);
-            dvMark = dvTotal / nMarkDonors;
-            self.dv(isMarkDonor) = self.dv(isMarkDonor) - dvMark;
-            dmTotal = sum(dvMark * self.c(isMarkDonor));
+        function [self, dmTotal] = DetachVolume(self, iMarkDonor, dvTotal, appendDonor)
+            nMarkDonors = 1;
+            vMarkDonors = self.dv(iMarkDonor);
+            iLastDonor = iMarkDonor;
+            % Add more donor markers if current donor marker doesn't contain enough volume
+            while (vMarkDonors < dvTotal)
+                iLastDonor = iLastDonor + appendDonor;
+                vMarkDonors = vMarkDonors + self.dv(iLastDonor);
+                nMarkDonors = nMarkDonors + 1;
+            end
+            iMarkDonor = iMarkDonor:appendDonor:iLastDonor;
+            dvMark = dvTotal * self.dv(iMarkDonor) / vMarkDonors;
+            self.dv(iMarkDonor) = self.dv(iMarkDonor) - dvMark;
+            dmTotal = sum(dvMark .* self.c(iMarkDonor));
         end
         
         % Distribute volume (dvTotal) containing total masses (mTotal) of solutes over markers
         % defined with logical indices isMarkAcceptor.
-        function self = AttachVolume(self, isMarkAcceptor, dvTotal, dmTotal)
-            nMarkAcceptors = sum(isMarkAcceptor);
+        function self = AttachVolume(self, iMarkAcceptor, dvTotal, dmTotal)
+            nMarkAcceptors = 1;
             dvMark = dvTotal / nMarkAcceptors;
-            mMark = self.dv(isMarkAcceptor) .* self.c(isMarkAcceptor) + dmTotal / nMarkAcceptors;
-            self.dv(isMarkAcceptor) = self.dv(isMarkAcceptor) + dvMark;
-            self.c(isMarkAcceptor) = mMark ./ self.dv(isMarkAcceptor);
+            mMark = self.dv(iMarkAcceptor) .* self.c(iMarkAcceptor) + dmTotal / nMarkAcceptors;
+            self.dv(iMarkAcceptor) = self.dv(iMarkAcceptor) + dvMark;
+            self.c(iMarkAcceptor) = mMark ./ self.dv(iMarkAcceptor);
         end
         
         %% Compute internodal values
@@ -619,49 +575,49 @@ classdef MarkerDataCl
                     error('RuntimeCheck:ExceedConcentration', ...
                         't = %5.3f: Concentration is too high', t);
                 end
-            else
-                % Else concentrations are adjusted in order to keep mass balance correct
-                if any(isCBelowZero)
-                    % Indices of nodes with wrong concentrations 
-                    iNodesToAdjust = unique(self.node(isCBelowZero))';
-                    
-                    % Process those nodes
-                    for iNode = iNodesToAdjust
-                        isMarkInNode = (self.node == iNode);
-                        doAdjustMarker = isMarkInNode & ~(isCBelowZero);
-                        massPerMarker = self.dv(doAdjustMarker) .* self.c(doAdjustMarker);
-                        totalMassToRemove = sum(self.dv(isCBelowZero) .* self.c(isCBelowZero));
-                        
-                        % Set zero instead of negative concentrations
-                        self.c(isCBelowZero) = 0;
-                        
-                        % Reallocate removed mass through other markers in node
-                        massAdjustment = massPerMarker ./ sum(massPerMarker) .* totalMassToRemove;
-                        self.c(doAdjustMarker) = ...
-                            (massPerMarker + massAdjustment) ./ self.dv(doAdjustMarker);
-                    end
-                end
-                if any(isCAboveOne)
-                    % Indices of nodes with wrong concentrations 
-                    iNodesToAdjust = unique(self.node(isCAboveOne))';
-                    
-                    % Process those nodes
-                    for iNode = iNodesToAdjust
-                        isMarkInNode = (self.node == iNode);
-                        doAdjustMarker = isMarkInNode & ~(isCAboveOne);
-                        massPerMarker = self.dv(doAdjustMarker) .* self.c(doAdjustMarker);
-                        totalMassToRemove = sum(self.dv(isCAboveOne) .* (self.c(isCAboveOne) - 1));
-                        
-                        % Set one instead of concentrations above 1
-                        self.c(isCAboveOne) = 1;
-                        
-                        % Reallocate removed mass through other markers in node
-                        massAdjustment = massPerMarker ./ sum(massPerMarker) .* totalMassToRemove;
-
-                        self.c(doAdjustMarker) = ...
-                            (massPerMarker + massAdjustment) ./ self.dv(doAdjustMarker);
-                    end
-                end
+%             else
+%                 % Else concentrations are adjusted in order to keep mass balance correct
+%                 if any(isCBelowZero)
+%                     % Indices of nodes with wrong concentrations 
+%                     iNodesToAdjust = unique(self.node(isCBelowZero))';
+%                     
+%                     % Process those nodes
+%                     for iNode = iNodesToAdjust
+%                         isMarkInNode = (self.node == iNode);
+%                         doAdjustMarker = isMarkInNode & ~(isCBelowZero);
+%                         massPerMarker = self.dv(doAdjustMarker) .* self.c(doAdjustMarker);
+%                         totalMassToRemove = sum(self.dv(isCBelowZero) .* self.c(isCBelowZero));
+%                         
+%                         % Set zero instead of negative concentrations
+%                         self.c(isCBelowZero) = 0;
+%                         
+%                         % Reallocate removed mass through other markers in node
+%                         massAdjustment = totalMassToRemove / numel(massPerMarker);
+%                         self.c(doAdjustMarker) = ...
+%                             (massPerMarker + massAdjustment) ./ abs(self.dv(doAdjustMarker));
+%                     end
+%                 end
+%                 if any(isCAboveOne)
+%                     % Indices of nodes with wrong concentrations 
+%                     iNodesToAdjust = unique(self.node(isCAboveOne))';
+%                     
+%                     % Process those nodes
+%                     for iNode = iNodesToAdjust
+%                         isMarkInNode = (self.node == iNode);
+%                         doAdjustMarker = isMarkInNode & ~(isCAboveOne);
+%                         massPerMarker = self.dv(doAdjustMarker) .* self.c(doAdjustMarker);
+%                         totalMassToRemove = sum(self.dv(isCAboveOne) .* (self.c(isCAboveOne) - 1));
+%                         
+%                         % Set one instead of concentrations above 1
+%                         self.c(isCAboveOne) = 1;
+%                         
+%                         % Reallocate removed mass through other markers in node
+%                         massAdjustment = totalMassToRemove / numel(massPerMarker);
+% 
+%                         self.c(doAdjustMarker) = ...
+%                             (massPerMarker + massAdjustment) ./ abs(self.dv(doAdjustMarker));
+%                     end
+%                 end
             end             % if STRICT_CHECK
         end                 % Function
         
