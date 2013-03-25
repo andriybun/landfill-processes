@@ -83,12 +83,18 @@ timeOutVec = nan(size(tRange));
 timeOutVec(1) = t;
 iTime = 1;
 
-%% Solve Richards
-tic
-[qOutR, thetaOutR, hOutR, tRangeR] = ...
-    Richards(tRange, dtMax, ModelDim, SoilPar, BoundaryPar);
-inFlow = min(BoundaryPar.qTop(tRange));
-toc
+% %% Solve Richards
+% tic
+% [qOutR, thetaOutR, hOutR, tRangeR] = ...
+%     Richards(tRange, dtMax, ModelDim, SoilPar, BoundaryPar);
+% inFlow = min(BoundaryPar.qTop(tRange));
+% toc
+
+%% STUB: constant flux
+qOutR = 0.01 * ones(ModelDim.znin, ModelDim.xnin);
+thetaOutR = 0.4 * ones(ModelDim.znn, ModelDim.xnn);
+tRangeR = tRange;
+%  END STUB
 
 %% Initialize markers object
 MarkerData = MarkerDataCl(thetaOutR(1, :)', nSolutes, ...

@@ -5,7 +5,7 @@ clc
 clear
 
 % Path to directory with code for solving Richards equation
-addpath('Common');
+addpath('../../Common');
 addpath('PhysicalProcesses');
 RICHARDS_ROOT_DIR = '../../Richards';
 addpath(RICHARDS_ROOT_DIR);
@@ -26,12 +26,14 @@ SimulationPar.EPSILON = 1e-10;
 zTop = 0;
 zBottom = -1;
 dz = -0.05;
-ModelDim = InitializeNodes('z', zTop, zBottom, dz);
+ModelDimZ = InitializeNodes('z', zTop, zBottom, dz);
 
-xRight = 0;
-xLeft = 0.2;
+xLeft = 0;
+xRight = 0.2;
 dx = 0.05;
 ModelDimX = InitializeNodes('x', xLeft, xRight, dx);
+
+ModelDim = MergeStructs(ModelDimX, ModelDimZ);
 
 nSolutes = 1;
 
@@ -68,7 +70,9 @@ SoilPar.d = 1e-3; %[1e-3, 1e-4];
 tic
 
 % Max timestep is based on cell size and flow velocity
-dtMax = max(abs(ModelDim.dzn)) ./ max(abs(kSat));
+maxDz = max(abs(ModelDim.dzn));
+maxDx = max(abs(ModelDim.dxn));
+dtMax = max(maxDz, maxDx) ./ max(abs(kSat));
 
 % Initialize output matrices
 timeOutVec = nan(size(tRange));
@@ -77,18 +81,17 @@ iTime = 1;
 
 %% Solve Richards
 tic
-RichardsOutput = SolveRichards(tRange, ModelDim, SoilPar, BoundaryPar, TimerPar, InitialPar);
-
-
-% [qOutR, thetaOutR, hOutR, tRangeR] = ...
-%     Richards(tRange, dtMax, ModelDim, SoilPar, BoundaryPar);
-
+% RichardsOutput = SolveRichards(tRange, ModelDim, SoilPar, BoundaryPar, TimerPar, InitialPar);
 
 %% Validation
-validationMode = false;
+validationMode = true;
 if validationMode
-    qOutR = -1e-2 * ones(size(qOutR));
-    thetaOutR = SoilPar.thetaS * ones(size(thetaOutR));
+    %% STUB: constant flux
+    qOutR = 0.01 * ones(ModelDim.znin, ModelDim.xnin);
+    thetaOutR = 0.4 * ones(ModelDim.znn, ModelDim.xnn);
+    tRangeR = tRange;
+    %  END STUB
+    
     inFlow = min(min(qOutR)) / SoilPar.thetaS;
     doDisplayAnalyticalSolution = true;
 else
