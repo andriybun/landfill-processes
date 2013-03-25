@@ -23,7 +23,14 @@ SimulationPar.EPSILON = 1e-10;
 zTop = 0;
 zBottom = -1;
 dz = -0.05;
-ModelDim = InitializeNodes('z', zTop, zBottom, dz);
+ModelDimZ = InitializeNodes('z', zTop, zBottom, dz);
+
+xLeft = 0;
+xRight = 0.2;
+dx = 0.05;
+ModelDimX = InitializeNodes('x', xLeft, xRight, dx);
+
+ModelDim = MergeStructs(ModelDimX, ModelDimZ);
 
 diffCoeff = 1e-3; % [1e-3, 5e-3];
 exchCoeff = 0 * 3e-3; % [1e-1, 5e-1];
