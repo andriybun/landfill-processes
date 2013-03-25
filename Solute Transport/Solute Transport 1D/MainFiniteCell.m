@@ -5,7 +5,7 @@ clc
 clear
 
 % Path to directory with code for solving Richards equation
-addpath('Common');
+addpath('../../Common');
 addpath('PhysicalProcesses');
 addpath('PhysicalProcesses/Richards');
 
