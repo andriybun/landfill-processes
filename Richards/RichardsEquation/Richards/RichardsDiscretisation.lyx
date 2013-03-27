@@ -1,0 +1,593 @@
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
+\begin_document
+\begin_header
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language dutch
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman times
+\font_sans helvet
+\font_typewriter lmtt
+\font_default_family rmdefault
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_amsmath 1
+\use_esint 1
+\use_mhchem 1
+\use_mathdots 1
+\cite_engine basic
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 1cm
+\topmargin 2cm
+\rightmargin 1cm
+\bottommargin 2cm
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Section
+Richards equation (head formulation)
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+C(\boldsymbol{h})\frac{\partial\boldsymbol{h}}{\partial t}=-\nabla\cdot\boldsymbol{q}+Q
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+\boldsymbol{q}=-\boldsymbol{K}\left(\nabla\boldsymbol{h}+\nabla\boldsymbol{z}\right)
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Insert 2 in to 1:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+C(\boldsymbol{h})\frac{\partial\boldsymbol{h}}{\partial t}=-\nabla\cdot\left[-\boldsymbol{K}\left(\nabla\boldsymbol{h}+\nabla\boldsymbol{z}\right)\right]+Q
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Initial value problem with two types of boundary conditions:
+\end_layout
+
+\begin_layout Enumerate
+Neumann condition (flux form):
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula 
+\begin{equation}
+\boldsymbol{q}(\boldsymbol{x},t)=q_{bnd}\qquad\boldsymbol{x}\in\partial\Omega_{1}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+Robbins condition (leakage form):
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula 
+\begin{equation}
+\boldsymbol{q}(\boldsymbol{x},t)=-K_{bnd}(h_{o}(\boldsymbol{x})-h(\boldsymbol{x}))
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Discrete form of model (vertical dimension)
+\end_layout
+
+\begin_layout Standard
+We define a finite difference grid in two dimensions (
+\begin_inset Formula $z$
+\end_inset
+
+ and 
+\begin_inset Formula $x$
+\end_inset
+
+).
+ We assume that 
+\begin_inset Formula $\Delta z_{i}=z_{i+1}-z_{i}$
+\end_inset
+
+ and 
+\begin_inset Formula $\Delta x_{j}=x_{j+1}-x_{j}$
+\end_inset
+
+ where 
+\begin_inset Formula $z_{i+1}>z_{i}$
+\end_inset
+
+ and 
+\begin_inset Formula $x_{j+1}>x_{j}$
+\end_inset
+
+.
+ Flow is negative in negative directions.
+ We implement the model on a so-called staggerd grid where fluxes are defined
+ on the internodes and the states are defined on the nodes.
+ Discretisation in the vertical dimension is:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+C_{i,j}\frac{\Delta h_{i,j}}{\Delta t}=-\frac{q_{i+\frac{1}{2},j}-q_{i-\frac{1}{2},j}}{\Delta z_{i-\frac{1}{2}}}-\frac{q_{i,j+\frac{1}{2}}-q_{i,j-\frac{1}{2}}}{\Delta x_{j-\frac{1}{2}}}+Q_{i,j}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Expansion of this equation for the vertical gives:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+C_{i,j}\frac{\Delta h_{i,j}}{\Delta t}=-\left[\frac{-K_{i+\frac{1}{2},j}\left(\frac{h_{i+1,j}-h_{i,j}}{\Delta z_{i}}+1\right)+K_{i-\frac{1}{2},j}\left(\frac{h_{i,j}-h_{i-1,j}}{\Delta z_{i-1}}+1\right)}{\Delta z_{i-\frac{1}{2}}}\right]-\left[\frac{-K_{i,j+\frac{1}{2}}\left(\frac{h_{i,j+1}-h_{i,j}}{\Delta x_{j}}+1\right)+K_{i,j-\frac{1}{2}}\left(\frac{h_{i,j}-h_{i,j-1}}{\Delta x_{j-1}}+1\right)}{\Delta x_{j-\frac{1}{2}}}\right]+Q_{i,j}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Rearranging gives:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+C_{i,j}\frac{\Delta h_{i,j}}{\Delta t} & = & \frac{K_{i,j-\frac{1}{2}}}{\Delta x_{j-\frac{1}{2}}\Delta x_{j-1}}h_{i,j-1}+\frac{K_{i-\frac{1}{2},j}}{\Delta z_{i-\frac{1}{2}}\Delta z_{i-1}}h_{i-1,j}-\left(\frac{K_{i-\frac{1}{2},j}}{\Delta z_{i-\frac{1}{2}}\Delta z_{i-1}}+\frac{K_{i+\frac{1}{2},j}}{\Delta z_{i-\frac{1}{2}}\Delta z_{i}}+\frac{K_{i,j-\frac{1}{2}}}{\Delta x_{j-\frac{1}{2}}\Delta x_{j-1}}+\frac{K_{i,j+\frac{1}{2}}}{\Delta x_{j-\frac{1}{2}}\Delta x_{j}}\right)h_{i,j}+\\
+ &  & \frac{K_{i+\frac{1}{2},j}}{\Delta z_{i-\frac{1}{2}}\Delta z_{i}}h_{i+1,j}+\frac{K_{i,j+\frac{1}{2}}}{\Delta x_{j-\frac{1}{2}}\Delta x_{j}}h_{i,j+1}+\frac{K_{i+\frac{1}{2},j}-K_{i-\frac{1}{2},j}}{\Delta z_{i-\frac{1}{2}}}+Q_{i,j}
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Which can be rewritten as:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+C_{i,j}\frac{\Delta h_{i,j}}{\Delta t}=a_{i,j-1}h_{i,j-1}+b_{i-1,j}h_{i-1,j}+c_{i,j}h_{i,j}+d_{i+1,j}h_{i+1,j}+e_{i,j+1}h_{i,j+1}+y_{i,j}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+for all values of 
+\begin_inset Formula $i$
+\end_inset
+
+ and 
+\begin_inset Formula $j$
+\end_inset
+
+ we get a system of equations which can be written in a matrix form:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\boldsymbol{C}\cdot\frac{\Delta\boldsymbol{h}}{\Delta t}=\boldsymbol{K}\cdot\boldsymbol{h}+\boldsymbol{y}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Eulerian discretization
+\end_layout
+
+\begin_layout Standard
+Lets us approximate 
+\begin_inset Formula $\boldsymbol{h}^{n+1}=\boldsymbol{h}^{n}+\Delta t\boldsymbol{\dot{h}}^{n+1}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Picard Iteration
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\boldsymbol{C}\cdot\frac{\Delta\boldsymbol{h}}{\Delta t}=\boldsymbol{K}\cdot\boldsymbol{h}+\boldsymbol{y}$
+\end_inset
+
+ can be written in the mixed form as: 
+\begin_inset Formula 
+\[
+\frac{\Delta\boldsymbol{\theta}}{\Delta t}-\boldsymbol{K}\cdot\boldsymbol{h}-\boldsymbol{y}=0
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+If we expand 
+\begin_inset Formula $\boldsymbol{\theta}(\boldsymbol{h})$
+\end_inset
+
+ in a Taylor series as:
+\begin_inset Formula 
+\begin{eqnarray*}
+\boldsymbol{\theta}^{n+1,m+1} & =\boldsymbol{\theta}(\boldsymbol{h}^{n+1,m+1})= & \boldsymbol{\theta}^{n+1,m}+\left(\frac{\mathrm{d\boldsymbol{\theta}}}{\mathrm{d\boldsymbol{h}}}\right)^{n+1,m}\boldsymbol{\delta}^{m+1}+O(\delta^{2})
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+with 
+\begin_inset Formula $\boldsymbol{h}^{n+1,m+1}=\boldsymbol{h}^{n+1,m}+\boldsymbol{\delta}^{m+1}$
+\end_inset
+
+ we can expand the equation as:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+(\boldsymbol{C}^{n+1,m}-\Delta t\boldsymbol{K}^{n+1,m})\boldsymbol{\delta}^{m+1}=\Delta t\left(\boldsymbol{K}^{n+1,m}\cdot\boldsymbol{h}^{n+1,m}+\boldsymbol{F}^{n+1,m}\right)-(\boldsymbol{\theta}^{n+1,m}-\boldsymbol{\theta}^{n})
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Discretisation of the boundary condition
+\end_layout
+
+\begin_layout Subsection
+Neumann bottom and left condition:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+i=1
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+C_{1,j}\frac{\Delta h_{i,j}}{\Delta t}=-\frac{q_{i+\frac{1}{2},j}-q_{B}}{\Delta z_{i-\frac{1}{2}}}-\frac{q_{i,j+\frac{1}{2}}-q_{i,j-\frac{1}{2}}}{\Delta x_{j-\frac{1}{2}}}+Q_{i,j}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Substitution gives:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+C_{i,j}\frac{\Delta h_{i,j}}{\Delta t}=-\left[\frac{-K_{i+\frac{1}{2},j}\left(\frac{h_{i+1,j}-h_{i,j}}{\Delta z_{i}}+1\right)-q_{B}}{\Delta z_{i-\frac{1}{2}}}\right]-\left[\frac{-K_{i,j+\frac{1}{2}}\left(\frac{h_{i,j+1}-h_{i,j}}{\Delta x_{j}}+1\right)+K_{i,j-\frac{1}{2}}\left(\frac{h_{i,j}-h_{i,j-1}}{\Delta x_{j-1}}+1\right)}{\Delta x_{j-\frac{1}{2}}}\right]+Q_{i,j}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+and rearranging gives:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+C_{i,j}\frac{\Delta h_{i,j}}{\Delta t} & = & \frac{K_{i,j-\frac{1}{2}}}{\Delta x_{j-\frac{1}{2}}\Delta x_{j-1}}h_{i,j-1}-\left({\color{red}\frac{K_{i+\frac{1}{2},j}}{\Delta z_{i-\frac{1}{2}}\Delta z_{i}}+\frac{K_{i,j-\frac{1}{2}}}{\Delta x_{j-\frac{1}{2}}\Delta x_{j-1}}+\frac{K_{i,j+\frac{1}{2}}}{\Delta x_{j-\frac{1}{2}}\Delta x_{j}}}\right)h_{i,j}+\\
+ &  & \frac{K_{i+\frac{1}{2},j}}{\Delta z_{i-\frac{1}{2}}\Delta z_{i}}h_{i+1,j}+\frac{K_{i,j+\frac{1}{2}}}{\Delta x_{j-\frac{1}{2}}\Delta x_{j}}h_{i,j+1}{\color{red}+\frac{K_{i+\frac{1}{2},j}}{\Delta z_{i-\frac{1}{2}}}+\frac{q_{B}}{\Delta z_{i-\frac{1}{2}}}}+Q_{i,j}
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+So in this case: 
+\begin_inset Formula ${\color{red}b=0}$
+\end_inset
+
+ and 
+\begin_inset Formula $c$
+\end_inset
+
+ and 
+\begin_inset Formula $y$
+\end_inset
+
+ need to be modified.
+ Similar approach for the left boundary condition.
+ Beware at the corner node, both 
+\begin_inset Formula $a$
+\end_inset
+
+ and 
+\begin_inset Formula $b$
+\end_inset
+
+ drop out...
+\end_layout
+
+\begin_layout Subsection
+Neumann top and the right condition
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+C_{n,j}\frac{\Delta h_{n,j}}{\Delta t}=-\frac{q_{T}-q_{n-\frac{1}{2},j}}{\Delta z_{n-\frac{1}{2}}}-\frac{q_{n,j+\frac{1}{2}}-q_{n,j-\frac{1}{2}}}{\Delta x_{j-\frac{1}{2}}}+Q_{n,j}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Substitution gives:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+C_{i,j}\frac{\Delta h_{1,j}}{\Delta t}=-\left[\frac{q_{T}+K_{\frac{1}{2},j}\left(\frac{h_{1,j}-h_{i-1,j}}{\Delta z_{i-1}}+1\right)}{\Delta z_{i-\frac{1}{2}}}\right]-\left[\frac{-K_{i,j+\frac{1}{2}}\left(\frac{h_{i,j+1}-h_{i,j}}{\Delta x_{j}}+1\right)+K_{i,j-\frac{1}{2}}\left(\frac{h_{i,j}-h_{i,j-1}}{\Delta x_{j-1}}+1\right)}{\Delta x_{j-\frac{1}{2}}}\right]+Q_{i,j}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+and rearranging gives:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+C_{i,j}\frac{\Delta h_{i,j}}{\Delta t} & = & \frac{K_{i,j-\frac{1}{2}}}{\Delta x_{j-\frac{1}{2}}\Delta x_{j-1}}h_{i,j-1}+\frac{K_{i-\frac{1}{2},j}}{\Delta z_{i-\frac{1}{2}}\Delta z_{i-1}}h_{i-1,j}-\left({\color{red}\frac{K_{i-\frac{1}{2},j}}{\Delta z_{i-\frac{1}{2}}\Delta z_{i-1}}+\frac{K_{i,j-\frac{1}{2}}}{\Delta x_{j-\frac{1}{2}}\Delta x_{j-1}}+\frac{K_{i,j+\frac{1}{2}}}{\Delta x_{j-\frac{1}{2}}\Delta x_{j}}}\right)h_{i,j}+\\
+ &  & \frac{K_{i+\frac{1}{2},j}}{\Delta z_{i-\frac{1}{2}}\Delta z_{i}}h_{i+1,j}+\frac{K_{i,j+\frac{1}{2}}}{\Delta x_{j-\frac{1}{2}}\Delta x_{j}}h_{i,j+1}{\color{red}-\frac{K_{i-\frac{1}{2},j}}{\Delta z_{i-\frac{1}{2}}}-\frac{q_{T}}{\Delta z_{i-\frac{1}{2}}}}+Q_{i,j}
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Robbins bottom and left
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+i=1
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+C_{i,j}\frac{\Delta h_{i,j}}{\Delta t}=-\frac{q_{i+\frac{1}{2},j}-q_{i-\frac{1}{2},j}}{\Delta z_{i-\frac{1}{2}}}-\frac{q_{i,j+\frac{1}{2}}-q_{i,j-\frac{1}{2}}}{\Delta x_{j-\frac{1}{2}}}+Q_{i,j}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+q_{i-\frac{1}{2}}=-K_{S_{i,j}}(h_{i,j}-h_{Amb})
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Expansion of this equation for the vertical gives:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+C_{i,j}\frac{\Delta h_{i,j}}{\Delta t}=-\left[\frac{-K_{i+\frac{1}{2},j}\left(\frac{h_{i+1,j}-h_{i,j}}{\Delta z_{i}}+1\right)+K_{S_{i,j}}\left(h_{i,j}-h_{Amb}\right)}{\Delta z_{i-\frac{1}{2}}}\right]-\left[\frac{-K_{i,j+\frac{1}{2}}\left(\frac{h_{i,j+1}-h_{i,j}}{\Delta x_{j}}+1\right)+K_{i,j-\frac{1}{2}}\left(\frac{h_{i,j}-h_{i,j-1}}{\Delta x_{j-1}}+1\right)}{\Delta x_{j-\frac{1}{2}}}\right]+Q_{i,j}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Rearranging gives:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+C_{i,j}\frac{\Delta h_{i,j}}{\Delta t} & = & \frac{K_{i,j-\frac{1}{2}}}{\Delta x_{j-\frac{1}{2}}\Delta x_{j-1}}h_{i,j-1}-\left({\color{red}\frac{K_{S_{i,j}}}{\Delta z_{i-\frac{1}{2}}}}+\frac{K_{i+\frac{1}{2},j}}{\Delta z_{i-\frac{1}{2}}\Delta z_{i}}+\frac{K_{i,j-\frac{1}{2}}}{\Delta x_{j-\frac{1}{2}}\Delta x_{j-1}}+\frac{K_{i,j+\frac{1}{2}}}{\Delta x_{j-\frac{1}{2}}\Delta x_{j}}\right)h_{i,j}+\\
+ &  & \frac{K_{i+\frac{1}{2},j}}{\Delta z_{i-\frac{1}{2}}\Delta z_{i}}h_{i+1,j}+\frac{K_{i,j+\frac{1}{2}}}{\Delta x_{j-\frac{1}{2}}\Delta x_{j}}h_{i,j+1}+{\color{red}\frac{K_{i+\frac{1}{2},j}}{\Delta z_{i-\frac{1}{2}}}+\frac{K_{S_{i,j}}}{\Delta z_{i-\frac{1}{2}}}h_{Amb}}+Q_{i,j}
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Robbins top and right
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+i=n
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+C_{i,j}\frac{\Delta h_{i,j}}{\Delta t}=-\frac{q_{i+\frac{1}{2},j}-q_{i-\frac{1}{2},j}}{\Delta z_{i-\frac{1}{2}}}-\frac{q_{i,j+\frac{1}{2}}-q_{i,j-\frac{1}{2}}}{\Delta x_{j-\frac{1}{2}}}+Q_{i,j}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+q_{i+\frac{1}{2},j}=-K_{S_{i,j}}(h_{Amb}-h_{i,j})
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Expansion of this equation for the vertical gives:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+C_{i,j}\frac{\Delta h_{i,j}}{\Delta t}=-\left[\frac{-K_{S_{i,j}}(h_{Amb}-h_{i,j})+K_{i-\frac{1}{2},j}\left(\frac{h_{i,j}-h_{i-1,j}}{\Delta z_{i-1}}+1\right)}{\Delta z_{i-\frac{1}{2}}}\right]-\left[\frac{-K_{i,j+\frac{1}{2}}\left(\frac{h_{i,j+1}-h_{i,j}}{\Delta x_{j}}+1\right)+K_{i,j-\frac{1}{2}}\left(\frac{h_{i,j}-h_{i,j-1}}{\Delta x_{j-1}}+1\right)}{\Delta x_{j-\frac{1}{2}}}\right]+Q_{i,j}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Rearranging gives:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+C_{i,j}\frac{\Delta h_{i,j}}{\Delta t} & = & \frac{K_{i,j-\frac{1}{2}}}{\Delta x_{j-\frac{1}{2}}\Delta x_{j-1}}h_{i,j-1}+\frac{K_{i-\frac{1}{2},j}}{\Delta z_{i-\frac{1}{2}}\Delta z_{i-1}}h_{i-1,j}-\left(\frac{K_{i-\frac{1}{2},j}}{\Delta z_{i-\frac{1}{2}}\Delta z_{i-1}}+{\color{red}\frac{K_{S_{i,j}}}{\Delta z_{i-\frac{1}{2}}}}+\frac{K_{i,j-\frac{1}{2}}}{\Delta x_{j-\frac{1}{2}}\Delta x_{j-1}}+\frac{K_{i,j+\frac{1}{2}}}{\Delta x_{j-\frac{1}{2}}\Delta x_{j}}\right)h_{i,j}+\\
+ &  & \frac{K_{i,j+\frac{1}{2}}}{\Delta x_{j-\frac{1}{2}}\Delta x_{j}}h_{i,j+1}{\color{red}-\frac{K_{i-\frac{1}{2},j}}{\Delta z_{i-\frac{1}{2}}}+\frac{K_{S_{i,j}}}{\Delta z_{i-\frac{1}{2}}}h_{Amb}}+Q_{i,j}
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document

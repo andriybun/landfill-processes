@@ -1,0 +1,390 @@
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
+\begin_document
+\begin_header
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_amsmath 1
+\use_esint 1
+\use_mhchem 1
+\use_mathdots 1
+\cite_engine basic
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Standard
+Richards equation:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial\theta_{w}}{\partial t}+S_{w}S_{s}^{w}\frac{\partial h_{w}}{\partial t}+\nabla\cdot\mathbf{q_{w}}=0
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+with 
+\begin_inset Formula 
+\[
+\mathbf{q_{w}}=-\frac{\mathbf{\kappa}k_{rw}}{\eta_{w}}\left(\nabla p_{w}+\rho_{w}\mathbf{g}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+in which 
+\begin_inset Formula $\theta_{w}$
+\end_inset
+
+ is the volumetric water content 
+\begin_inset Formula $[m_{w}^{3}/m_{vol}^{3}]$
+\end_inset
+
+, 
+\begin_inset Formula $t$
+\end_inset
+
+ is time (s), 
+\begin_inset Formula $S_{w}$
+\end_inset
+
+ is the water saturation, 
+\begin_inset Formula $S_{s}^{w}$
+\end_inset
+
+ is the compressibility of water 
+\begin_inset Formula $[1/Pa]$
+\end_inset
+
+, 
+\begin_inset Formula $p_{w}$
+\end_inset
+
+ is the water pressure, 
+\begin_inset Formula $\mathbf{q_{w}}$
+\end_inset
+
+is the Darcy flux, 
+\begin_inset Formula $\mathbf{\kappa}$
+\end_inset
+
+ is the permeability tensor of the porous medium 
+\begin_inset Formula $[m^{2}]$
+\end_inset
+
+, 
+\begin_inset Formula $k_{rw}$
+\end_inset
+
+ is the relative permeability of water, 
+\begin_inset Formula $\eta_{w}$
+\end_inset
+
+ is the viscosity of water 
+\begin_inset Formula $[Pa\cdot s]$
+\end_inset
+
+, 
+\begin_inset Formula $\rho_{w}$
+\end_inset
+
+ is the density of water 
+\begin_inset Formula $[kg/m_{w}^{3}]$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathbf{g}$
+\end_inset
+
+ is the gravitational acceleration vector 
+\begin_inset Formula $[m/s^{2}]$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+There are some challenges which we face when solving this equation.
+ The first challenge when we look at this equation is the fact that this
+ equation contains two state variables, 
+\begin_inset Formula $\theta_{w}$
+\end_inset
+
+ and 
+\begin_inset Formula $p_{w}$
+\end_inset
+
+ which are related by a so-called constitutional relationship where 
+\begin_inset Formula $\theta_{w}$
+\end_inset
+
+ is a function of 
+\begin_inset Formula $p_{w}$
+\end_inset
+
+, in this case we use the capillary pressure defined as 
+\begin_inset Formula $p_{c}=p_{a}-p_{w}$
+\end_inset
+
+ where 
+\begin_inset Formula $p_{a}$
+\end_inset
+
+ is the air pressure.
+ Generally when considering unsaturated flow (i.e.
+ water flow in the first meters of the soil) we may assume that the gradient
+ in air pressures will be very small because permeability for air in the
+ unsaturated zone is very high.
+ This so-called Richards Assumption allows us to disregard the air pressure
+ and the easiest way to do this is to take all pressures relative to the
+ air pressure.
+ Therefore we take the air pressure as zero.
+ The capillary pressure then becomes 
+\begin_inset Formula $p_{c}=-p_{w}$
+\end_inset
+
+.
+ Above the phreatic groundwater level the capillary pressure will be positive
+ (relative water pressures are negative), below the phreatic groundwater
+ level, the capillary pressure will be negative.
+ Below the phreatic groundwater level we know that the volumetric water
+ content will be equal to the porosity of the porous material (
+\begin_inset Formula $\varepsilon$
+\end_inset
+
+) because all pore space is filled with water.
+ Above the phreatic water level, the volumetric water content will be a
+ highly non-linear equation of the capillary pressure.
+ Two well known equations for describing volumetric water content as a function
+ of capillary pressure are the Brooks-Corey and the van Genuchten equations.
+\end_layout
+
+\begin_layout Standard
+The Brooks-Corey equations is:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+S_{eff} & = & 1,\qquad\qquad p_{c}\leqq p_{entry}\\
+p_{c} & = & p_{entry}\left(S_{eff}\right)^{-\frac{1}{\lambda}}\qquad p_{c}>p_{entry}
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+which can be rewritten to:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+S_{eff}=\begin{cases}
+\begin{array}{c}
+\left(\frac{p_{c}}{p_{entry}}\right)^{-\lambda},\qquad p_{c}>p_{entry}\\
+1,\qquad p_{c}\leqq p_{entry}
+\end{array}\end{cases}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In these equations, 
+\begin_inset Formula $p_{entry}$
+\end_inset
+
+ can be considered to be the air entry pressure or bubbling pressure and
+ 
+\begin_inset Formula $\lambda$
+\end_inset
+
+ is a parameter that defines the shape of the curve.
+\end_layout
+
+\begin_layout Standard
+The van Genuchten equation is:
+\begin_inset Formula 
+\[
+p_{c}=p^{*}\left[(S_{eff})^{-\frac{1}{m}}-1\right]^{1-m},\qquad p_{c}>0
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+which can be rewritten to
+\begin_inset Formula 
+\[
+S_{eff}=\begin{cases}
+\begin{array}{c}
+\left[1+\left(\frac{p_{c}}{p^{*}}\right)^{n}\right]^{-m},\qquad p_{c}>0\\
+1,\qquad p_{c}\leqq0
+\end{array}\end{cases}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+in which 
+\begin_inset Formula $p^{*}$
+\end_inset
+
+, 
+\begin_inset Formula $n$
+\end_inset
+
+ and 
+\begin_inset Formula $m$
+\end_inset
+
+ are empirical parameters which are obtained by fitting the van Genuchten
+ to measured data.
+ 
+\begin_inset Formula $S_{eff}$
+\end_inset
+
+ is the effective saturation given by
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+S_{eff}=\frac{\theta_{w}-\theta_{res}}{\theta_{sat}-\theta_{res}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+where 
+\begin_inset Formula $\theta_{res}$
+\end_inset
+
+ is the residual water content which is the minimal obtainable water content
+ under natural conditions and 
+\begin_inset Formula $\theta_{sat}$
+\end_inset
+
+ is the saturated water content, which generally is assumed to be equal
+ to the porosity 
+\begin_inset Formula $\varepsilon.$
+\end_inset
+
+ Often a parameter 
+\begin_inset Formula $\alpha=1/p^{*}$
+\end_inset
+
+is used and 
+\begin_inset Formula $n=1/(1-m)$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+Problem: 
+\begin_inset Formula $\theta_{w}(\psi_{w})$
+\end_inset
+
+ is a highly non-linear equation, the required linearization during discretizati
+on will lead to significant mass-balance errors.
+ One solution is to use a Picard iteration, the other is to develop a split
+ approach where in the unsaturated zone we solve the equation based on 
+\begin_inset Formula $\theta_{w}$
+\end_inset
+
+ and in the saturated zone 
+\begin_inset Formula $\frac{\partial\theta_{w}}{\partial t}=0$
+\end_inset
+
+ and we then solve based on 
+\begin_inset Formula $\psi_{w}$
+\end_inset
+
+, or we choose a different approach.
+ Everything is solved using 
+\begin_inset Formula $\theta_{w}$
+\end_inset
+
+ and when it is saturated we assume 
+\begin_inset Formula $\nabla\cdot\mathbf{q_{w}}=0$
+\end_inset
+
+ and we obtain 
+\begin_inset Formula $\psi_{w}$
+\end_inset
+
+ from this equation...
+\end_layout
+
+\end_body
+\end_document
