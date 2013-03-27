@@ -1,3 +1,5 @@
+% Marker Data 2D class
+
 classdef MarkerDataCl
 	properties (Access = public)
         % Maximum volume of one marker particle
@@ -8,8 +10,9 @@ classdef MarkerDataCl
         nTotal;
         % Number of solutes simulated
     	nSolutes;
-        % Positions of markers in 1-dimensional system (dim: nTotal x 1)
+        % Positions of markers in 2-dimensional system (dim: nTotal x 1)
         z;
+        x;
         % Volumes of markers (dim: nTotal x 1)
         dv;
         % Concentrations of solutes in markers (dim: nTotal x nSolutes)
@@ -17,7 +20,8 @@ classdef MarkerDataCl
         % Diffusion coefficients of solutes (dim: 1 x nSolutes)
         d;
         % Indices of nodes to which markers belong
-        node;
+        zNode;
+        xNode;
         % Concentrations of solutes in cells (dim: nNodes x nSolutes)
         cNodes;
         % Moisture contents in cells (dim: nNodes x 1)
@@ -59,43 +63,53 @@ classdef MarkerDataCl
             if isfield(ModelDim, 'mobileFraction')
                 self.mobileFraction = ModelDim.mobileFraction;
             else
-                self.mobileFraction = ones(ModelDim.znn, 1);
+                self.mobileFraction = ones(ModelDim.znn, ModelDim.xnn);
             end
             
             % Calculate amounts of fluid in each node
-            vN = thetaN .* abs(ModelDim.dzin) .* self.mobileFraction;
-            % Calculate internodal moisture contents to distribute volumes of markers
-            % proportionally
-            thetaIn = InterNodalValues(self, thetaN);
+            vN = thetaN .* (abs(ModelDim.dzin) * abs(ModelDim.dxin)) .* self.mobileFraction;
+            
             % Calculate number of markers needed for each node
-            nMarkPerN = ceil(vN / self.dvMax); % 10 * ones(ModelDim.znn, 1); % 
+            nMarkPerZ = ceil(sqrt(vN) / sqrt(self.dvMax) + self.EPSILON);
+            nMarkPerX = ceil(sqrt(vN) / sqrt(self.dvMax) + self.EPSILON);
+            nMarkPerNode = nMarkPerZ .* nMarkPerX;
             
             % Initialize some numbers
-            self.nTotal = sum(nMarkPerN);
+            self.nTotal = sum(sum(nMarkPerNode));
             self.nSolutes = nSolutes;
 
             % Initialize information about markers
             self.z = zeros(self.nTotal, 1);
+            self.x = zeros(self.nTotal, 1);
             self.dv = zeros(self.nTotal, 1);
-            self.node = zeros(self.nTotal, 1);
+            self.zNode = zeros(self.nTotal, 1);
+            self.xNode = zeros(self.nTotal, 1);
             
             iPos = 1;
             % We process node by node because properties are different
-            for iNode = 1:ModelDim.znn
-                % Distribute markers over the node
-                self.z(iPos:iPos + nMarkPerN(iNode) - 1) = ModelDim.zin(iNode) + ...
-                    ModelDim.dzin(iNode) * ((1:nMarkPerN(iNode))' - 0.5) / nMarkPerN(iNode);
-                % Distribute volumes of markers proportionally to moisture content
-                self.dv(iPos:iPos + nMarkPerN(iNode) - 1) = ...
-                    self.DistributeVolumes(vN(iNode), self.z(iPos:iPos + nMarkPerN(iNode) - 1));
-                % Set indices of nodes to which markers belong
-                self.node(iPos:iPos + nMarkPerN(iNode) - 1) = iNode;
-                % Update index of first marker for the next node
-                iPos = iPos + nMarkPerN(iNode);
+            for iNodeZ = 1:ModelDim.znn
+                for iNodeX = 1:ModelDim.xnn
+                    nMark = nMarkPerNode(iNodeZ, iNodeX);
+                    nMarkZ = nMarkPerZ(iNodeZ, iNodeX);
+                    nMarkX = nMarkPerX(iNodeZ, iNodeX);
+                    % Distribute markers over the node (from left to right, top to bottom)
+                    zShift = repmat(ModelDim.dzin(iNodeZ) * ((1:nMarkZ)' - 0.5) / nMarkZ, [1, nMarkX]);
+                    self.z(iPos:iPos + nMark - 1) = ModelDim.zin(iNodeZ) + reshape(zShift, [], 1);
+                    xShift = repmat(ModelDim.dxin(iNodeX) * ((1:nMarkX) - 0.5) / nMarkX, [nMarkZ, 1]);
+                    self.x(iPos:iPos + nMark - 1) = ModelDim.xin(iNodeX) + reshape(xShift, [], 1);
+                    % Distribute volumes of markers proportionally to moisture content in cell
+                    self.dv(iPos:iPos + nMark - 1) = ...
+                        self.DistributeVolumes(vN(iNodeZ, iNodeX), nMark);
+                    % Set indices of nodes to which markers belong
+                    self.zNode(iPos:iPos + nMark - 1) = iNodeZ;
+                    self.xNode(iPos:iPos + nMark - 1) = iNodeX;
+                    % Update index of first marker for the next node
+                    iPos = iPos + nMark;
+                end
             end
             
             % Define initial concentration for markers
-            self.c = InitialC(self.z, nSolutes);
+            self.c = InitialC(self.z, self.x, nSolutes);
 
             % Check inputs
             if (size(SoilPar.d, 2) ~= nSolutes)
@@ -287,7 +301,7 @@ classdef MarkerDataCl
             end
             zMarkInj = zInj + fluxDirection * distr * vInj / (thetaIn(nodeInj) * nMarkInj);
             % Calculate volumes of injected markers
-            dvMarkInj = self.DistributeVolumes(abs(vInj), zMarkInj);
+            dvMarkInj = self.DistributeVolumes(abs(vInj), zMarkInj, xMarkInj);
             % Append injected markers to existing arrays
             if fluxDirection > 0
                 % If upwards flow - append markers at the end
@@ -400,11 +414,13 @@ classdef MarkerDataCl
                 % Compute masses of solutes per each particle
                 mMark = repmat(self.dv, [1, self.nSolutes]) .* self.c;
                 % Compute masses of solutes per each node
-                mNode = ComputeNodalValues(self.z, mMark, self.ModelDim, @sum, self.node);
+                mNode = ComputeNodalValues(self.z, self.x, mMark, self.ModelDim, @sum, ...
+                    self.zNode, self.xNode);
                 % Total volumes of solutes in nodes
-                dvNode = ComputeNodalValues(self.z, self.dv, self.ModelDim, @sum, self.node);
+                dvNode = ComputeNodalValues(self.z, self.x, self.dv, self.ModelDim, @sum, ...
+                    self.zNode, self.xNode);
                 % Result
-                cNodes = mNode ./ repmat(dvNode, [1, self.nSolutes]);
+                cNodes = mNode ./ repmat(dvNode, [1, 1, self.nSolutes]);
                 
                 % Save results to this object
                 self.cNodes = cNodes;
@@ -528,8 +544,7 @@ classdef MarkerDataCl
         %% Initially distribute volumes of markers 
         %  correspondingly to moisture content for one node with given boundaries and moisture
         %  content at boundaries
-        function dvIni = DistributeVolumes(self, vN, zMark)
-            nMark = numel(zMark);
+        function dvIni = DistributeVolumes(self, vN, nMark)
             dvFraction = ones(nMark, 1) / nMark;
             dvIni = vN * dvFraction;
          end

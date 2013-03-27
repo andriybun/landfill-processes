@@ -26,22 +26,28 @@ SimulationPar.EPSILON = 1e-10;
 zTop = 0;
 zBottom = -1;
 dz = -0.05;
-ModelDimZ = InitializeNodes('z', zTop, zBottom, dz);
+ModelDimZ = InitializeNodes('z', zTop, zBottom, dz, 'vertical');
 
 xLeft = 0;
 xRight = 0.2;
 dx = 0.05;
-ModelDimX = InitializeNodes('x', xLeft, xRight, dx);
+ModelDimX = InitializeNodes('x', xLeft, xRight, dx, 'horizontal');
 
 ModelDim = MergeStructs(ModelDimX, ModelDimZ);
 
 nSolutes = 1;
 
-alln = 1:ModelDim.znn;
-allin = 1:ModelDim.znin;
+allnZ = 1:ModelDim.znn;
+allinZ = 1:ModelDim.znin;
+allnX = 1:ModelDim.xnn;
+allinX = 1:ModelDim.xnin;
 
 % Boundary parameters
-BoundaryPar.cTop = zeros(1, nSolutes);
+BoundaryPar.cTop = zeros(1, ModelDim.xnn, nSolutes);
+BoundaryPar.cBottom = zeros(1, ModelDim.xnn, nSolutes);
+BoundaryPar.cLeft = zeros(ModelDim.znn, 1, nSolutes);
+BoundaryPar.cRight = zeros(ModelDim.znn, 1, nSolutes);
+
 BoundaryPar.qTop = @qBoundary;
 BoundaryPar.kSurf = 1e-2;
 BoundaryPar.hAmb = -0.025;
@@ -87,12 +93,13 @@ tic
 validationMode = true;
 if validationMode
     %% STUB: constant flux
-    qOutR = 0.01 * ones(ModelDim.znin, ModelDim.xnin);
-    thetaOutR = 0.4 * ones(ModelDim.znn, ModelDim.xnn);
+    qzOutR = -0.01 * ones(numel(tRange), ModelDim.znin, ModelDim.xnn);
+    qxOutR = 0.01 * ones(numel(tRange), ModelDim.znn, ModelDim.xnin);
+    thetaOutR = 0.4 * ones(numel(tRange), ModelDim.znn, ModelDim.xnn);
     tRangeR = tRange;
     %  END STUB
     
-    inFlow = min(min(qOutR)) / SoilPar.thetaS;
+    inFlow = max(max(abs(qzOutR(:))), max(abs(qxOutR(:)))) / SoilPar.thetaS;
     doDisplayAnalyticalSolution = true;
 else
     doDisplayAnalyticalSolution = false;
@@ -101,19 +108,25 @@ end
 toc
 
 %% Initialize markers object
-MarkerData = MarkerDataCl(thetaOutR(1, :)', nSolutes, ...
+MarkerData = MarkerDataCl(squeeze(thetaOutR(1, :, :)), nSolutes, ...
     ModelDim, SoilPar, SimulationPar, @InitialConcentration);
 
 %% Initialize outputs
 initialMass = MarkerData.dv' * MarkerData.c;
 mSoluteOutCum = zeros(1, nSolutes);
-cOutArr = nan(ModelDim.znn, nSolutes, numel(tRange));
+cOutArr = nan(numel(tRange), ModelDim.znn, ModelDim.xnn, nSolutes);
+qIn = zeros(1, numel(tRange));
 qOut = zeros(1, numel(tRange));
-qOut(1) = -qOutR(1, ModelDim.znin);
+[qIn(1), qOut(1)] = ...
+    ComputeBoundaryFlux(squeeze(qzOutR(1, :, :)), squeeze(qxOutR(1, :, :)), ModelDim);
 mOut = zeros(nSolutes, numel(tRange));
 
-[MarkerData, cOutArr(:, :, iTime)] = MarkerData.NodalConcentrations();
-mOut(:, 1) = qOut(1) * cOutArr(ModelDim.znn, :, iTime);
+[MarkerData, cOutArr(iTime, :, :, :)] = MarkerData.NodalConcentrations();
+
+%% TODO: some function to ComputeBoundaryFlux / mass solute out
+mOut(:, 1) = ...
+    ComputeBoundaryMassFlux(squeeze(qzOutR(1, :, :)), squeeze(qxOutR(1, :, :)), ...
+    squeeze(cOutArr(iTime, :, :, :)), ModelDim, BoundaryPar);
 
 %% Simulation loop
 tic
@@ -176,7 +189,7 @@ while abs(t - tEnd) > SimulationPar.TIME_EPSILON,
     else
         % Update output matrices
         iTime = iTime + 1;
-        [MarkerData, cOutArr(:, :, iTime)] = MarkerData.NodalConcentrations();
+        [MarkerData, cOutArr(iTime, :, :, :)] = MarkerData.NodalConcentrations();
         timeOutVec(iTime) = t;
         qOut(iTime) = vOutStep;
         mOut(:, iTime) = mSoluteOutStep;

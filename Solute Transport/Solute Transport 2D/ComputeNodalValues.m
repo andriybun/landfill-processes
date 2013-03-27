@@ -1,4 +1,5 @@
-function [cNodes, sIdx] = ComputeNodalValues(zMark, cMark, ModelDim, StatType, zNodeIdx)
+function [cNodes, sIdx] = ComputeNodalValues(zMark, xMark, cMark, ModelDim, StatType, ...
+                                             zNodeIdx, xNodeIdx)
 % Function:
 %   Compute nodal values
 %
@@ -8,10 +9,12 @@ function [cNodes, sIdx] = ComputeNodalValues(zMark, cMark, ModelDim, StatType, z
 %   node (between nearest internodes) to calculate values at any node.
 %
 % Parameters:
-%   zMark - vector of coordinates of markers.
+%   zMark, xMark - vectors of coordinates of markers.
 %   cMark - vector of concentrations at markers. Must be of the same
 %           size as z.
-%   zNode - coordinates of nodes.
+%   ModelDim - structure with dimensions of model.
+%   StatType - handle of statistical function (e.g. sum, mean, max etc.)
+%   (optional) zNodeIdx, xNodeIdx - indices of nodes to which markers belong
 %
 % Return:
 %   cNodes - concentration of values at given nodes.
@@ -23,35 +26,33 @@ function [cNodes, sIdx] = ComputeNodalValues(zMark, cMark, ModelDim, StatType, z
 
     % Sort markers
     [zMarkSorted, sIdx] = sort(-zMark);
-
-%     %% Alternative calculation using interp1:
-%     cNodes = interp1(zMark(sIdx), cMark(sIdx), ModelDim.zn, INTERPOLATION_METHOD, 'extrap');
+    xMarkSorted = xMark(sIdx, :);
     
     %% Alternative using average
     cMarkSorted = cMark(sIdx, :);
 
-    % Boundaries of cells to consider
-    zInDown = -ModelDim.zin(1:end-1);
-    zInUp = -ModelDim.zin(2:end);
-
     % Nodal concentrations
-    nNodes = ModelDim.znn;
+    znNodes = ModelDim.znn;
+    xnNodes = ModelDim.xnn;
     nSolutes = size(cMark, 2);
-    cNodes = zeros(nNodes, nSolutes);
+    cNodes = zeros(znNodes, xnNodes, nSolutes);
     
     % Index of nearest node to marker
-    if nargin < 5
+    if nargin < 6
         zNodeIdx = interp1(ModelDim.zn, 1:ModelDim.znn, -zMarkSorted, 'nearest', 'extrap');
+        xNodeIdx = interp1(ModelDim.xn, 1:ModelDim.xnn, -xMarkSorted, 'nearest', 'extrap');
     end
     
-    for idx = 1:nNodes
-        isInNode = (zNodeIdx == idx);
-        if any(isInNode)
-            % Concentration at the node
-            cNodes(idx, :) = StatType(cMarkSorted(isInNode, :));
-        else
-            % Zero concentration
-            cNodes(idx, :) = 0;
+    for iZ = 1:znNodes
+        for iX = 1:xnNodes
+            isInNode = (zNodeIdx == iZ) & (xNodeIdx == iX);
+            if any(isInNode)
+                % Concentration at the node
+                cNodes(iZ, iX, :) = StatType(cMarkSorted(isInNode, :));
+            else
+                % Zero concentration
+                cNodes(iZ, iX, :) = 0;
+            end
         end
     end
 

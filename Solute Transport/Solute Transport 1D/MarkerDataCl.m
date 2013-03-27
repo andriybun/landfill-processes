@@ -64,9 +64,7 @@ classdef MarkerDataCl
             
             % Calculate amounts of fluid in each node
             vN = thetaN .* abs(ModelDim.dzin) .* self.mobileFraction;
-            % Calculate internodal moisture contents to distribute volumes of markers
-            % proportionally
-            thetaIn = InterNodalValues(self, thetaN);
+            
             % Calculate number of markers needed for each node
             nMarkPerN = ceil(vN / self.dvMax); % 10 * ones(ModelDim.znn, 1); % 
             
