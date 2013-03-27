@@ -13,11 +13,5 @@ function SoilPar = InitializeSoilProperties(kSat, ModelDim, mobileFraction)
     
     SoilPar.kSat = kSat;
     
-%     if nargin > 0
-%         SoilPar.v = inFlow;
-%     else
-%         SoilPar.v = 0;
-%     end
-    
     SoilPar.theta = 0.3;
 end
