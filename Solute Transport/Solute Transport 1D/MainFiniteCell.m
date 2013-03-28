@@ -102,7 +102,7 @@ mOut(:, 1) = qOut(1) * cOutArr(ModelDim.znn, :, iTime);
 %% Simulation loop
 tic
 
-thetaNextN = interp2(ModelDim.zn, tRangeR, thetaOutR, ModelDim.zn, t)';
+thetaNextN = interp1(tRangeR, thetaOutR, t)';
 isMidStep = false;
 
 while abs(t - tEnd) > SimulationPar.TIME_EPSILON,
@@ -116,7 +116,7 @@ while abs(t - tEnd) > SimulationPar.TIME_EPSILON,
 
         % Interpolate values of moisture content for both ends of time Interval
         thetaN = thetaNextN;
-        thetaNextN = interp2(ModelDim.zn, tRangeR, thetaOutR, ModelDim.zn, t + dtRemaining)';
+        thetaNextN = interp1(tRangeR, thetaOutR, t + dtRemaining)';
         
         % Calculate mass preserving internodal flux for given time step
         deltaQn = ModelDim.dzin ./ dtRemaining .* (thetaNextN - thetaN);
