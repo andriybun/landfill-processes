@@ -1,20 +1,20 @@
-function [qIn, qOut] = ComputeBoundaryMassFlux(qz, qx, cn, ModelDim, BoundaryPar)
+function [mIn, mOut] = ComputeBoundaryMassFlux(qz, qx, cn, ModelDim, BoundaryPar, nSolutes)
     % Top
-    [qTopIn, qTopOut] = OneSideFlux(qz, cn, 1, 1, ModelDim, BoundaryPar);
+    [qTopIn, qTopOut] = OneSideFlux(qz, cn, 1, 1, ModelDim, BoundaryPar, nSolutes);
     % Bottom
-    [qBottomIn, qBottomOut] = OneSideFlux(qz, cn, 1, ModelDim.znin, ModelDim, BoundaryPar);
+    [qBottomIn, qBottomOut] = OneSideFlux(qz, cn, 1, ModelDim.znin, ModelDim, BoundaryPar, nSolutes);
     % Left
-    [qLeftIn, qLeftOut] = OneSideFlux(qx, cn, 2, 1, ModelDim, BoundaryPar);
+    [qLeftIn, qLeftOut] = OneSideFlux(qx, cn, 2, 1, ModelDim, BoundaryPar, nSolutes);
     % Right
-    [qRightIn, qRightOut] = OneSideFlux(qx, cn, 2, ModelDim.xnin, ModelDim, BoundaryPar);
+    [qRightIn, qRightOut] = OneSideFlux(qx, cn, 2, ModelDim.xnin, ModelDim, BoundaryPar, nSolutes);
     
     % Summarize
-    qIn = qTopIn + qBottomIn + qLeftIn + qRightIn;
-    qOut = qTopOut + qBottomOut + qLeftOut + qRightOut;
+    mIn = qTopIn + qBottomIn + qLeftIn + qRightIn;
+    mOut = qTopOut + qBottomOut + qLeftOut + qRightOut;
     
     return
     
-    function [qInX, qOutX] = OneSideFlux(qX, cX, dim, iInode, ModelDim, BoundaryPar)
+    function [mInX, mOutX] = OneSideFlux(qX, cX, dim, iInode, ModelDim, BoundaryPar, nSolutes)
         cFieldList = {'cTop', 'cBottom', 'cLeft', 'cRight'};
         
         % dim: 1 - vertical, 2 - horizontal flux
@@ -27,7 +27,7 @@ function [qIn, qOut] = ComputeBoundaryMassFlux(qz, qx, cn, ModelDim, BoundaryPar
                 % Flux across boundary
                 qBound = qX(iInode, :);
                 % Concentration of nodes nearest to boundary
-                cBound = cX(min(iInode, ModelDim.znn), :);
+                cBound = cX(min(iInode, ModelDim.znn), :, :);
                 % Define field name of boundary concentration to be used
                 cFieldList = cFieldList([1, 2]);
             case 2
@@ -38,7 +38,7 @@ function [qIn, qOut] = ComputeBoundaryMassFlux(qz, qx, cn, ModelDim, BoundaryPar
                 % Flux across boundary
                 qBound = qX(:, iInode);
                 % Concentration of nodes nearest to boundary
-                cBound = cX(:, min(iInode, ModelDim.xnn));
+                cBound = cX(:, min(iInode, ModelDim.xnn), :);
                 % Define field name of boundary concentration to be used
                 cFieldList = cFieldList([3, 4]);
         end
@@ -61,12 +61,17 @@ function [qIn, qOut] = ComputeBoundaryMassFlux(qz, qx, cn, ModelDim, BoundaryPar
         isInflux = (qAlign > 0);
         switch dim
             case 1
-                qInX = sum(qAlign(isInflux) .* cBound(1.5 - 0.5 * boundSign, isInflux));
-                qOutX = -sum(qAlign(~isInflux) .* cBound(1.5 + 0.5 * boundSign, ~isInflux));
+                mInX = sum(repmat(qAlign(isInflux), [1, 1, nSolutes]) .* ...
+                    cBound(1.5 - 0.5 * boundSign, isInflux, :));
+                mOutX = -sum(repmat(qAlign(~isInflux), [1, 1, nSolutes]) .* ...
+                    cBound(1.5 + 0.5 * boundSign, ~isInflux, :));
             case 2
-                qInX = sum(qAlign(isInflux) .* cBound(isInflux, 1.5 - 0.5 * boundSign));
-                qOutX = -sum(qAlign(~isInflux) .* cBound(~isInflux, 1.5 + 0.5 * boundSign));
+                mInX = sum(repmat(qAlign(isInflux), [1, 1, nSolutes]) .* ...
+                    cBound(isInflux, 1.5 - 0.5 * boundSign, :));
+                mOutX = -sum(repmat(qAlign(~isInflux), [1, 1, nSolutes]) .* ...
+                    cBound(~isInflux, 1.5 + 0.5 * boundSign, :));
         end
-        
+        mInX = squeeze(mInX);
+        mOutX = squeeze(mOutX);
     end
 end

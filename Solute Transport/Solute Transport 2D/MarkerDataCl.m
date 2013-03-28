@@ -125,32 +125,39 @@ classdef MarkerDataCl
         
         %% Advect markers
         function [self, deltaT, vOut, mSoluteOut] = Advect(...
-                self, t, deltaT, qIn, thetaN, BoundaryPar)
+                self, t, deltaT, qzIn, qxIn, thetaN, BoundaryPar)
             nZn = self.ModelDim.znn;
             nZin = self.ModelDim.znin;
+            nXn = self.ModelDim.xnn;
+            nXin = self.ModelDim.xnin;
 
             thetaN = thetaN .* self.mobileFraction;
-            thetaIn = InterNodalValues(self, thetaN);
-%             thetaIn = cat(1, thetaN(1), thetaN);
+            [thetaZin, thetaXin] = InterNodalValues(self, thetaN);
                         
-            % Velocity of particles
-            qVelIn = qIn ./ thetaIn;
+            % Velocity of particles (vertical and horizontal components)
+            qzVelIn = qzIn ./ thetaZin;
+            qxVelIn = qxIn ./ thetaXin;
             
             % Calculate maximum time step
             dzIn = -cat(1, self.ModelDim.dzin(1), self.ModelDim.dzin);
-            deltaT = min(deltaT, 0.95 * min(abs(dzIn ./ qVelIn)));
+            dxIn = -cat(2, self.ModelDim.dxin(1), self.ModelDim.dxin);
+            deltaT = min([deltaT, ...
+                0.95 * min(min(abs(repmat(dzIn, [1, nXn]) ./ qzVelIn))), ...
+                0.95 * min(min(abs(repmat(dxIn, [nZn, 1]) ./ qxVelIn)))]);
 
             % Calculate flux over time interval
-            qIn = qIn * deltaT;
-            qVelIn = qVelIn * deltaT;
+            qzIn = qzIn * deltaT;
+            qxIn = qxIn * deltaT;
+            qzVelIn = qzVelIn * deltaT;
+            qxVelIn = qxVelIn * deltaT;
             
             % Inject new particles at the top
-            if RealLt(qIn(1), 0, self.EPSILON)
-                self = self.InjectFluid(t, 1, qIn, BoundaryPar.cTop, thetaIn);
+            if RealLt(qzIn(1), 0, self.EPSILON)
+                self = self.InjectFluid(t, 1, qzIn, BoundaryPar.cTop, thetaIn);
             end
             % ... and bottom
-            if RealGt(qIn(nZin), 0, self.EPSILON)
-                self = self.InjectFluid(t, nZin, qIn, zeros(1, self.nSolutes), thetaIn);
+            if RealGt(qzIn(nZin), 0, self.EPSILON)
+                self = self.InjectFluid(t, nZin, qzIn, zeros(1, self.nSolutes), thetaIn);
             else
                 % Create one extra marker with zero volume and mass at the bottom. This
                 % prevents crashes when flux at the bottom is too low, and no markers leave the
@@ -187,7 +194,7 @@ classdef MarkerDataCl
             % Particles that pass to next cells:
             for iNode = 0:nZn
                 % Check direction of flow (downwards - negative, upwards - positive)
-                fluxDirection = sign(qIn(iNode + 1));
+                fluxDirection = sign(qzIn(iNode + 1));
                 
                 if (fluxDirection <= 0)
                     % Flux downwards
@@ -215,7 +222,7 @@ classdef MarkerDataCl
                 
                 % Redistrubute fluid to keep mass of fluid flowing through internode correct
                 % Compute difference between desired and actual flux
-                diffV = fluxDirection * (qIn(iNode + 1) - ...
+                diffV = fluxDirection * (qzIn(iNode + 1) - ...
                     fluxDirection * sum(self.dv(doLeaveThisNode)));
 
                 % Exchange fluid
@@ -530,15 +537,21 @@ classdef MarkerDataCl
         end
         
         %% Compute internodal values
-        function valIn = InterNodalValues(self, valN)
+        function [valZin, valXin] = InterNodalValues(self, valN)
             nZn = self.ModelDim.znn;
             nZin = self.ModelDim.znin;
+            nXn = self.ModelDim.xnn;
+            nXin = self.ModelDim.xnin;
             
-            valN = valN .* self.mobileFraction;
-            valIn = zeros(nZin, 1);
-            valIn(2:nZin-1) = (valN(1:nZn-1) + valN(2:nZn)) / 2;
-            valIn(1) = valN(1) + (valN(1) - valIn(2));
-            valIn(nZin) = valN(nZn) + (valN(nZn) - valIn(nZin-1));
+            valZin = zeros(nZin, nXn);
+            valZin(2:nZin-1, :) = (valN(1:nZn-1, :) + valN(2:nZn, :)) / 2;
+            valZin(1, :) = valN(1, :) + (valN(1, :) - valZin(2, :));
+            valZin(nZin, :) = valN(nZn, :) + (valN(nZn, :) - valZin(nZin-1, :));
+            
+            valXin = zeros(nZn, nXin);
+            valXin(:, 2:nXin-1) = (valN(:, 1:nXn-1) + valN(:, 2:nXn)) / 2;
+            valXin(:, 1) = valN(:, 1) + (valN(:, 1) - valXin(:, 2));
+            valXin(:, nXin) = valN(:, nXn) + (valN(:, nXn) - valXin(:, nXin-1));
         end            
         
         %% Initially distribute volumes of markers 

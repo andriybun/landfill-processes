@@ -35,7 +35,9 @@ ModelDimX = InitializeNodes('x', xLeft, xRight, dx, 'horizontal');
 
 ModelDim = MergeStructs(ModelDimX, ModelDimZ);
 
-nSolutes = 1;
+% Diffusion coefficients
+diffC = [1e-3, 1e-4];
+nSolutes = numel(diffC);
 
 allnZ = 1:ModelDim.znn;
 allinZ = 1:ModelDim.znin;
@@ -70,7 +72,7 @@ kSat = 1e-2;                             % m^3 water per m^2 soil per day
 SoilPar = InitializeSoilProperties(kSat, ModelDim);
 
 % Diffusion coefficients
-SoilPar.d = 1e-3; %[1e-3, 1e-4];
+SoilPar.d = diffC;
 
 %% 
 tic
@@ -119,19 +121,20 @@ qIn = zeros(1, numel(tRange));
 qOut = zeros(1, numel(tRange));
 [qIn(1), qOut(1)] = ...
     ComputeBoundaryFlux(squeeze(qzOutR(1, :, :)), squeeze(qxOutR(1, :, :)), ModelDim);
+mIn = zeros(nSolutes, numel(tRange));
 mOut = zeros(nSolutes, numel(tRange));
 
 [MarkerData, cOutArr(iTime, :, :, :)] = MarkerData.NodalConcentrations();
 
 %% TODO: some function to ComputeBoundaryFlux / mass solute out
-mOut(:, 1) = ...
+[mIn(:, 1), mOut(:, 1)] = ...
     ComputeBoundaryMassFlux(squeeze(qzOutR(1, :, :)), squeeze(qxOutR(1, :, :)), ...
-    squeeze(cOutArr(iTime, :, :, :)), ModelDim, BoundaryPar);
+    squeeze(cOutArr(iTime, :, :, :)), ModelDim, BoundaryPar, nSolutes);
 
 %% Simulation loop
 tic
 
-thetaNextN = interp2(ModelDim.zn, tRangeR, thetaOutR, ModelDim.zn, t)';
+thetaNextN = squeeze(interp1(tRangeR, thetaOutR, t));
 isMidStep = false;
 
 while abs(t - tEnd) > SimulationPar.TIME_EPSILON,
@@ -145,18 +148,15 @@ while abs(t - tEnd) > SimulationPar.TIME_EPSILON,
 
         % Interpolate values of moisture content for both ends of time Interval
         thetaN = thetaNextN;
-        thetaNextN = interp2(ModelDim.zn, tRangeR, thetaOutR, ModelDim.zn, t + dtRemaining)';
-        
-        % Calculate mass preserving internodal flux for given time step
-        deltaQn = ModelDim.dzin ./ dtRemaining .* (thetaNextN - thetaN);
-        qIn = zeros(ModelDim.znin, 1);
-        qIn(1) = interp1(tRangeR, qOutR(:, 1), t + dtRemaining);
-        qIn(2:ModelDim.znin) = qIn(1) - cumsum(deltaQn);
+        thetaNextN = squeeze(interp1(tRangeR, thetaOutR, t + dtRemaining));
+        % ... and internodal flux at the beginning
+        qzIn = squeeze(interp1(tRangeR, qzOutR, t));
+        qxIn = squeeze(interp1(tRangeR, qxOutR, t));
     end
     
     % Advect markers, inject new markers, recompute concentrations
     [MarkerData, dtCalc, vOut, mSoluteOut] = ...
-        MarkerData.Advect(t, dtRemaining, qIn, thetaN, BoundaryPar);
+        MarkerData.Advect(t, dtRemaining, qzIn, qxIn, thetaN, BoundaryPar);
     [MarkerData, thetaNewN] = MarkerData.NodalThetas();
 
     % Accumulate discharge for current time step

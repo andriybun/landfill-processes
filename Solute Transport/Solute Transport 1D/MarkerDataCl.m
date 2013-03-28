@@ -505,7 +505,6 @@ classdef MarkerDataCl
             nZn = self.ModelDim.znn;
             nZin = self.ModelDim.znin;
             
-            valN = valN .* self.mobileFraction;
             valIn = zeros(nZin, 1);
             valIn(2:nZin-1) = (valN(1:nZn-1) + valN(2:nZn)) / 2;
             valIn(1) = valN(1) + (valN(1) - valIn(2));
