@@ -1,5 +1,4 @@
 % Marker Data 2D class
-
 classdef MarkerDataCl
 	properties (Access = public)
         % Maximum volume of one marker particle
@@ -43,6 +42,10 @@ classdef MarkerDataCl
         ModelDim;
         SoilPar;
         SimulationPar;
+        
+        % Some constants
+        FROM_ABOVE = 0;
+        FROM_BELOW = 1;
     end
     
     methods (Access = public)
@@ -152,35 +155,14 @@ classdef MarkerDataCl
             qxVelIn = qxVelIn * deltaT;
             
             % Inject new particles at the top
-            if RealLt(qzIn(1), 0, self.EPSILON)
-                self = self.InjectFluid(t, 1, qzIn, BoundaryPar.cTop, thetaIn);
-            end
+            self = self.InjectFluidVertical(t, 1, self.FROM_ABOVE, qzIn, ...
+                BoundaryPar.cTop, thetaZin);
             % ... and bottom
-            if RealGt(qzIn(nZin), 0, self.EPSILON)
-                self = self.InjectFluid(t, nZin, qzIn, zeros(1, self.nSolutes), thetaIn);
-            else
-                % Create one extra marker with zero volume and mass at the bottom. This
-                % prevents crashes when flux at the bottom is too low, and no markers leave the
-                % system, but volume is expected to flow outside.
-                self.nTotal = self.nTotal + 1;
-                self.z      = cat(1, self.z, self.ModelDim.zin(nZin));
-                self.dv     = cat(1, self.dv, 0);
-                self.c      = cat(1, self.c, zeros(1, self.nSolutes));
-                self.node   = cat(1, self.node, nZin);
-            end
+            self = self.InjectFluidVertical(t, nZn, self.FROM_BELOW, qzIn, ...
+                zeros(1, self.nSolutes), thetaZin);
             
             % Coordinates of those points from which particles start switching to next nodes:
             zSwitch = self.ModelDim.zin - qVelIn;
-            
-%             %% TODO: try velocity constant for all markers within range [zSwitch; zSwitch + 1]
-%             %% 
-%             
-%             zInterv = cat(1, zSwitch, self.ModelDim.zin);
-%             qInterv = cat(1, qVelIn, qVelIn(2:nZin), qVelIn(nZin));
-%             [zInterv, iSort] = sort(zInterv, 'descend');
-%             qInterv = qInterv(iSort);
-%             qMark = self.MarkerValues(zInterv, qInterv, 'linear');
-%             %% TODO END #
             
             % Velocities of particles
             qMark = self.MarkerValues(zSwitch, qVelIn, 'linear');
@@ -287,42 +269,53 @@ classdef MarkerDataCl
         end
         
         %% Inject fluid
-        function self = InjectFluid(self, t, nodeInj, qIn, cBound, thetaIn)
-            %% TODO: write comments (initialize markers outside -> advect them)
-            % Check direction of flow (downwards - negative, upwards - positive)
-            fluxDirection = sign(qIn(nodeInj));
+        function self = InjectFluidVertical(self, t, nodeInj, sourcePos, qzIn, cBound, thetaZin)
+            % nodeInj       - index of node to inject to
+            % sourcePos     - 0 - from above, 1 - from below
+
+            % Index of inode through which injection is done
+            iNodeInj = nodeInj + sourcePos;
+            % Check direction of flow (positive - inside, negative - outside)
+            fluxDirection = sign(qzIn(iNodeInj, :)) * sign(self.ModelDim.dzin(nodeInj)) * ...
+                (2 * (sourcePos - 0.5));
+            % Check for influx
+            doInject = (fluxDirection < 0);
+            
             % Volume of water injected
-            vInj = qIn(nodeInj);
+            vInj = zeros(1, self.ModelDim.xnn);
+            vInj(doInject) = abs(qzIn(iNodeInj, doInject));
+            
             % Point of entry
-            zInj = self.ModelDim.zin(nodeInj);
-            % Number of particles injected
-            nMarkInj = ceil(abs(vInj) / self.dvMax);
+            zInj = self.ModelDim.zin(iNodeInj);
+            % Number of particles injected (at least 1)
+            nMarkInj = max(1, ceil(vInj / self.dvMax));
             % Update total number of markers
-            self.nTotal = self.nTotal + nMarkInj;
+            self.nTotal = self.nTotal + sum(nMarkInj);
             
             % Distribute injected particles uniformly over the volume outside the system
-            if fluxDirection > 0
-                distr = (1:nMarkInj)' - 0.5;
-            else
-                distr = (nMarkInj:-1:1)' - 0.5;
+            zMarkInj = zeros(sum(nMarkInj), 1);
+            xMarkInj = zeros(sum(nMarkInj), 1);
+            
+            iSt = 1;
+            for iX = 1:self.ModelDim.xnn
+                iEnd = iSt + nMarkInj(iX) - 1;
+                [zMarkInj(iSt:iEnd), xMarkInj(iSt:iEnd)] = self.AllocateMarkers(...
+                    [zInj, zInj + (2 * (sourcePos - 0.5) * sign(self.ModelDim.dzin(nodeInj)) * ...
+                    vInj(iX) / thetaZin(iNodeInj, iX))], ...
+                    [self.ModelDim.xin(iX), self.ModelDim.xin(iX + 1)], ...
+                    nMarkInj(iX));
             end
-            zMarkInj = zInj + fluxDirection * distr * vInj / (thetaIn(nodeInj) * nMarkInj);
+            
             % Calculate volumes of injected markers
-            dvMarkInj = self.DistributeVolumes(abs(vInj), zMarkInj, xMarkInj);
+            dvMarkInj = self.DistributeVolumes(vInj, nMarkInj);
+            
             % Append injected markers to existing arrays
-            if fluxDirection > 0
-                % If upwards flow - append markers at the end
-                self.z = cat(1, self.z, zMarkInj);
-                self.dv = cat(1, self.dv, dvMarkInj);
-                self.c = cat(1, self.c, repmat(cBound, [nMarkInj, 1]));
-                self.node = cat(1, self.node, (nodeInj - isUpwardFlow) * ones(nMarkInj, 1));
-            else
-                % If downwards flow - append markers at the beginning
-                self.z = cat(1, zMarkInj, self.z);
-                self.dv = cat(1, dvMarkInj, self.dv);
-                self.c = cat(1, repmat(cBound, [nMarkInj, 1]), self.c);
-                self.node = cat(1, (nodeInj + fluxDirection) * ones(nMarkInj, 1), self.node);
-            end
+            % If downwards flow - append markers at the beginning
+            self.z = cat(1, zMarkInj, self.z);
+            self.x = cat(1, xMarkInj, self.x);
+            self.dv = cat(1, dvMarkInj, self.dv);
+            self.c = cat(1, repmat(cBound, [sum(nMarkInj), 1]), self.c);
+            self.node = cat(1, (nodeInj + fluxDirection) * ones(nMarkInj, 1), self.node);
             
             % Reset flags
             self.isSorted = false;
@@ -560,7 +553,14 @@ classdef MarkerDataCl
         function dvIni = DistributeVolumes(self, vN, nMark)
             dvFraction = ones(nMark, 1) / nMark;
             dvIni = vN * dvFraction;
-         end
+        end
+         
+        %% Distribute markers' positions randomly according to latin hypercube sampling
+        function [zPos, xPos] = AllocateMarkers(self, zRange, xRange, nMark)
+            coords = lhspoint(nMark, 2);
+            zPos = coords(1, :) * (zRange(2) - zRange(1)) + zRange(1);
+            xPos = coords(2, :) * (xRange(2) - xRange(1)) + xRange(1);
+        end
         
         %% Some correctness checking procedures
         function CheckMoistureContentPerCell(self, t)
