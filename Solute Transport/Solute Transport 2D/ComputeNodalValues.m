@@ -1,4 +1,4 @@
-function [cNodes, sIdx] = ComputeNodalValues(zMark, xMark, cMark, ModelDim, StatType, ...
+function cNodes = ComputeNodalValues(zMark, xMark, cMark, ModelDim, StatType, ...
                                              zNodeIdx, xNodeIdx)
 % Function:
 %   Compute nodal values
@@ -24,31 +24,18 @@ function [cNodes, sIdx] = ComputeNodalValues(zMark, xMark, cMark, ModelDim, Stat
         StatType = @mean;
     end
 
-    % Sort markers
-    [zMarkSorted, sIdx] = sort(-zMark);
-    xMarkSorted = xMark(sIdx, :);
-    
-    %% Alternative using average
-    cMarkSorted = cMark(sIdx, :);
-
     % Nodal concentrations
     znNodes = ModelDim.znn;
     xnNodes = ModelDim.xnn;
     nSolutes = size(cMark, 2);
     cNodes = zeros(znNodes, xnNodes, nSolutes);
     
-    % Index of nearest node to marker
-    if nargin < 6
-        zNodeIdx = interp1(ModelDim.zn, 1:ModelDim.znn, -zMarkSorted, 'nearest', 'extrap');
-        xNodeIdx = interp1(ModelDim.xn, 1:ModelDim.xnn, -xMarkSorted, 'nearest', 'extrap');
-    end
-    
     for iZ = 1:znNodes
         for iX = 1:xnNodes
             isInNode = (zNodeIdx == iZ) & (xNodeIdx == iX);
             if any(isInNode)
                 % Concentration at the node
-                cNodes(iZ, iX, :) = StatType(cMarkSorted(isInNode, :));
+                cNodes(iZ, iX, :) = StatType(cMark(isInNode, :));
             else
                 % Zero concentration
                 cNodes(iZ, iX, :) = 0;

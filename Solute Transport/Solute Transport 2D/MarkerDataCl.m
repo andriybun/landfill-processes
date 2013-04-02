@@ -21,6 +21,8 @@ classdef MarkerDataCl
         % Indices of nodes to which markers belong
         zNode;
         xNode;
+        % Volume of nodes
+        vNode;
         % Concentrations of solutes in cells (dim: nNodes x nSolutes)
         cNodes;
         % Moisture contents in cells (dim: nNodes x 1)
@@ -69,8 +71,10 @@ classdef MarkerDataCl
                 self.mobileFraction = ones(ModelDim.znn, ModelDim.xnn);
             end
             
+            % Calculate volume of each node
+            self.vNode = abs(ModelDim.dzin) * abs(ModelDim.dxin);
             % Calculate amounts of fluid in each node
-            vN = thetaN .* (abs(ModelDim.dzin) * abs(ModelDim.dxin)) .* self.mobileFraction;
+            vN = thetaN .* self.vNode .* self.mobileFraction;
             
             % Calculate number of markers needed for each node
             nMarkPerZ = ceil(sqrt(vN) / sqrt(self.dvMax) + self.EPSILON);
@@ -162,76 +166,82 @@ classdef MarkerDataCl
                 zeros(1, self.nSolutes), thetaZin);
             
             % Coordinates of those points from which particles start switching to next nodes:
-            zSwitch = self.ModelDim.zin - qVelIn;
+            zSwitch = self.ModelDim.zin - qzVelIn;
+            xSwitch = self.ModelDim.xin - qxVelIn;
             
             % Velocities of particles
-            qMark = self.MarkerValues(zSwitch, qVelIn, 'linear');
+            qzMark = self.MarkerValues(zSwitch, qzVelIn, 'linear');
+            qxMark = self.MarkerValues(xSwitch, qxVelIn, 'linear');
             
             % Advect (dzMark = qMark)
-            zNext = self.z + qMark;
+            zNext = self.z + qzMark;
+            xNext = self.x + qxMark;
 
             % Updated locations of markers
-            nodeNext = self.node;
+            zNodeNext = self.zNode;
+            xNodeNext = self.xNode;
             
-            % Particles that pass to next cells:
-            for iNode = 0:nZn
-                % Check direction of flow (downwards - negative, upwards - positive)
-                fluxDirection = sign(qzIn(iNode + 1));
-                
-                if (fluxDirection <= 0)
-                    % Flux downwards
-                    % Beginning of interval where particles pass to the next node
-                    isAfterSwitchPoint = RealLt(zNext, self.ModelDim.zin(iNode + 1), 0);
-                    % Markers in the node from which water flows
-                    isSourceNode = (self.node == iNode);
-                elseif (iNode == nZn)
-                    % Leave the loop if water flows upwards at bottom
-                    break
-                else
-                    % Flux upwards
-                    % End of interval where particles pass to current node from the next one
-                    isAfterSwitchPoint = RealGe(zNext, self.ModelDim.zin(iNode + 1), 0);
-                    % Markers in the node from which water flows
-                    isSourceNode = (self.node == iNode + 1);
-                end
-                
-                % Indices of markers staying in current cell and moving further
-                doLeaveThisNode = isAfterSwitchPoint & isSourceNode;
-                doStayInThisNode = isSourceNode & (~doLeaveThisNode);
-                
-                % Updated nodes of markers that move forward / backward
-                nodeNext(doLeaveThisNode) = self.node(doLeaveThisNode) - fluxDirection;
-                
-                % Redistrubute fluid to keep mass of fluid flowing through internode correct
-                % Compute difference between desired and actual flux
-                diffV = fluxDirection * (qzIn(iNode + 1) - ...
-                    fluxDirection * sum(self.dv(doLeaveThisNode)));
-
-                % Exchange fluid
-                if ~RealEq(diffV, 0, self.EPSILON)
-                    if any(doLeaveThisNode)
-                        if fluxDirection <= 0
-                            iMarkSwitch = find(doLeaveThisNode, true, 'first');
-                        else
-                            iMarkSwitch = find(doLeaveThisNode, true, 'last');
-                        end
-                    else
-                        if fluxDirection <= 0
-                            iMarkSwitch = find(doStayInThisNode, true, 'last') + 1;
-                        else
-                            iMarkSwitch = find(doStayInThisNode, true, 'first') - 1;
-                        end
-                    end
-                    
-                    iMarkStay = iMarkSwitch + fluxDirection;
-
-                    self = self.LocalMassExchange(t, iMarkStay, iMarkSwitch, fluxDirection, diffV);
-                end
-            end
+%             % Particles that pass to next cells:
+%             for iNode = 0:nZn
+%                 % Check direction of flow (downwards - negative, upwards - positive)
+%                 fluxDirection = sign(qzIn(iNode + 1));
+%                 
+%                 if (fluxDirection <= 0)
+%                     % Flux downwards
+%                     % Beginning of interval where particles pass to the next node
+%                     isAfterSwitchPoint = RealLt(zNext, self.ModelDim.zin(iNode + 1), 0);
+%                     % Markers in the node from which water flows
+%                     isSourceNode = (self.node == iNode);
+%                 elseif (iNode == nZn)
+%                     % Leave the loop if water flows upwards at bottom
+%                     break
+%                 else
+%                     % Flux upwards
+%                     % End of interval where particles pass to current node from the next one
+%                     isAfterSwitchPoint = RealGe(zNext, self.ModelDim.zin(iNode + 1), 0);
+%                     % Markers in the node from which water flows
+%                     isSourceNode = (self.node == iNode + 1);
+%                 end
+%                 
+%                 % Indices of markers staying in current cell and moving further
+%                 doLeaveThisNode = isAfterSwitchPoint & isSourceNode;
+%                 doStayInThisNode = isSourceNode & (~doLeaveThisNode);
+%                 
+%                 % Updated nodes of markers that move forward / backward
+%                 nodeNext(doLeaveThisNode) = self.node(doLeaveThisNode) - fluxDirection;
+%                 
+%                 % Redistrubute fluid to keep mass of fluid flowing through internode correct
+%                 % Compute difference between desired and actual flux
+%                 diffV = fluxDirection * (qzIn(iNode + 1) - ...
+%                     fluxDirection * sum(self.dv(doLeaveThisNode)));
+% 
+%                 % Exchange fluid
+%                 if ~RealEq(diffV, 0, self.EPSILON)
+%                     if any(doLeaveThisNode)
+%                         if fluxDirection <= 0
+%                             iMarkSwitch = find(doLeaveThisNode, true, 'first');
+%                         else
+%                             iMarkSwitch = find(doLeaveThisNode, true, 'last');
+%                         end
+%                     else
+%                         if fluxDirection <= 0
+%                             iMarkSwitch = find(doStayInThisNode, true, 'last') + 1;
+%                         else
+%                             iMarkSwitch = find(doStayInThisNode, true, 'first') - 1;
+%                         end
+%                     end
+%                     
+%                     iMarkStay = iMarkSwitch + fluxDirection;
+% 
+%                     self = self.LocalMassExchange(t, iMarkStay, iMarkSwitch, fluxDirection, diffV);
+%                 end
+%             end
 
             % Update positions of markers
             self.z = zNext;
-            self.node = nodeNext;
+            self.x = xNext;
+            self.zNode = zNodeNext;
+            self.xNode = xNodeNext;
             
 %             % Consistency check
 %             self.CheckMarkersVolume(t);
@@ -289,12 +299,13 @@ classdef MarkerDataCl
             zInj = self.ModelDim.zin(iNodeInj);
             % Number of particles injected (at least 1)
             nMarkInj = max(1, ceil(vInj / self.dvMax));
+            nMarkInjAll = sum(nMarkInj);
             % Update total number of markers
-            self.nTotal = self.nTotal + sum(nMarkInj);
+            self.nTotal = self.nTotal + nMarkInjAll;
             
             % Distribute injected particles uniformly over the volume outside the system
-            zMarkInj = zeros(sum(nMarkInj), 1);
-            xMarkInj = zeros(sum(nMarkInj), 1);
+            zMarkInj = zeros(nMarkInjAll, 1);
+            xMarkInj = zeros(nMarkInjAll, 1);
             
             iSt = 1;
             for iX = 1:self.ModelDim.xnn
@@ -304,26 +315,25 @@ classdef MarkerDataCl
                     vInj(iX) / thetaZin(iNodeInj, iX))], ...
                     [self.ModelDim.xin(iX), self.ModelDim.xin(iX + 1)], ...
                     nMarkInj(iX));
+                iSt = iEnd + 1;
             end
             
             % Calculate volumes of injected markers
-            dvMarkInj = self.DistributeVolumes(vInj, nMarkInj);
+            [dvMarkInj, xNodeInj] = self.DistributeVolumes(vInj, nMarkInj);
+            zNodeInj = (nodeInj + 2 * (sourcePos - 0.5)) * ones(nMarkInjAll, 1);
             
             % Append injected markers to existing arrays
             % If downwards flow - append markers at the beginning
             self.z = cat(1, zMarkInj, self.z);
             self.x = cat(1, xMarkInj, self.x);
             self.dv = cat(1, dvMarkInj, self.dv);
-            self.c = cat(1, repmat(cBound, [sum(nMarkInj), 1]), self.c);
-            self.node = cat(1, (nodeInj + fluxDirection) * ones(nMarkInj, 1), self.node);
+            self.c = cat(1, repmat(squeeze(cBound), [nMarkInjAll, 1]), self.c);
+            self.zNode = cat(1, zNodeInj, self.zNode);
+            self.xNode = cat(1, xNodeInj, self.xNode);
             
             % Reset flags
-            self.isSorted = false;
             self.hasNodalConcentrationsComputed = false;
             self.hasNodalThetasComputed = false;
-            
-            % Reorder markers by coordinate
-            self = self.SortMark();
             
             % Check correctness
             self.CheckMoistureContentPerCell(t);
@@ -433,8 +443,9 @@ classdef MarkerDataCl
         % Moisture contents
         function [self, thetaRes] = NodalThetas(self)
             if ~self.hasNodalThetasComputed 
-                [vN, ~] = ComputeNodalValues(self.z, self.dv, self.ModelDim, @sum, self.node);
-                self.thetaNodes = - vN ./ self.ModelDim.dzin;
+                vN = ComputeNodalValues(self.z, self.x, self.dv, self.ModelDim, @sum, ...
+                    self.zNode, self.xNode);
+                self.thetaNodes = - vN ./ self.vNode;
                 self.hasNodalThetasComputed = true;
             end
             
@@ -550,9 +561,19 @@ classdef MarkerDataCl
         %% Initially distribute volumes of markers 
         %  correspondingly to moisture content for one node with given boundaries and moisture
         %  content at boundaries
-        function dvIni = DistributeVolumes(self, vN, nMark)
-            dvFraction = ones(nMark, 1) / nMark;
-            dvIni = vN * dvFraction;
+        function [dvIni, iNode] = DistributeVolumes(self, vN, nMark)
+            nAll = sum(nMark);
+            iNode = nan(nAll, 1);
+            if isrow(nMark)
+                nMark = nMark';
+                vN = vN';
+            end
+            nMarkCum = cat(1, 1, 1 + cumsum(nMark));
+            for idx = 1:numel(nMark)
+                iNode(nMarkCum(idx):nMarkCum(idx+1)-1) = idx;
+            end
+            dvFraction = ones(nAll, 1) ./ nMark(iNode);
+            dvIni = vN(iNode) .* dvFraction;
         end
          
         %% Distribute markers' positions randomly according to latin hypercube sampling
@@ -567,7 +588,7 @@ classdef MarkerDataCl
             [self, thetaNodesX] = NodalThetas(self);
             
             % Check if any cell contains more fluid than its capacity
-            if any(RealGt(thetaNodesX, self.SoilPar.thetaS, self.EPSILON))
+            if any(RealGt(thetaNodesX(:), self.SoilPar.thetaS(:), self.EPSILON))
                 error('RuntimeCheck:ExceedTheta', ...
                     't = %5.3f: Moisture content is too high.', t);
             end
