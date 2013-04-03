@@ -32,8 +32,6 @@ classdef MarkerDataCl
     end
     
     properties (Access = private)
-        % Flag showing if markers are sorted by their location
-        isSorted;
         % Flag showing if nodal concentrations have been computed recently
         hasNodalConcentrationsComputed;
         % Flag showing if nodal moisture contents have been computed recently
@@ -122,7 +120,6 @@ classdef MarkerDataCl
             end
             
             % Set flags
-            self.isSorted;
             self.hasNodalConcentrationsComputed = false;
             self.hasNodalThetasComputed = false;
         end
@@ -163,12 +160,14 @@ classdef MarkerDataCl
                 zeros(1, self.nSolutes), thetaZin);
             
             % Coordinates of those points from which particles start switching to next nodes:
-            zSwitch = self.ModelDim.zin - qzVelIn;
-            xSwitch = self.ModelDim.xin - qxVelIn;
+            repZin = repmat(self.ModelDim.zin, [1, nXn]);
+            repXin = repmat(self.ModelDim.xin, [nZn, 1]);
+            zSwitch = repZin - qzVelIn;
+            xSwitch = repXin - qxVelIn;
             
             % Velocities of particles
-            qzMark = self.MarkerValues(zSwitch, qzVelIn, 'linear');
-            qxMark = self.MarkerValues(xSwitch, qxVelIn, 'linear');
+            qzMark = self.MarkerValues(zSwitch, repZin, qzVelIn, 'linear');
+            qxMark = self.MarkerValues(xSwitch, repXin, qxVelIn, 'linear');
             
             % Advect (dzMark = qMark)
             zNext = self.z + qzMark;
@@ -178,70 +177,14 @@ classdef MarkerDataCl
             zNodeNext = self.zNode;
             xNodeNext = self.xNode;
             
-%             % Particles that pass to next cells:
-%             for iNode = 0:nZn
-%                 % Check direction of flow (downwards - negative, upwards - positive)
-%                 fluxDirection = sign(qzIn(iNode + 1));
-%                 
-%                 if (fluxDirection <= 0)
-%                     % Flux downwards
-%                     % Beginning of interval where particles pass to the next node
-%                     isAfterSwitchPoint = RealLt(zNext, self.ModelDim.zin(iNode + 1), 0);
-%                     % Markers in the node from which water flows
-%                     isSourceNode = (self.node == iNode);
-%                 elseif (iNode == nZn)
-%                     % Leave the loop if water flows upwards at bottom
-%                     break
-%                 else
-%                     % Flux upwards
-%                     % End of interval where particles pass to current node from the next one
-%                     isAfterSwitchPoint = RealGe(zNext, self.ModelDim.zin(iNode + 1), 0);
-%                     % Markers in the node from which water flows
-%                     isSourceNode = (self.node == iNode + 1);
-%                 end
-%                 
-%                 % Indices of markers staying in current cell and moving further
-%                 doLeaveThisNode = isAfterSwitchPoint & isSourceNode;
-%                 doStayInThisNode = isSourceNode & (~doLeaveThisNode);
-%                 
-%                 % Updated nodes of markers that move forward / backward
-%                 nodeNext(doLeaveThisNode) = self.node(doLeaveThisNode) - fluxDirection;
-%                 
-%                 % Redistrubute fluid to keep mass of fluid flowing through internode correct
-%                 % Compute difference between desired and actual flux
-%                 diffV = fluxDirection * (qzIn(iNode + 1) - ...
-%                     fluxDirection * sum(self.dv(doLeaveThisNode)));
-% 
-%                 % Exchange fluid
-%                 if ~RealEq(diffV, 0, self.EPSILON)
-%                     if any(doLeaveThisNode)
-%                         if fluxDirection <= 0
-%                             iMarkSwitch = find(doLeaveThisNode, true, 'first');
-%                         else
-%                             iMarkSwitch = find(doLeaveThisNode, true, 'last');
-%                         end
-%                     else
-%                         if fluxDirection <= 0
-%                             iMarkSwitch = find(doStayInThisNode, true, 'last') + 1;
-%                         else
-%                             iMarkSwitch = find(doStayInThisNode, true, 'first') - 1;
-%                         end
-%                     end
-%                     
-%                     iMarkStay = iMarkSwitch + fluxDirection;
-% 
-%                     self = self.LocalMassExchange(t, iMarkStay, iMarkSwitch, fluxDirection, diffV);
-%                 end
-%             end
-
             % Update positions of markers
             self.z = zNext;
             self.x = xNext;
             self.zNode = zNodeNext;
             self.xNode = xNodeNext;
             
-%             % Consistency check
-%             self.CheckMarkersVolume(t);
+            % Consistency check
+            self.CheckMarkersVolume(t);
             
             % Volume of fluid that leave system
             vOut = 0;
@@ -250,7 +193,8 @@ classdef MarkerDataCl
             
             % Remove markers that left system and calculate amounts of fluid and solutes that
             % leave the system
-            isOut = (self.node > nZn);
+            isOut = (self.zNode < 1) | (self.zNode > nZn) | ...
+                (self.xNode < 1) | (self.xNode > nXn);
             if any(isOut)
                 % Calculate discharge rate, masses of solutes
                 vOut = sum(self.dv(isOut));
@@ -267,8 +211,8 @@ classdef MarkerDataCl
             self.hasNodalConcentrationsComputed = false;
             self.hasNodalThetasComputed = false;
             
-            % Diffuse solutes
-            self = Diffuse(self, t, deltaT);
+%             % Diffuse solutes
+%             self = Diffuse(self, t, deltaT);
             
             % Check correctness
             self.CheckMoistureContentPerCell(t);
@@ -462,26 +406,16 @@ classdef MarkerDataCl
     
     %% 
     methods (Access = private)
-        %% Sort particles by z coordinate
-        function self = SortMark(self)
-            if (~self.isSorted)
-                [self.z, sIdx] = sort(self.z, 'descend');
-                self.dv = self.dv(sIdx);
-                self.c = self.c(sIdx, :);
-                self.node = self.node(sIdx);
-                self.isSorted = true;
-            end
-        end
-        
         %% Compute values at markers' locations based on nodal data
-        function vMark = MarkerValues(self, zNode, vNode, INTERPOLATION_METHOD)
+        function vMark = MarkerValues(self, zNode, xNode, vNode, INTERPOLATION_METHOD)
             if nargin < 4
                 INTERPOLATION_METHOD = 'linear';
             end
             if strcmp(INTERPOLATION_METHOD, 'current node')
-                vMark = vNode(self.node, :);
+                vMark = vNode(self.zNode, self.xNode);
             else
-                vMark = interp1(zNode, vNode, self.z, INTERPOLATION_METHOD, 'extrap');
+                vMark = interp2(zNode, xNode, vNode, self.z, self.x, ...
+                    INTERPOLATION_METHOD, 'extrap');
             end
         end
         
