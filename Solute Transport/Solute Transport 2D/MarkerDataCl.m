@@ -2,7 +2,7 @@
 classdef MarkerDataCl
 	properties (Access = public)
         % Maximum volume of one marker particle
-        dvMax = 1e-3;
+        dvMax = 1e-4;
         % Numerical diffusion coefficient
         dCoeff = 1;
         % Total number of marker particles in system (is variable)
@@ -77,9 +77,7 @@ classdef MarkerDataCl
             vN = thetaN .* self.vNode .* self.mobileFraction;
             
             % Calculate number of markers needed for each node
-            nMarkPerZ = ceil(sqrt(vN) / sqrt(self.dvMax) + self.EPSILON);
-            nMarkPerX = ceil(sqrt(vN) / sqrt(self.dvMax) + self.EPSILON);
-            nMarkPerNode = nMarkPerZ .* nMarkPerX;
+            nMarkPerNode = round(vN / self.dvMax);
             
             % Initialize some numbers
             self.nTotal = sum(sum(nMarkPerNode));
@@ -97,13 +95,12 @@ classdef MarkerDataCl
             for iNodeZ = 1:ModelDim.znn
                 for iNodeX = 1:ModelDim.xnn
                     nMark = nMarkPerNode(iNodeZ, iNodeX);
-                    nMarkZ = nMarkPerZ(iNodeZ, iNodeX);
-                    nMarkX = nMarkPerX(iNodeZ, iNodeX);
-                    % Distribute markers over the node (from left to right, top to bottom)
-                    zShift = repmat(ModelDim.dzin(iNodeZ) * ((1:nMarkZ)' - 0.5) / nMarkZ, [1, nMarkX]);
-                    self.z(iPos:iPos + nMark - 1) = ModelDim.zin(iNodeZ) + reshape(zShift, [], 1);
-                    xShift = repmat(ModelDim.dxin(iNodeX) * ((1:nMarkX) - 0.5) / nMarkX, [nMarkZ, 1]);
-                    self.x(iPos:iPos + nMark - 1) = ModelDim.xin(iNodeX) + reshape(xShift, [], 1);
+                    % Allocate markers in the node
+                    [self.z(iPos:iPos + nMark - 1), self.x(iPos:iPos + nMark - 1)] = ...
+                        self.AllocateMarkers(...
+                        [ModelDim.zin(iNodeZ), ModelDim.zin(iNodeZ + 1)], ...
+                        [ModelDim.xin(iNodeX), ModelDim.xin(iNodeX + 1)], ...
+                        nMark);
                     % Distribute volumes of markers proportionally to moisture content in cell
                     self.dv(iPos:iPos + nMark - 1) = ...
                         self.DistributeVolumes(vN(iNodeZ, iNodeX), nMark);
