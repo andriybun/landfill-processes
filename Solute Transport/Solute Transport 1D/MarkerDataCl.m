@@ -123,6 +123,9 @@ classdef MarkerDataCl
             dzIn = -cat(1, self.ModelDim.dzin(1), self.ModelDim.dzin);
             deltaT = min(deltaT, 0.95 * min(abs(dzIn ./ qVelIn)));
 
+            % Diffuse solutes
+            self = Diffuse(self, t, deltaT);
+            
             % Calculate flux over time interval
             qIn = qIn * deltaT;
             qVelIn = qVelIn * deltaT;
@@ -243,9 +246,6 @@ classdef MarkerDataCl
             % Reset flags
             self.hasNodalConcentrationsComputed = false;
             self.hasNodalThetasComputed = false;
-            
-            % Diffuse solutes
-            self = Diffuse(self, t, deltaT);
             
             % Check correctness
             self.CheckMoistureContentPerCell(t);
