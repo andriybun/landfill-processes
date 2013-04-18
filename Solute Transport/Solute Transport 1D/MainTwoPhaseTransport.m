@@ -26,7 +26,7 @@ dz = -0.05;
 ModelDim = InitializeNodes('z', zTop, zBottom, dz);
 
 diffCoeff = 1e-3; % [1e-3, 5e-3];
-exchCoeff = 0 * 3e-3; % [1e-1, 5e-1];
+exchCoeff = 3e-3; % [1e-1, 5e-1];
 nSolutes = numel(diffCoeff);
 
 alln = 1:ModelDim.znn;
@@ -51,8 +51,8 @@ SimulationPar.tRange = tRange;
 SimulationPar.TIME_EPSILON = 1e-7;
 
 % Initialize fraction of mobile phase volume
-% ModelDim.mobileFraction = linspace(0.9, 0.1, ModelDim.znn)';
-ModelDim.mobileFraction = 0.1 * ones(ModelDim.znn, 1);
+ModelDim.mobileFraction = linspace(0.9, 0.01, ModelDim.znn)';
+% ModelDim.mobileFraction = 0.5 * ones(ModelDim.znn, 1);
 
 % Saturated conductivity
 kSat = 1e-2;             % m^3 water per m^2 soil per day

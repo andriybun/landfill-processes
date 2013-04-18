@@ -72,7 +72,7 @@ tic
 
 
 %% Validation
-validationMode = false;
+validationMode = true;
 if validationMode
     qOutR = -1e-2 * ones(size(qOutR));
     thetaOutR = SoilPar.thetaS * ones(size(thetaOutR));

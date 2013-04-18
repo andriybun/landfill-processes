@@ -16,6 +16,13 @@ classdef ImmobilePhaseCl
     end
     
     properties (Access = private)
+        % Densities of solutes
+        rho;
+        % Initial masses of solutes in solid state
+        mSolidIni;
+        % Decay rates
+        lambda;
+        % Numerical tolerance
         EPSILON;
         % Structures
         ModelDim;
@@ -37,10 +44,15 @@ classdef ImmobilePhaseCl
             self.mobileFraction = ModelDim.mobileFraction;
             self.theta = theta .* (1 - self.mobileFraction);
             
-            %% TODO: initialize concentration instead of this:
+            %% TODO: initialize concentrations and densities instead of this:
             %%
             self.c = ones(self.nNodes, self.nSolutes);
-
+            self.rho = ones(1, self.nSolutes + 1); % nSolutes + 1 for intert materails
+            soluteFractions = 1 / (self.nSolutes + 1) * ones(self.nNodes, self.nSolutes + 1);
+            %% TODO: decay constant
+            self.lambda = 0 * 1e-1 * ones(1, self.nSolutes); 
+            %%
+            
             % Structures
             self.ModelDim = ModelDim;
             self.SoilPar = SoilPar;
@@ -49,10 +61,16 @@ classdef ImmobilePhaseCl
             
             % Tolerance
             self.EPSILON = SimulationPar.EPSILON;
+            
+            % Initialize masses in solid phase
+            self = self.InitializeSolidPhase(soluteFractions);
         end
         
         %% Compute diffusion
         function [self, cMobDiff] = Diffuse(self, t, deltaT, cMob, thetaMob)
+            % Dissolve some matter from solid to liquid
+            self = DissolveSolutes(self, t, deltaT);
+            
             % cMob      - concentration of solutes in mobile phase (dim: nNodes x nSolutes)
             % thetaMob  - moisture content in mobile phase(dim: nNodes x 1)
 
@@ -88,14 +106,11 @@ classdef ImmobilePhaseCl
                     % Now we have to translate solutiion to concentration:
                     cNextSol = reshape(cNextSol(end, :), [], self.nPhases);
                     
-%                     % Replace NaN's where theta was zero
-%                     isThetaZero = (xTheta == 0);
-%                     cNextSol(isThetaZero) = 0;
-                    
                     cDiff(doComputeNodes, :, iSolute) = cNextSol;
                     
                     % Mass balance check
-                    chk = ~RealEq(sum(cSol .* xTheta, 2), sum(cNextSol .* xTheta, 2), self.EPSILON);
+                    chk = ~RealEq(sum(cSol .* xTheta(doComputeNodes, :), 2), ...
+                        sum(cNextSol .* xTheta(doComputeNodes, :), 2), self.EPSILON);
                     iProblemNode = find(chk, 1, 'first');
                     if iProblemNode
                         warning('RuntimeCheck:MassBalanceError', ...
@@ -109,11 +124,54 @@ classdef ImmobilePhaseCl
                 cMobDiff = squeeze(cDiff(:, 1, :));
                 self.c = squeeze(cDiff(:, 2, :));
             end
+            
+            self.CheckConcentrations(t);
+        end
+        
+        %% Dissolve solutes from solid state to liquid in immobile phase
+        function self = DissolveSolutes(self, t, deltaT)
+            dmSolid = repmat(self.lambda, [self.nNodes, 1]) .* ...
+                self.mSolidIni(:, 1:self.nSolutes) .* deltaT;
+            % Remove this mass from solid phase
+            self.mSolidIni(:, 1:self.nSolutes) = ...
+                self.mSolidIni(:, 1:self.nSolutes) - dmSolid;
+            % Add it to liquid phase
+            dvLiquid = dmSolid ./ repmat(self.rho(1:self.nSolutes), [self.nNodes, 1]);
+            dTheta = sum(dvLiquid, 2) ./ abs(self.ModelDim.dzin);
+            vNodeSol = repmat(abs(self.ModelDim.dzin) .* self.theta, [1, self.nSolutes]) .* self.c;
+            vNodeSol = vNodeSol + dvLiquid;
+            self.theta = self.theta + dTheta;
+            self.c = vNodeSol ./ repmat(abs(self.ModelDim.dzin) .* self.theta, [1, self.nSolutes]);
         end
     end
     
     %% Private methods
     methods (Access = private)
+        function self = InitializeSolidPhase(self, soluteFractions)
+            % Initial masses of different compounds in solid phase
+            mSolidTotal = ...
+                abs(self.ModelDim.dzin) .* (1 - self.SoilPar.thetaS) ./ ...
+                sum(soluteFractions ./ repmat(self.rho, [self.nNodes, 1]), 2);
+            self.mSolidIni = repmat(mSolidTotal, [1, self.nSolutes + 1]) .* soluteFractions;
+        end
+        
+        %% Some correctness checking procedures
+        function CheckConcentrations(self, t)
+            % Check if concentrations exceed the range [0; 1]
+            isCBelowZero = RealLt(self.c(:), 0, self.EPSILON);
+            isCAboveOne = RealGt(self.c(:), 1, self.EPSILON);
+            
+            
+            % If strict check is requested, throw error, when concentration exceeds [0; 1]
+            if any(isCBelowZero)
+                error('RuntimeCheck:ExceedConcentration', ...
+                    't = %5.3f: Concentration is too low', t);
+            end
+            if any(isCAboveOne)
+                error('RuntimeCheck:ExceedConcentration', ...
+                    't = %5.3f: Concentration is too high', t);
+            end
+        end
         
     end
     

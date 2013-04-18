@@ -525,9 +525,15 @@ classdef MarkerDataCl
             [self, thetaNodesX] = NodalThetas(self);
             
             % Check if any cell contains more fluid than its capacity
-            if any(RealGt(thetaNodesX, self.SoilPar.thetaS, self.EPSILON))
+            if any(RealGt(thetaNodesX, self.SoilPar.thetaS * self.mobileFraction, self.EPSILON))
                 error('RuntimeCheck:ExceedTheta', ...
                     't = %5.3f: Moisture content is too high.', t);
+            end
+            
+            % Check if any cell contains more fluid than its capacity
+            if any(RealLt(thetaNodesX, self.SoilPar.thetaR * self.mobileFraction, self.EPSILON))
+                error('RuntimeCheck:ExceedTheta', ...
+                    't = %5.3f: Moisture content is too low.', t);
             end
         end
         
@@ -561,51 +567,8 @@ classdef MarkerDataCl
                     error('RuntimeCheck:ExceedConcentration', ...
                         't = %5.3f: Concentration is too high', t);
                 end
-%             else
-%                 % Else concentrations are adjusted in order to keep mass balance correct
-%                 if any(isCBelowZero)
-%                     % Indices of nodes with wrong concentrations 
-%                     iNodesToAdjust = unique(self.node(isCBelowZero))';
-%                     
-%                     % Process those nodes
-%                     for iNode = iNodesToAdjust
-%                         isMarkInNode = (self.node == iNode);
-%                         doAdjustMarker = isMarkInNode & ~(isCBelowZero);
-%                         massPerMarker = self.dv(doAdjustMarker) .* self.c(doAdjustMarker);
-%                         totalMassToRemove = sum(self.dv(isCBelowZero) .* self.c(isCBelowZero));
-%                         
-%                         % Set zero instead of negative concentrations
-%                         self.c(isCBelowZero) = 0;
-%                         
-%                         % Reallocate removed mass through other markers in node
-%                         massAdjustment = totalMassToRemove / numel(massPerMarker);
-%                         self.c(doAdjustMarker) = ...
-%                             (massPerMarker + massAdjustment) ./ abs(self.dv(doAdjustMarker));
-%                     end
-%                 end
-%                 if any(isCAboveOne)
-%                     % Indices of nodes with wrong concentrations 
-%                     iNodesToAdjust = unique(self.node(isCAboveOne))';
-%                     
-%                     % Process those nodes
-%                     for iNode = iNodesToAdjust
-%                         isMarkInNode = (self.node == iNode);
-%                         doAdjustMarker = isMarkInNode & ~(isCAboveOne);
-%                         massPerMarker = self.dv(doAdjustMarker) .* self.c(doAdjustMarker);
-%                         totalMassToRemove = sum(self.dv(isCAboveOne) .* (self.c(isCAboveOne) - 1));
-%                         
-%                         % Set one instead of concentrations above 1
-%                         self.c(isCAboveOne) = 1;
-%                         
-%                         % Reallocate removed mass through other markers in node
-%                         massAdjustment = totalMassToRemove / numel(massPerMarker);
-% 
-%                         self.c(doAdjustMarker) = ...
-%                             (massPerMarker + massAdjustment) ./ abs(self.dv(doAdjustMarker));
-%                     end
-%                 end
-            end             % if STRICT_CHECK
-        end                 % Function
+            end
+        end
         
     end                     % Private methods
 end
