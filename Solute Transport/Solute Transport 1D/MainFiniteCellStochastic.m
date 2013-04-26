@@ -73,7 +73,7 @@ tic
 
 
 %% Validation
-validationMode = true;
+validationMode = false;
 if validationMode
     qOutR = -1e-2 * ones(size(qOutR));
     thetaOutR = SoilPar.thetaS * ones(size(thetaOutR));
@@ -86,7 +86,7 @@ end
 toc
 
 %% Initialize markers object
-MarkerData = MarkerDataCl(thetaOutR(1, :)', nSolutes, ...
+MarkerData = MarkerDataTtCl(thetaOutR(1, :)', nSolutes, ...
     ModelDim, SoilPar, SimulationPar, @InitialConcentration);
 
 %% Initialize outputs
@@ -172,10 +172,14 @@ while abs(t - tEnd) > SimulationPar.TIME_EPSILON,
 end
 toc
 
-tic
-%% Running analytical solution
-cAnalyticalArr = SoluteTransportAnalytic(ModelDim.zn, timeOutVec, inFlow, SoilPar.d(1), ModelDim);
-toc
+if doDisplayAnalyticalSolution
+    tic
+    %% Running analytical solution
+    cAnalyticalArr = SoluteTransportAnalytic(ModelDim.zn, timeOutVec, inFlow, SoilPar.d(1), ModelDim);
+    toc
+else
+    cAnalyticalArr = 0;
+end
 
 %% Checking mass balance
 fprintf('\nMass balance check:\n');

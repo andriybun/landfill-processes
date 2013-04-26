@@ -1,7 +1,9 @@
-classdef MarkerDataCl
+classdef MarkerDataTtCl
+    % TT - stands for travel time
+    
 	properties (Access = public)
         % Maximum volume of one marker particle
-        dvMax = 1e-4;
+        dvMax = 1e-3;
         % Numerical diffusion coefficient
         dCoeff = 1;
         % Total number of marker particles in system (is variable)
@@ -49,7 +51,7 @@ classdef MarkerDataCl
     
     methods (Access = public)
         %% Constructor
-        function self = MarkerDataCl(thetaN, nSolutes, ModelDim, SoilPar, SimulationPar, InitialC)
+        function self = MarkerDataTtCl(thetaN, nSolutes, ModelDim, SoilPar, SimulationPar, InitialC)
             if isfield(SimulationPar, 'isStochastic')
                 self.isStochastic = SimulationPar.isStochastic;
             else
@@ -390,6 +392,7 @@ classdef MarkerDataCl
                 cNext(:, soluteIdx) = cNodesDiff(end, :)';
             end
            
+             self.c = self.MarkerValues(self.ModelDim.zn, cNext, 'current node');
 %             self = ApplySubgridDiffusion(self, t, deltaT, cNext);
             
             % Set flag
@@ -582,8 +585,9 @@ classdef MarkerDataCl
         
         % Initialize velocities of markers
         function qMark = InitializeMarkersVelocity(self, nMark)
+            cdfPos = ((1:nMark)' - 0.5) ./ nMark;
             qMark = -abs(self.ModelDim.zin(self.ModelDim.znin) - self.ModelDim.zin(1)) ./ ...
-                lognrnd(self.lognormal.mu, self.lognormal.sigma, nMark, 1);
+                logninv(cdfPos, self.lognormal.mu, self.lognormal.sigma);
         end
         
         %% Some correctness checking procedures
