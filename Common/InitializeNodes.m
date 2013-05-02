@@ -9,6 +9,8 @@ function ModelDim = InitializeNodes(varName, varargin)
 %   - varTop, varBottom - spatial boundaries of the system
 %   - dVar              - spatial discretization along generated axis
 %   - orientation       - one of the following: 'vertical' (default), 'horizontal'
+% or
+%   - vin               - array of internodes. It already contains all the needed information
 % Fields generated are:
 %   - positions of internodes (from 0 to varBottom with a step dVar)
 %   - positions of nodes
