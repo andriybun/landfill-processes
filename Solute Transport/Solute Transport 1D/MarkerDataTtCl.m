@@ -3,7 +3,7 @@ classdef MarkerDataTtCl
     
 	properties (Access = public)
         % Maximum volume of one marker particle
-        dvMax = 1e-3;
+        dvMax = 1e-5;
         % Numerical diffusion coefficient
         dCoeff = 1;
         % Total number of marker particles in system (is variable)
@@ -107,7 +107,7 @@ classdef MarkerDataTtCl
             end
             
             if self.isStochastic
-                self.lognormal.mu = 3;
+                self.lognormal.mu = 2.5;
                 self.lognormal.sigma = 0.6;
                 self.q = zeros(self.nTotal, 1); % self.InitializeMarkersVelocity(self.nTotal);
             end
