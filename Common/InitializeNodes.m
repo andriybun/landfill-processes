@@ -1,4 +1,4 @@
-function ModelDim = InitializeNodes(varName, varTop, varBottom, dVar, orientation)
+function ModelDim = InitializeNodes(varName, varargin)
 %
 % Function generates structure containing information about geometrical discretization of 
 % investigated system (nodes / internodes).
@@ -18,8 +18,22 @@ function ModelDim = InitializeNodes(varName, varTop, varBottom, dVar, orientatio
 %   - number of nodes
 %
 
-    if nargin < 5
-        orientation = 'vertical';
+    switch nargin
+        case 2
+            vinVal = varargin{1};
+            orientation = isrow(vinVal) + 1;
+        case 4
+            varBottom = varargin{1};
+            varTop = varargin{2};
+            dVar = varargin{3};
+            orientation = 'vertical';
+        case 5
+            varBottom = varargin{1};
+            varTop = varargin{2};
+            dVar = varargin{3};
+            orientation = varargin{4};
+        otherwise
+            error('Initialization:SpatialDiscretization', 'Wrong number of input parameters');
     end
     orientationId = find(strcmp({'vertical', 'horizontal'}, orientation), 1);
 
@@ -38,13 +52,19 @@ function ModelDim = InitializeNodes(varName, varTop, varBottom, dVar, orientatio
     
     % Initialize its fields
     % Positions of internodes (equally spaced on interval [0, varBottom])
-    switch (orientationId)
-        case 1
-            ModelDim.(vin) = (varTop:dVar:varBottom)';
+    
+    switch nargin
         case 2
-            ModelDim.(vin) = (varTop:dVar:varBottom);
+            ModelDim.(vin) = vinVal;
         otherwise
-            error('Initialization:SpatialDiscretization', 'Wrong orientation keyword');
+            switch (orientationId)
+                case 1
+                    ModelDim.(vin) = (varBottom:dVar:varTop)';
+                case 2
+                    ModelDim.(vin) = (varBottom:dVar:varTop);
+                otherwise
+                    error('Initialization:SpatialDiscretization', 'Wrong orientation keyword');
+            end
     end
     % Number of internodes
     ModelDim.(vnin) = length(ModelDim.(vin));
