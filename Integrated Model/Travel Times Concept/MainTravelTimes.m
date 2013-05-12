@@ -39,7 +39,7 @@ function MainTravelTimes
     % Initial mass of solute
     mIni = pv * cIni;
     
-    nT = 720;
+%     nT = 720;
     t = t(1:nT);
     
     qOutTotal = zeros(1, nT);
@@ -78,6 +78,13 @@ function MainTravelTimes
     figure(3);
     plotyy(t, qOutTotal(1:nT), t, mOutTotal(1:nT) ./ qOutTotal(1:nT));
 
+    figure(4);
+    plot(t, mOutTotal(1:nT) ./ qOutTotal(1:nT), 'r');
+    hold on;
+    plot(t, cRemaining(1:nT));
+    hold off;
+    
+    
     return
     
     function cOut = OutConcentration(t, cRemaining, lambda)
