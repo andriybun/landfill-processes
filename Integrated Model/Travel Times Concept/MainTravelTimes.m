@@ -78,16 +78,16 @@ function MainTravelTimes
     end
 
     mEnd = cRemaining(:, end) * pv;
-    [sum(mIni) - sum(mOutTotal), sum(mEnd)]
+    [sum(mIni) - sum(mOutTotal); sum(mEnd)]
     
     
     %% Plotting
     figure(1);
-    [axH, lH1, lH2] = plotyy(t, rainData(1:nT), t, sum(cRemaining(:, 1:nT), 1) / (2 * pv));
+    [axH, lH1, lH2] = plotyy(t, rainData(1:nT), t, sum(cRemaining(:, 1:nT), 1) / 2);
     xlabel('time [days]');
     set(get(axH(1), 'ylabel'), 'string', 'precipitation [m/hour]');
     set(get(axH(2), 'ylabel'), 'string', 'emission potential [m^3/m^3]');
-    hgsave(sprintf('fig/oug_flux_c_rem_%d_days_lambda_%e.fig', ...
+    hgsave(sprintf('fig/oug_flux_c_rem_%d_days_lambda_%2.1f.fig', ...
         ceil(nT / TimeParams.intervals_per_day), lambda));
 
     figH = figure(2);
@@ -100,7 +100,7 @@ function MainTravelTimes
     xlabel('time [days]');
     ylabel('flux [m/hour]')
     legend({'Precipitation', 'Leachate volume flux'}, 'Location', 'NorthEast');
-    hgsave(sprintf('fig/precip_leachate_flux_%d_days_lambda_%e.fig', ...
+    hgsave(sprintf('fig/precip_leachate_flux_%d_days_lambda_%2.1f.fig', ...
         ceil(nT / TimeParams.intervals_per_day), lambda));
     
     figH = figure(3);
@@ -110,7 +110,7 @@ function MainTravelTimes
     legend({'Leachate volume flux', 'Leachate concentration'}, 'Location', 'NorthEast');
     set(get(axH(1), 'ylabel'), 'string', 'out flux [m/hour]');
     set(get(axH(2), 'ylabel'), 'string', 'out concentration [m^3/m^3]');
-    hgsave(sprintf('fig/concentr_leachate_flux_%d_days_lambda_%e.fig', ...
+    hgsave(sprintf('fig/concentr_leachate_flux_%d_days_lambda_%2.1f.fig', ...
         ceil(nT / TimeParams.intervals_per_day), lambda));
     
     figH = figure(4);
@@ -118,12 +118,12 @@ function MainTravelTimes
     set(figH, 'Position', figPos);
     plot(t, mOutTotal(1:nT) ./ qOutTotal(1:nT), 'r');
     hold on;
-    plot(t, sum(cRemaining(:, 1:nT), 1) / (2 * pv));
+    plot(t, sum(cRemaining(:, 1:nT), 1) / 2);
     hold off;
     xlabel('time [days]');
     ylabel('concentration [m^3/m^3]')
-    legend({'Leachate concentration', 'Emission potential'}, 'Location', 'NorthEast'); % 'SouthWest'
-    hgsave(sprintf('fig/concentr_c_rem_%d_days_lambda_%e.fig', ...
+    legend({'Leachate concentration', 'Emission potential'}, 'Location', 'SouthEast'); % 'SouthWest'
+    hgsave(sprintf('fig/concentr_c_rem_%d_days_lambda_%2.1f.fig', ...
         ceil(nT / TimeParams.intervals_per_day), lambda));
     
     return
