@@ -32,21 +32,24 @@ function MainTravelTimes
     pv = zLength * theta;
     
     % Decay rate
-    lambda = 1e-0;
+    lambda = 1e-2;
+    % Exchange rate between mobile-immobile phases
+    kExch = 1e-0;
     
-    % Initial concentration
-    cIni = 1;
+    % Initial concentration (immobile, mobile phases)
+    cIni = [1; 0];
     % Initial mass of solute
-    mIni = pv * cIni;
+    mIni = cIni * pv;
     
-%     nT = 720;
+    nT = 1 * 720;
     t = t(1:nT);
     
     qOutTotal = zeros(1, nT);
     mOutTotal = zeros(1, nT);
-    cRemaining = zeros(1, nT + 1);
-    cRemaining(1) = cIni;
-    mRemaining = mIni;
+    cRemaining = zeros(2, nT + 1);
+    cRemaining(:, 1) = cIni;
+    
+    % mRemaining = mIni;
     for iT = 1:nT
         tOffset = t(iT);
         tAfter = t(iT:nT) - tOffset;
@@ -54,40 +57,90 @@ function MainTravelTimes
         % outflow during a given time step is considered as a particle with unique travel time.
         qOutAfter = rainData(iT) * lognpdf(tAfter, mu, sigma) * dt;
         % We integrate volumes of all the particles flowing out at the same time intervals to 
-        % obtain leachate load.
+        % obtain Leachate volume flux.
         qOutTotal(iT:nT) = qOutTotal(iT:nT) + qOutAfter;
         % The longer particle resides inside the landfill, the bigger oncentrations of solutes
         % will be.
-        cOutAfter = OutConcentration(tAfter, cRemaining(iT), lambda);
-        % We integrate masses of solutes in all particles.
-        mOutTotal(iT:nT) = mOutTotal(iT:nT) + qOutAfter .* cOutAfter;
+        cOutAfter = OutConcentration(tAfter, cRemaining(:, iT), kExch, lambda);
+        
         % Calculate the remaining mass of solute
-        mRemaining = mRemaining - mOutTotal(iT);
-        cRemaining(iT + 1) = mRemaining / pv;
+        mRemaining = cOutAfter(:, 1) * pv;
+        % We integrate masses of solutes in all particles.
+        mOutTotal(iT:nT) = mOutTotal(iT:nT) + qOutAfter .* cOutAfter(2, :);
+        mRemaining(2) = mRemaining(2) - mOutTotal(iT);
+        
+        % Calculate the remaining concentrations
+        cRemaining(:, iT + 1) = mRemaining / pv;
+        
+        if mod(iT, 87) == 0
+            fprintf('%5.3f%% complete\n', iT / nT * 100);
+        end
     end
 
+    mEnd = cRemaining(:, end) * pv;
+    [sum(mIni) - sum(mOutTotal), sum(mEnd)]
+    
     figure(1);
-    plotyy(t, rainData(1:nT), t, cRemaining(1:nT));
+    [axH, lH1, lH2] = plotyy(t, rainData(1:nT), t, sum(cRemaining(:, 1:nT), 1) / (2 * pv));
+    xlabel('time [days]');
+    set(get(axH(1), 'ylabel'), 'string', 'precipitation [m/hour]');
+    set(get(axH(2), 'ylabel'), 'string', 'emission potential [m^3/m^3]');
+    hgsave(sprintf('oug_flux_c_rem_%d.fig', ceil(nT / TimeParams.intervals_per_day)));
 
-    figure(2);
+    figH = figure(2);
+    figPos = [100, 100, 500, 250];
+    set(figH, 'Position', figPos);
     plot(t, rainData(1:nT), 'b');
     hold on;
     plot(t, qOutTotal(1:nT), 'r');
     hold off;
+    xlabel('time [days]');
+    ylabel('flux [m/hour]')
+    legend({'Precipitation', 'Leachate volume flux'}, 'Location', 'NorthEast');
+    hgsave(sprintf('precip_leachate_flux_%d.fig', ceil(nT / TimeParams.intervals_per_day)));
     
-    figure(3);
-    plotyy(t, qOutTotal(1:nT), t, mOutTotal(1:nT) ./ qOutTotal(1:nT));
-
-    figure(4);
+    figH = figure(3);
+    figPos = [200, 200, 500, 300];
+    set(figH, 'Position', figPos);
+    [axH, lH1, lH2] = plotyy(t, qOutTotal(1:nT), t, mOutTotal(1:nT) ./ qOutTotal(1:nT));
+    legend({'Leachate volume flux', 'Leachate concentration'}, 'Location', 'NorthEast');
+    set(get(axH(1), 'ylabel'), 'string', 'out flux [m/hour]');
+    set(get(axH(2), 'ylabel'), 'string', 'out concentration [m^3/m^3]');
+    hgsave(sprintf('concentr_leachate_flux_%d.fig', ceil(nT / TimeParams.intervals_per_day)));
+    
+    figH = figure(4);
+    figPos = [300, 300, 500, 300];
+    set(figH, 'Position', figPos);
     plot(t, mOutTotal(1:nT) ./ qOutTotal(1:nT), 'r');
     hold on;
-    plot(t, cRemaining(1:nT));
+    plot(t, sum(cRemaining(:, 1:nT), 1) / (2 * pv));
     hold off;
-    
+    xlabel('time [days]');
+    ylabel('concentration [m^3/m^3]')
+    legend({'Leachate concentration', 'Emission potential'}, 'Location', 'NorthEast'); % 'SouthWest'
+    hgsave(sprintf('concentr_c_rem_%d.fig', ceil(nT / TimeParams.intervals_per_day)));
     
     return
     
-    function cOut = OutConcentration(t, cRemaining, lambda)
-        cOut = cRemaining * (1 - exp(-lambda * t));
+    function cOut = OutConcentration(tau, cRemaining, kExch, lambda)
+%         cOut = cRemaining * (1 - exp(-lambda * tau));
+        if (tau(1) == tau(end))
+            cOut = cRemaining;
+        else
+            tRange = [tau(1), tau(end)];
+            [tauOde, cOde] = ode45(@(tauX, cX) Dc(tauX, cX, kExch, lambda), tRange, cRemaining);
+            % cOut = cOde(end, :)';
+            cOut = interp1(tauOde, cOde, tau)';
+            % cOut(2, :) = cRemaining(2) - cOut(2, :);
+            % plot(cOut');
+        end
+        
+        return
+        
+        function dcdt = Dc(xTau, xC, kExch, lambda)
+            dcdt = nan(2, 1);
+            dcdt(1) = (-kExch - lambda) * xC(1) + kExch * xC(2);
+            dcdt(2) = kExch * xC(1) - kExch * xC(2);
+        end
     end
 end
