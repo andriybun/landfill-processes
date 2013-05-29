@@ -2,6 +2,10 @@ function MainTravelTimes
     addpath('../../Common/');
     addpath('../Data/');
     
+    % Tolerance
+    EPSILON = 1e-10;
+    NUM_SIGMAS = 6;
+    
     % Dimensions
     zTop = 0;
     zBottom = -1;
@@ -19,7 +23,7 @@ function MainTravelTimes
     tEnd = TimeParams.t(end);   % 100;
     dt = TimeParams.dt;         % 1;
     t = TimeParams.t;           % 0:dt:tEnd;
-    nT = TimeParams.num_intervals;
+    nT = TimeParams.numIntervals;
 
     % Log-normal parameters
     mu = 0;
@@ -41,7 +45,8 @@ function MainTravelTimes
     % Initial mass of solute
     mIni = cIni * pv;
     
-    nT = 1 * 720;
+%     TimeParams.maxDays = 30;
+    nT = TimeParams.maxDays * TimeParams.intervalsPerDay;
     t = t(1:nT);
     
     qOutTotal = zeros(1, nT);
@@ -49,16 +54,30 @@ function MainTravelTimes
     cRemaining = zeros(2, nT + 1);
     cRemaining(:, 1) = cIni;
     
+    profile on
+    tic
+    
     % mRemaining = mIni;
     for iT = 1:nT
         tOffset = t(iT);
         tAfter = t(iT:nT) - tOffset;
+        
+        % Calculate boundaries of log-normally distributed travel times (to save computational
+        % resources we calculate only for those times, when something comes out of the drainage
+        % system but not until the end of the period).
+        tBouds = LogNormalBounds(mu, sigma, NUM_SIGMAS);
+        % Select only those time steps that are affected by current injection
+        iCalcT = (tAfter <= tBouds(2));
+        nCalcT = sum(iCalcT);
+        iTend = iT + nCalcT - 1;
+        tAfter = tAfter(iCalcT);
+        
         % Every input impulse of water will cause (log-normal) response at the outlet. All the
         % outflow during a given time step is considered as a particle with unique travel time.
         qOutAfter = rainData(iT) * lognpdf(tAfter, mu, sigma) * dt;
         % We integrate volumes of all the particles flowing out at the same time intervals to 
         % obtain Leachate volume flux.
-        qOutTotal(iT:nT) = qOutTotal(iT:nT) + qOutAfter;
+        qOutTotal(iT:iTend) = qOutTotal(iT:iTend) + qOutAfter;
         % The longer particle resides inside the landfill, the bigger oncentrations of solutes
         % will be.
         cOutAfter = OutConcentration(tAfter, cRemaining(:, iT), kExch, lambda);
@@ -66,7 +85,7 @@ function MainTravelTimes
         % Calculate the remaining mass of solute
         mRemaining = cOutAfter(:, 1) * pv;
         % We integrate masses of solutes in all particles.
-        mOutTotal(iT:nT) = mOutTotal(iT:nT) + qOutAfter .* cOutAfter(2, :);
+        mOutTotal(iT:iTend) = mOutTotal(iT:iTend) + qOutAfter .* cOutAfter(2, :);
         mRemaining(2) = mRemaining(2) - mOutTotal(iT);
         
         % Calculate the remaining concentrations
@@ -77,8 +96,20 @@ function MainTravelTimes
         end
     end
 
+    toc
+    profile off
+    profile viewer
+    
+    %% Error check
     mEnd = cRemaining(:, end) * pv;
-    [sum(mIni) - sum(mOutTotal); sum(mEnd)]
+    if ~RealEq(sum(mIni) - sum(mOutTotal), sum(mEnd), EPSILON)
+        warning('ResultCheck:MassBalanceError', 'Absolute error is too high: err = %3.2e', ...
+            abs(abs(sum(mIni) - sum(mOutTotal) - sum(mEnd))));
+    end
+    %% End error check
+    
+%     return
+    
     
     
     %% Plotting
@@ -88,9 +119,9 @@ function MainTravelTimes
     set(get(axH(1), 'ylabel'), 'string', 'precipitation [m/hour]');
     set(get(axH(2), 'ylabel'), 'string', 'emission potential [m^3/m^3]');
     hgsave(sprintf('fig/oug_flux_c_rem_%d_days_lambda_%4.3f.fig', ...
-        ceil(nT / TimeParams.intervals_per_day), lambda));
+        ceil(nT / TimeParams.intervalsPerDay), lambda));
 %     print(figH, '-dpng', '-r0', sprintf('fig/oug_flux_c_rem_%d_days_lambda_%4.3f.png', ...
-%         ceil(nT / TimeParams.intervals_per_day), lambda));
+%         ceil(nT / TimeParams.intervalsPerDay), lambda));
 
     figH = figure(2);
     figPos = [100, 100, 500, 250];
@@ -103,9 +134,9 @@ function MainTravelTimes
     ylabel('flux [m/hour]')
     legend({'Precipitation', 'Leachate volume flux'}, 'Location', 'NorthEast');
     hgsave(sprintf('fig/precip_leachate_flux_%d_days_lambda_%4.3f.fig', ...
-        ceil(nT / TimeParams.intervals_per_day), lambda));
+        ceil(nT / TimeParams.intervalsPerDay), lambda));
 %     print(figH, '-dpng', '-r0', sprintf('fig/precip_leachate_flux_%d_days_lambda_%4.3f.png', ...
-%         ceil(nT / TimeParams.intervals_per_day), lambda));
+%         ceil(nT / TimeParams.intervalsPerDay), lambda));
     
     figH = figure(3);
     figPos = [200, 200, 500, 300];
@@ -116,9 +147,9 @@ function MainTravelTimes
     set(get(axH(1), 'ylabel'), 'string', 'out flux [m/hour]');
     set(get(axH(2), 'ylabel'), 'string', 'out concentration [m^3/m^3]');
     hgsave(sprintf('fig/concentr_leachate_flux_%d_days_lambda_%4.3f.fig', ...
-        ceil(nT / TimeParams.intervals_per_day), lambda));
+        ceil(nT / TimeParams.intervalsPerDay), lambda));
 %     print(figH, '-dpng', '-r0', sprintf('fig/concentr_leachate_flux_%d_days_lambda_%4.3f.png', ...
-%         ceil(nT / TimeParams.intervals_per_day), lambda));
+%         ceil(nT / TimeParams.intervalsPerDay), lambda));
     
     figH = figure(4);
     figPos = [300, 300, 500, 300];
@@ -131,9 +162,9 @@ function MainTravelTimes
     ylabel('concentration [m^3/m^3]')
     legend({'Leachate concentration', 'Emission potential'}, 'Location', 'SouthEast'); % 'SouthWest'
     hgsave(sprintf('fig/concentr_c_rem_%d_days_lambda_%4.3f.fig', ...
-        ceil(nT / TimeParams.intervals_per_day), lambda));
+        ceil(nT / TimeParams.intervalsPerDay), lambda));
 %     print(figH, '-dpng', '-r0', sprintf('fig/concentr_c_rem_%d_days_lambda_%4.3f.png', ...
-%         ceil(nT / TimeParams.intervals_per_day), lambda));
+%         ceil(nT / TimeParams.intervalsPerDay), lambda));
     
     return
     
