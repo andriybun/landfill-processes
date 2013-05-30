@@ -175,10 +175,7 @@ function MainTravelTimes
         else
             tRange = [tau(1), tau(end)];
             [tauOde, cOde] = ode45(@(tauX, cX) Dc(tauX, cX, kExch, lambda), tRange, cRemaining);
-            % cOut = cOde(end, :)';
             cOut = interp1(tauOde, cOde, tau)';
-            % cOut(2, :) = cRemaining(2) - cOut(2, :);
-            % plot(cOut');
         end
         
         return
