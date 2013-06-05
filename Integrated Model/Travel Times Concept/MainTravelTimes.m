@@ -198,23 +198,22 @@ function MainTravelTimes
     return
     
     function cOut = OutConcentration(tau, cRemaining, kExch, lambda)
-%         cOut = cRemaining * (1 - exp(-lambda * tau));
         if (tau(1) == tau(end))
             cOut = cRemaining;
         else
-            tRange = [tau(1), tau(end)];
-            odeOpt = odeset('RelTol', 1e-3, 'AbsTol', 1e-5);
-            [tauOde, cOde] = ode45(@(tauX, cX) Dc(tauX, cX, kExch, lambda), ...
-                tRange, cRemaining, odeOpt); % 
-            cOut = interp1(tauOde, cOde, tau)';
+            cOutAn = Concentration(tau, cRemaining, kExch, lambda);
+            cOut = cOutAn;
         end
         
         return
         
-        function dcdt = Dc(xTau, xC, kExch, lambda)
-            dcdt = nan(2, 1);
-            dcdt(1) = (-kExch - lambda) * xC(1) + kExch * xC(2);
-            dcdt(2) = kExch * xC(1) - kExch * xC(2);
+        function cTrend = Concentration(t, cIni, kExch, lambda)
+            C1_ = (1/2) * (cIni(2) * sqrt(lambda^2 + 4 * kExch^2) + 2 * cIni(1) * kExch + cIni(2) * lambda) / sqrt(lambda^2 + 4 * kExch^2);
+            C2_ = (1/2) * ( - 2 * cIni(1) * kExch - cIni(2) * lambda + cIni(2) * sqrt(lambda^2 + 4 * kExch^2)) / sqrt(lambda^2 + 4 * kExch^2);
+            
+            cTrend = nan(2, numel(t));
+            cTrend(1, :) = -(1/2) * (C1_ * exp((1/2 * ( - lambda - 2 * kExch + sqrt(lambda^2 + 4 * kExch^2))) * t) * lambda - C1_ * exp((1/2 * ( - lambda - 2 * kExch + sqrt(lambda^2 + 4 * kExch^2))) * t) * sqrt(lambda^2 + 4 * kExch^2) + C2_ * exp( - (1/2 * (lambda + 2 * kExch + sqrt(lambda^2 + 4 * kExch^2))) * t) * lambda + C2_ * exp( - (1/2 * (lambda + 2 * kExch + sqrt(lambda^2 + 4 * kExch^2))) * t) * sqrt(lambda^2 + 4 * kExch^2)) / kExch;
+            cTrend(2, :) = C1_ * exp((1/2 * ( - lambda - 2 * kExch + sqrt(lambda^2 + 4 * kExch^2))) * t) + C2_ * exp( - (1/2 * (lambda + 2 * kExch + sqrt(lambda^2 + 4 * kExch^2))) * t);
         end
     end
 end
