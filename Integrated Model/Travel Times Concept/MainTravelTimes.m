@@ -45,7 +45,7 @@ function MainTravelTimes
     % Initial mass of solute
     mIni = cIni * pv;
     
-%     TimeParams.maxDays = 30;
+    TimeParams.maxDays = 30;
     nT = TimeParams.maxDays * TimeParams.intervalsPerDay;
     t = t(1:nT);
     
@@ -54,7 +54,7 @@ function MainTravelTimes
     cRemaining = zeros(2, nT + 1);
     cRemaining(:, 1) = cIni;
     
-    profile on
+%     profile on
     tic
     
     % mRemaining = mIni;
@@ -97,8 +97,8 @@ function MainTravelTimes
     end
 
     toc
-    profile off
-    profile viewer
+%     profile off
+%     profile viewer
     
     %% Error check
     mEnd = cRemaining(:, end) * pv;
@@ -108,7 +108,36 @@ function MainTravelTimes
     end
     %% End error check
     
-%     return
+    % Validate
+    SAVE_RESULTS = 1;
+    COMPARE_RESULTS = 2;
+    BASELINE_FILE_NAME = 'baseline';
+    COMP_VARS = {'cOutRes', 'mOutRes', 'cRemRes'};
+    
+    % Results:
+    % Out concentration
+    cOutRes = mOutTotal(1:nT) ./ qOutTotal(1:nT);
+    mOutRes = mOutTotal(1:nT);
+    cRemRes = sum(cRemaining(:, 1:nT));
+    
+%     action = SAVE_RESULTS;
+    action = COMPARE_RESULTS;
+    if (action == SAVE_RESULTS)
+        save(BASELINE_FILE_NAME, 'cOutRes', 'mOutRes', 'cRemRes');
+    elseif (action == COMPARE_RESULTS)
+        BaselineRes = load(BASELINE_FILE_NAME);
+        DiffBl.cOutRes = cOutRes - BaselineRes.cOutRes;
+        DiffBl.mOutRes = mOutRes - BaselineRes.mOutRes;
+        DiffBl.cRemRes = cRemRes - BaselineRes.cRemRes;
+        
+        fprintf('Error analysis:\n');
+        for varIdx = 1:numel(COMP_VARS)
+            var = COMP_VARS{varIdx};
+            fprintf('\t%s : %f\n', var, max(abs(DiffBl.(var))));
+        end
+    end
+    
+    return
     
     
     
@@ -174,7 +203,9 @@ function MainTravelTimes
             cOut = cRemaining;
         else
             tRange = [tau(1), tau(end)];
-            [tauOde, cOde] = ode45(@(tauX, cX) Dc(tauX, cX, kExch, lambda), tRange, cRemaining);
+            odeOpt = odeset('RelTol', 1e-3, 'AbsTol', 1e-5);
+            [tauOde, cOde] = ode45(@(tauX, cX) Dc(tauX, cX, kExch, lambda), ...
+                tRange, cRemaining, odeOpt); % 
             cOut = interp1(tauOde, cOde, tau)';
         end
         
