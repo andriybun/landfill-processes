@@ -45,7 +45,7 @@ function MainTravelTimes
     % Initial mass of solute
     mIni = cIni * pv;
     
-    TimeParams.maxDays = 30;
+%     TimeParams.maxDays = 30;
     nT = TimeParams.maxDays * TimeParams.intervalsPerDay;
     t = t(1:nT);
     
@@ -111,7 +111,7 @@ function MainTravelTimes
     % Validate
     SAVE_RESULTS = 1;
     COMPARE_RESULTS = 2;
-    BASELINE_FILE_NAME = 'baseline';
+    BASELINE_FILE_NAME = '../Data/baseline';
     COMP_VARS = {'cOutRes', 'mOutRes', 'cRemRes'};
     
     % Results:
@@ -126,9 +126,10 @@ function MainTravelTimes
         save(BASELINE_FILE_NAME, 'cOutRes', 'mOutRes', 'cRemRes');
     elseif (action == COMPARE_RESULTS)
         BaselineRes = load(BASELINE_FILE_NAME);
-        DiffBl.cOutRes = cOutRes - BaselineRes.cOutRes;
-        DiffBl.mOutRes = mOutRes - BaselineRes.mOutRes;
-        DiffBl.cRemRes = cRemRes - BaselineRes.cRemRes;
+        nEl = min(numel(cOutRes), numel(BaselineRes.cOutRes));
+        DiffBl.cOutRes = cOutRes(1:nEl) - BaselineRes.cOutRes(1:nEl);
+        DiffBl.mOutRes = mOutRes(1:nEl) - BaselineRes.mOutRes(1:nEl);
+        DiffBl.cRemRes = cRemRes(1:nEl) - BaselineRes.cRemRes(1:nEl);
         
         fprintf('Error analysis:\n');
         for varIdx = 1:numel(COMP_VARS)
