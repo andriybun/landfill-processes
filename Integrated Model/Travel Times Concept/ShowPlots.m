@@ -16,7 +16,7 @@ function ShowPlots(qOutTotal, mOutTotal, cRemaining, rainData, lambda, TimeParam
     
     EmissionPotentialInfo = struct();
     EmissionPotentialInfo.data = sum(cRemaining(:, 1:nT), 1) / 2;
-    EmissionPotentialInfo.name = 'Emission Potential';
+    EmissionPotentialInfo.name = 'Emission potential';
     EmissionPotentialInfo.axisLabel = 'concentration [m^3/m^3]';
     EmissionPotentialInfo.color = [0.4, 0.4, 0.4];
     
@@ -33,45 +33,24 @@ function ShowPlots(qOutTotal, mOutTotal, cRemaining, rainData, lambda, TimeParam
     LeachateConcentrationInfo.color = [1, 0.5, 0.15];
     
     %% Plot
-    figH = figure(1);
-    PlotYyWrapper(figH, TInfo, PrecipInfo, EmissionPotentialInfo, 'NorthEast');
-    hgsave(sprintf('fig/oug_flux_c_rem_%d_days_lambda_%4.3f.fig', ...
-        ceil(nT / TimeParams.intervalsPerDay), lambda));
-%     print(figH, '-dpng', '-r0', sprintf('fig/oug_flux_c_rem_%d_days_lambda_%4.3f.png', ...
-%         ceil(nT / TimeParams.intervalsPerDay), lambda));
+    PlotYyWrapper(TInfo, PrecipInfo, EmissionPotentialInfo, 'NorthEast');
 
-    figH = figure(2);
     figPos = [100, 100, 500, 250];
-    PlotDoubleWrapper(figH, TInfo, PrecipInfo, LeachateFluxInfo, 'NorthEast', figPos);
-    % PrecipInfo - 'b'; LeachateFluxInfo - 'r'
-    hgsave(sprintf('fig/precip_leachate_flux_%d_days_lambda_%4.3f.fig', ...
-        ceil(nT / TimeParams.intervalsPerDay), lambda));
-%     print(figH, '-dpng', '-r0', sprintf('fig/precip_leachate_flux_%d_days_lambda_%4.3f.png', ...
-%         ceil(nT / TimeParams.intervalsPerDay), lambda));
+    PlotDoubleWrapper(TInfo, PrecipInfo, LeachateFluxInfo, 'NorthEast', figPos);
     
-    figH = figure(3);
     figPos = [200, 200, 500, 300];
-    PlotYyWrapper(figH, TInfo, LeachateFluxInfo, LeachateConcentrationInfo, 'NorthEast', figPos);
-    hgsave(sprintf('fig/concentr_leachate_flux_%d_days_lambda_%4.3f.fig', ...
-        ceil(nT / TimeParams.intervalsPerDay), lambda));
-%     print(figH, '-dpng', '-r0', sprintf('fig/concentr_leachate_flux_%d_days_lambda_%4.3f.png', ...
-%         ceil(nT / TimeParams.intervalsPerDay), lambda));
+    PlotYyWrapper(TInfo, LeachateFluxInfo, LeachateConcentrationInfo, 'NorthEast', figPos);
     
-    figH = figure(4);
     figPos = [300, 300, 500, 300];
-    PlotDoubleWrapper(figH, TInfo, LeachateConcentrationInfo, EmissionPotentialInfo, ...
+    PlotDoubleWrapper(TInfo, LeachateConcentrationInfo, EmissionPotentialInfo, ...
         'NorthEast', figPos);
-    % LeachateConcentrationInfo - 'r', EmissionPotentialInfo - 'def'
-    hgsave(sprintf('fig/concentr_c_rem_%d_days_lambda_%4.3f.fig', ...
-        ceil(nT / TimeParams.intervalsPerDay), lambda));
-%     print(figH, '-dpng', '-r0', sprintf('fig/concentr_c_rem_%d_days_lambda_%4.3f.png', ...
-%         ceil(nT / TimeParams.intervalsPerDay), lambda));
 
     return
     
     %% Some generic plotting functions
-    function PlotYyWrapper(figH, X, Var1, Var2, legendLocation, figPos)
-        if nargin > 5
+    function PlotYyWrapper(X, Var1, Var2, legendLocation, figPos)
+        figH = figure();
+        if nargin > 4
             set(figH, 'Position', figPos);
         end
         [axH, lH1, lH2] = plotyy(X.data, Var1.data, X.data, Var2.data);
@@ -85,10 +64,14 @@ function ShowPlots(qOutTotal, mOutTotal, cRemaining, rainData, lambda, TimeParam
         if isfield(Var2, 'color')
             set(lH2, 'color', Var2.color);
         end
+        % Save to file
+        hgsave(figH, GenerateFileName(Var1, Var2, 'fig'));
+%         print(figH, '-dpng', '-r0', GenerateFileName(Var1, Var2, 'png'));
     end
 
-    function PlotDoubleWrapper(figH, X, Var1, Var2, legendLocation, figPos)
-        if nargin > 5
+    function PlotDoubleWrapper(X, Var1, Var2, legendLocation, figPos)
+        figH = figure();
+        if nargin > 4
             set(figH, 'Position', figPos);
         end
         if isfield(Var1, 'color')
@@ -106,5 +89,15 @@ function ShowPlots(qOutTotal, mOutTotal, cRemaining, rainData, lambda, TimeParam
         xlabel(X.axisLabel);
         ylabel(Var1.axisLabel)
         legend({Var1.name, Var2.name}, 'Location', legendLocation);
+        % Save to file
+        fileName = GenerateFileName(Var1, Var2, 'fig');
+        hgsave(figH, fileName);
+%         print(figH, '-dpng', '-r0', GenerateFileName(Var1, Var2, 'png'));
+    end
+
+    function fileName = GenerateFileName(Var1, Var2, ext)
+        fileName = sprintf('fig/%s_-_%s_%d_days_lambda_%4.3f.%s', ...
+            strrep(Var1.name, ' ', '_'), strrep(Var2.name, ' ', '_'), ...
+            TimeParams.maxDays, lambda, ext);
     end
 end
