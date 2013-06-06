@@ -23,7 +23,6 @@ function MainTravelTimes
     tEnd = TimeParams.t(end);   % 100;
     dt = TimeParams.dt;         % 1;
     t = TimeParams.t;           % 0:dt:tEnd;
-    nT = TimeParams.numIntervals;
 
     % Log-normal parameters
     mu = 0;
@@ -45,7 +44,7 @@ function MainTravelTimes
     % Initial mass of solute
     mIni = cIni * pv;
     
-    TimeParams.maxDays = 30;
+%     TimeParams.maxDays = 30;
     nT = TimeParams.maxDays * TimeParams.intervalsPerDay;
     t = t(1:nT);
     
@@ -139,8 +138,8 @@ function MainTravelTimes
         end
     end
     
-    %% Plotting
-    ShowPlots(qOutTotal, mOutTotal, cRemaining, rainData, lambda, TimeParams);
+%     %% Plotting
+%     ShowPlots(qOutTotal, mOutTotal, cRemaining, rainData, lambda, TimeParams);
     
     return
     
@@ -155,12 +154,24 @@ function MainTravelTimes
         return
         
         function cTrend = Concentration(t, cIni, kExch, lambda)
-            C1_ = (1/2) * (cIni(2) * sqrt(lambda^2 + 4 * kExch^2) + 2 * cIni(1) * kExch + cIni(2) * lambda) / sqrt(lambda^2 + 4 * kExch^2);
-            C2_ = (1/2) * ( - 2 * cIni(1) * kExch - cIni(2) * lambda + cIni(2) * sqrt(lambda^2 + 4 * kExch^2)) / sqrt(lambda^2 + 4 * kExch^2);
+            v1 = lambda^2 + 4 * kExch^2;
+            v2 = sqrt(v1);
+            v3 = lambda + 2 * kExch;
+            v4 = exp(0.5 * (-v3 + v2) * t);
+            v5 = exp(-0.5 * (v3 + v2) * t);
+            
+            cv1 = cIni(2) * lambda;
+            cv2 = 2 * cIni(1) * kExch;
+            cv3 = cIni(2) * sqrt(v1);
+            
+            C1_ = 0.5 * (cv1 + cv2 + cv3) / v2;
+            C2_ = 0.5 * (-cv1 - cv2 + cv3) / v2;
             
             cTrend = nan(2, numel(t));
-            cTrend(1, :) = -(1/2) * (C1_ * exp((1/2 * ( - lambda - 2 * kExch + sqrt(lambda^2 + 4 * kExch^2))) * t) * lambda - C1_ * exp((1/2 * ( - lambda - 2 * kExch + sqrt(lambda^2 + 4 * kExch^2))) * t) * sqrt(lambda^2 + 4 * kExch^2) + C2_ * exp( - (1/2 * (lambda + 2 * kExch + sqrt(lambda^2 + 4 * kExch^2))) * t) * lambda + C2_ * exp( - (1/2 * (lambda + 2 * kExch + sqrt(lambda^2 + 4 * kExch^2))) * t) * sqrt(lambda^2 + 4 * kExch^2)) / kExch;
-            cTrend(2, :) = C1_ * exp((1/2 * ( - lambda - 2 * kExch + sqrt(lambda^2 + 4 * kExch^2))) * t) + C2_ * exp( - (1/2 * (lambda + 2 * kExch + sqrt(lambda^2 + 4 * kExch^2))) * t);
+            cTrend(1, :) = -0.5 / kExch * (...
+                C1_ * v4 * lambda - C1_ * v4 * v2 + ...
+                C2_ * v5 * lambda + C2_ * v5 * v2);
+            cTrend(2, :) = C1_ * v4 + C2_ * v5;
         end
     end
 end
