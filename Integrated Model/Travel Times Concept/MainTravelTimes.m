@@ -45,7 +45,7 @@ function MainTravelTimes
     % Initial mass of solute
     mIni = cIni * pv;
     
-%     TimeParams.maxDays = 30;
+    TimeParams.maxDays = 30;
     nT = TimeParams.maxDays * TimeParams.intervalsPerDay;
     t = t(1:nT);
     
@@ -109,6 +109,7 @@ function MainTravelTimes
     %% End error check
     
     % Validate
+    NO_VALIDATION = 0;
     SAVE_RESULTS = 1;
     COMPARE_RESULTS = 2;
     BASELINE_FILE_NAME = '../Data/baseline';
@@ -138,63 +139,8 @@ function MainTravelTimes
         end
     end
     
-    return
-    
-    
-    
     %% Plotting
-    figH = figure(1);
-    [axH, lH1, lH2] = plotyy(t, rainData(1:nT), t, sum(cRemaining(:, 1:nT), 1) / 2);
-    xlabel('time [days]');
-    set(get(axH(1), 'ylabel'), 'string', 'precipitation [m/hour]');
-    set(get(axH(2), 'ylabel'), 'string', 'emission potential [m^3/m^3]');
-    hgsave(sprintf('fig/oug_flux_c_rem_%d_days_lambda_%4.3f.fig', ...
-        ceil(nT / TimeParams.intervalsPerDay), lambda));
-%     print(figH, '-dpng', '-r0', sprintf('fig/oug_flux_c_rem_%d_days_lambda_%4.3f.png', ...
-%         ceil(nT / TimeParams.intervalsPerDay), lambda));
-
-    figH = figure(2);
-    figPos = [100, 100, 500, 250];
-    set(figH, 'Position', figPos);
-    plot(t, rainData(1:nT), 'b');
-    hold on;
-    plot(t, qOutTotal(1:nT), 'r');
-    hold off;
-    xlabel('time [days]');
-    ylabel('flux [m/hour]')
-    legend({'Precipitation', 'Leachate volume flux'}, 'Location', 'NorthEast');
-    hgsave(sprintf('fig/precip_leachate_flux_%d_days_lambda_%4.3f.fig', ...
-        ceil(nT / TimeParams.intervalsPerDay), lambda));
-%     print(figH, '-dpng', '-r0', sprintf('fig/precip_leachate_flux_%d_days_lambda_%4.3f.png', ...
-%         ceil(nT / TimeParams.intervalsPerDay), lambda));
-    
-    figH = figure(3);
-    figPos = [200, 200, 500, 300];
-    set(figH, 'Position', figPos);
-    [axH, lH1, lH2] = plotyy(t, qOutTotal(1:nT), t, mOutTotal(1:nT) ./ qOutTotal(1:nT));
-    legend({'Leachate volume flux', 'Leachate concentration'}, 'Location', 'NorthEast');
-    xlabel('time [days]');
-    set(get(axH(1), 'ylabel'), 'string', 'out flux [m/hour]');
-    set(get(axH(2), 'ylabel'), 'string', 'out concentration [m^3/m^3]');
-    hgsave(sprintf('fig/concentr_leachate_flux_%d_days_lambda_%4.3f.fig', ...
-        ceil(nT / TimeParams.intervalsPerDay), lambda));
-%     print(figH, '-dpng', '-r0', sprintf('fig/concentr_leachate_flux_%d_days_lambda_%4.3f.png', ...
-%         ceil(nT / TimeParams.intervalsPerDay), lambda));
-    
-    figH = figure(4);
-    figPos = [300, 300, 500, 300];
-    set(figH, 'Position', figPos);
-    plot(t, mOutTotal(1:nT) ./ qOutTotal(1:nT), 'r');
-    hold on;
-    plot(t, sum(cRemaining(:, 1:nT), 1) / 2);
-    hold off;
-    xlabel('time [days]');
-    ylabel('concentration [m^3/m^3]')
-    legend({'Leachate concentration', 'Emission potential'}, 'Location', 'SouthEast'); % 'SouthWest'
-    hgsave(sprintf('fig/concentr_c_rem_%d_days_lambda_%4.3f.fig', ...
-        ceil(nT / TimeParams.intervalsPerDay), lambda));
-%     print(figH, '-dpng', '-r0', sprintf('fig/concentr_c_rem_%d_days_lambda_%4.3f.png', ...
-%         ceil(nT / TimeParams.intervalsPerDay), lambda));
+    ShowPlots(qOutTotal, mOutTotal, cRemaining, rainData, lambda, TimeParams);
     
     return
     
