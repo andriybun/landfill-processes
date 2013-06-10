@@ -16,7 +16,6 @@ function MainTravelTimes
     PrecipitationData = load('precipitation');
     % Precipitation in meters per time interval dt
     rainData = 4 * PrecipitationData.rainData;
-%     rainData = 1e-2 * ones(size(rainData));
     TimeParams = PrecipitationData.TimeParams;
     
     % Time parameters
@@ -64,9 +63,9 @@ function MainTravelTimes
         % Calculate boundaries of log-normally distributed travel times (to save computational
         % resources we calculate only for those times, when something comes out of the drainage
         % system but not until the end of the period).
-        tBouds = LogNormalBounds(mu, sigma, NUM_SIGMAS);
+        tBounds = LogNormalBounds(mu, sigma, NUM_SIGMAS);
         % Select only those time steps that are affected by current injection
-        iCalcT = (tAfter <= tBouds(2));
+        iCalcT = (tAfter <= tBounds(2));
         nCalcT = sum(iCalcT);
         iTend = iT + nCalcT - 1;
         tAfter = tAfter(iCalcT);
@@ -123,7 +122,7 @@ function MainTravelTimes
 %     action = SAVE_RESULTS;
     action = COMPARE_RESULTS;
     if (action == SAVE_RESULTS)
-        save(BASELINE_FILE_NAME, 'cOutRes', 'mOutRes', 'cRemRes');
+        save(BASELINE_FILE_NAME, 'cOutRes', 'mOutRes', 'cRemRes', 'qOutTotal');
     elseif (action == COMPARE_RESULTS)
         BaselineRes = load(BASELINE_FILE_NAME);
         nEl = min(numel(cOutRes), numel(BaselineRes.cOutRes));
@@ -141,6 +140,18 @@ function MainTravelTimes
 %     %% Plotting
 %     ShowPlots(qOutTotal, mOutTotal, cRemaining, rainData, lambda, TimeParams);
     
+%     %% Compare with fourier transform
+%     lognpdfVec = lognpdf(t, mu, sigma) * dt;
+%     
+%     rainDataF = fft(rainData);
+%     lognpdfVecF = fft(lognpdfVec);
+%     
+%     qOutF = rainDataF .* lognpdfVecF;
+%     qOutIft = ifft(qOutF);
+% 
+%     plot(t, cat(1, qOutTotal, qOutIft));
+%     legend('Numerical integration', 'Fourier transform');
+
     return
     
     function cOut = OutConcentration(tau, cRemaining, kExch, lambda)
