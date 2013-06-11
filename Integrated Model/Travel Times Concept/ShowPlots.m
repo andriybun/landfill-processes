@@ -33,6 +33,7 @@ function ShowPlots(qOutTotal, mOutTotal, cRemaining, rainData, lambda, TimeParam
     LeachateConcentrationInfo.color = [1, 0.5, 0.15];
     
     %% Plot
+    close all;
     PlotYyWrapper(TInfo, PrecipInfo, EmissionPotentialInfo, 'NorthEast');
 
     figPos = [100, 100, 500, 250];
