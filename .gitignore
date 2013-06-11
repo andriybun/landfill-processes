@@ -9,4 +9,4 @@ try_*
 *.tif
 .~lock.*
 *.bak
-*.fig
+*.png
