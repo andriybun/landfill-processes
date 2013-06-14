@@ -2,6 +2,8 @@ function MainTravelTimes
     addpath('../../Common/');
     addpath('../Data/');
     
+    close all
+    
     % Tolerance
     EPSILON = 1e-10;
     NUM_SIGMAS = 6;
@@ -43,7 +45,7 @@ function MainTravelTimes
     % Initial mass of solute
     mIni = cIni * pv;
     
-%     TimeParams.maxDays = 30;
+%     TimeParams.maxDays = 20;
     nT = TimeParams.maxDays * TimeParams.intervalsPerDay;
     t = t(1:nT);
     
@@ -137,8 +139,8 @@ function MainTravelTimes
         end
     end
     
-%     %% Plotting
-%     ShowPlots(qOutTotal, mOutTotal, cRemaining, rainData, lambda, TimeParams);
+    %% Plotting
+    ShowPlots(qOutTotal, mOutTotal, cRemaining, rainData, lambda, TimeParams);
     
 %     %% Compare with fourier transform
 %     lognpdfVec = lognpdf(t, mu, sigma) * dt;
