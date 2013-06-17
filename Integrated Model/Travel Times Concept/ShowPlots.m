@@ -1,7 +1,12 @@
-function ShowPlots(qOutTotal, mOutTotal, emissionPotential, rainData, lambda, TimeParams)
+function ShowPlots(qOutTotal, mOutTotal, emissionPotential, rainData, lambda, TimeParams, tShow)
 
-    nT = TimeParams.maxDays * TimeParams.intervalsPerDay;
-    t = TimeParams.t(1:nT);
+    if nargin < 7
+        nT = TimeParams.maxDays * TimeParams.intervalsPerDay;
+        tShow = true(1, nT);
+        t = TimeParams.t(1:nT);
+    else
+        t = TimeParams.t(tShow);
+    end
 
     %% Prepare data structures to be plotted:
     TInfo = struct();
@@ -9,25 +14,26 @@ function ShowPlots(qOutTotal, mOutTotal, emissionPotential, rainData, lambda, Ti
     TInfo.axisLabel = 'time [days]';
     
     PrecipInfo = struct();
-    PrecipInfo.data = rainData(1:nT);
+    PrecipInfo.data = rainData(tShow);
     PrecipInfo.name = 'Precipitation';
     PrecipInfo.axisLabel = 'precipitation [m/hour]';
     PrecipInfo.color = [0.4, 0.7, 1];
     
     EmissionPotentialInfo = struct();
-    EmissionPotentialInfo.data = emissionPotential;
+    EmissionPotentialInfo.data = emissionPotential(tShow);
     EmissionPotentialInfo.name = 'Emission potential';
     EmissionPotentialInfo.axisLabel = 'concentration [m^3/m^3]';
     EmissionPotentialInfo.color = [0.4, 0.4, 0.4];
     
     LeachateFluxInfo = struct();
-    LeachateFluxInfo.data = qOutTotal(1:nT);
+    LeachateFluxInfo.data = qOutTotal(tShow);
     LeachateFluxInfo.name = 'Leachate volume flux';
     LeachateFluxInfo.axisLabel = 'out flux [m/hour]';
     LeachateFluxInfo.color = [0.55, 0.25, 0.08];
     
     LeachateConcentrationInfo = struct();
-    LeachateConcentrationInfo.data = mOutTotal(1:nT) ./ qOutTotal(1:nT);
+    LeachateConcentrationInfo.data = mOutTotal(tShow) ./ qOutTotal(tShow);
+    LeachateConcentrationInfo.data(qOutTotal(tShow) == 0) = 0;
     LeachateConcentrationInfo.name = 'Leachate concentration';
     LeachateConcentrationInfo.axisLabel = 'concentration [m^3/m^3]';
     LeachateConcentrationInfo.color = [1, 0.5, 0.15];
