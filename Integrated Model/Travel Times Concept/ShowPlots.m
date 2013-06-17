@@ -1,4 +1,4 @@
-function ShowPlots(qOutTotal, mOutTotal, cRemaining, rainData, lambda, TimeParams)
+function ShowPlots(qOutTotal, mOutTotal, emissionPotential, rainData, lambda, TimeParams)
 
     nT = TimeParams.maxDays * TimeParams.intervalsPerDay;
     t = TimeParams.t(1:nT);
@@ -15,7 +15,7 @@ function ShowPlots(qOutTotal, mOutTotal, cRemaining, rainData, lambda, TimeParam
     PrecipInfo.color = [0.4, 0.7, 1];
     
     EmissionPotentialInfo = struct();
-    EmissionPotentialInfo.data = sum(cRemaining(:, 1:nT), 1) / 2;
+    EmissionPotentialInfo.data = emissionPotential;
     EmissionPotentialInfo.name = 'Emission potential';
     EmissionPotentialInfo.axisLabel = 'concentration [m^3/m^3]';
     EmissionPotentialInfo.color = [0.4, 0.4, 0.4];

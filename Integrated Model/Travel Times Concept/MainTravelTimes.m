@@ -1,8 +1,8 @@
 function MainTravelTimes
+    close all
+
     addpath('../../Common/');
     addpath('../Data/');
-    
-    close all
     
     % Tolerance
     EPSILON = 1e-10;
@@ -17,8 +17,14 @@ function MainTravelTimes
     % Load: rainData, TimeParams, StartDate
     PrecipitationData = load('precipitation');
     % Precipitation in meters per time interval dt
-    rainData = 4 * PrecipitationData.rainData;
+    rainData = PrecipitationData.rainData;
     TimeParams = PrecipitationData.TimeParams;
+    
+%     rainData = repmat(rainData, [1, 2]);
+%     TimeParams.maxDays = TimeParams.maxDays * 2;
+%     TimeParams.numIntervals = TimeParams.maxDays * TimeParams.intervalsPerDay;
+%     TimeParams.t = 0:TimeParams.dt:TimeParams.maxDays - EPSILON;
+%     TimeParams.daysElapsed = TimeParams.t;
     
     % Time parameters
     tEnd = TimeParams.t(end);   % 100;
@@ -32,27 +38,29 @@ function MainTravelTimes
     % Other geometrical
     zLength = abs(ModelDim.zin(1) - ModelDim.zin(end));
     % Pore volume
-    theta = 0.4;
-    pv = zLength * theta;
+    theta = [0.4; 0.4];
+    pv = zLength .* theta;
     
     % Decay rate
-    lambda = 1e-2;
+    lambda = 0 * 1e-5;
     % Exchange rate between mobile-immobile phases
-    kExch = 1e-0;
+    kExch = 1e-2;
     
     % Initial concentration (immobile, mobile phases)
     cIni = [1; 0];
     % Initial mass of solute
-    mIni = cIni * pv;
+    mIni = cIni .* pv;
     
-%     TimeParams.maxDays = 20;
+%     TimeParams.maxDays = 30;
     nT = TimeParams.maxDays * TimeParams.intervalsPerDay;
     t = t(1:nT);
     
     qOutTotal = zeros(1, nT);
     mOutTotal = zeros(1, nT);
-    cRemaining = zeros(2, nT + 1);
+    cRemaining = nan(2, nT + 1);
     cRemaining(:, 1) = cIni;
+    mRemaining = nan(2, nT + 1);
+    mRemaining(:, 1) = mIni;
     
 %     profile on
     tic
@@ -72,26 +80,54 @@ function MainTravelTimes
         iTend = iT + nCalcT - 1;
         tAfter = tAfter(iCalcT);
         
+        % Add fresh rainwater to the system. Change volume of liquid and revise concentration in
+        % mobile phase
+        pvMobUpd = pv(2) + rainData(iT);
+        cRemaining(2, iT) = cRemaining(2, iT) * pv(2) / pvMobUpd;
+        pv(2) = pvMobUpd;
+        % Initial masses of solute(s) available in the system
+        mStepIni = cRemaining(:, iT) .* pv;
+        
         % Every input impulse of water will cause (log-normal) response at the outlet. All the
         % outflow during a given time step is considered as a particle with unique travel time.
         qOutAfter = rainData(iT) * lognpdf(tAfter, mu, sigma) * dt;
         % We integrate volumes of all the particles flowing out at the same time intervals to 
         % obtain Leachate volume flux.
         qOutTotal(iT:iTend) = qOutTotal(iT:iTend) + qOutAfter;
-        % The longer particle resides inside the landfill, the bigger oncentrations of solutes
-        % will be.
-        cOutAfter = OutConcentration(tAfter, cRemaining(:, iT), kExch, lambda);
-        
-        % Calculate the remaining mass of solute
-        mRemaining = cOutAfter(:, 1) * pv;
+        % Exchange equation is solved with respect to masses of solutes, since volumes of different
+        % phases differ. Thus different volumes will have different effect on exchange
+        mOutAfter = OutConcentration([tAfter(1), tAfter(1) + dt], mStepIni, kExch, lambda);
+        % Convert obtained masses of solutes after exchange to concentrations
+        cOutAfter = mOutAfter ./ repmat(pv, [1, 2]);
+        % Save the remaining mass of solute to output vector
+        mRemaining(:, iT + 1) = mOutAfter(:, 2);
         % We integrate masses of solutes in all particles.
-        mOutTotal(iT:iTend) = mOutTotal(iT:iTend) + qOutAfter .* cOutAfter(2, :);
-        mRemaining(2) = mRemaining(2) - mOutTotal(iT);
+        diffConst = 1e-0;
+        % Particles of fresh water also exchange with the surrounding environment and tend to
+        % increase content of solute. The longer particle resides in mobile phase and exchanges with
+        % it, the higher concentration at outlet will be
+        cPart = cOutAfter(2, 2) * (1 - exp(-diffConst * tAfter));
+        mOutTotal(iT:iTend) = mOutTotal(iT:iTend) + qOutAfter .* cPart;
+        % Withdraw solute leaving together with leachate and compute remaining masses of solutes in 
+        % both phases
+        mRemaining(2, iT + 1) = mRemaining(2, iT + 1) - mOutTotal(iT);
+
+        % Remove volume of drained leachate from the volume of liquid in the system.
+        pv(2) = pv(2) - qOutTotal(iT);
         
         % Calculate the remaining concentrations
-        cRemaining(:, iT + 1) = mRemaining / pv;
+        cRemaining(:, iT + 1) = mRemaining(:, iT + 1) ./ pv;
         
-        if mod(iT, 87) == 0
+        % Some checks
+        if any(cRemaining(:, iT + 1) < 0)
+            error('iT = %d: Concentration is negative.', iT);
+        end
+        if any(cRemaining(:, iT + 1) > 1)
+            error('iT = %d: Concentration is too high.', iT);
+        end
+        
+        % Output progress
+        if mod(iT, 1000) == 0
             fprintf('%5.3f%% complete\n', iT / nT * 100);
         end
     end
@@ -101,7 +137,7 @@ function MainTravelTimes
 %     profile viewer
     
     %% Error check
-    mEnd = cRemaining(:, end) * pv;
+    mEnd = cRemaining(:, end) .* pv;
     if ~RealEq(sum(mIni) - sum(mOutTotal), sum(mEnd), EPSILON)
         warning('ResultCheck:MassBalanceError', 'Absolute error is too high: err = %3.2e', ...
             abs(abs(sum(mIni) - sum(mOutTotal) - sum(mEnd))));
@@ -120,9 +156,10 @@ function MainTravelTimes
     cOutRes = mOutTotal(1:nT) ./ qOutTotal(1:nT);
     mOutRes = mOutTotal(1:nT);
     cRemRes = sum(cRemaining(:, 1:nT));
+    emissionPotential = sum(mRemaining(:, 1:nT), 1);
     
-%     action = SAVE_RESULTS;
-    action = COMPARE_RESULTS;
+    action = SAVE_RESULTS;
+%     action = COMPARE_RESULTS;
     if (action == SAVE_RESULTS)
         save(BASELINE_FILE_NAME, 'cOutRes', 'mOutRes', 'cRemRes', 'qOutTotal');
     elseif (action == COMPARE_RESULTS)
@@ -140,7 +177,7 @@ function MainTravelTimes
     end
     
     %% Plotting
-    ShowPlots(qOutTotal, mOutTotal, cRemaining, rainData, lambda, TimeParams);
+    ShowPlots(qOutTotal, mOutTotal, emissionPotential, rainData, lambda, TimeParams);
     
 %     %% Compare with fourier transform
 %     lognpdfVec = lognpdf(t, mu, sigma) * dt;
