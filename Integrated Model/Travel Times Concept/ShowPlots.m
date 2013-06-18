@@ -65,6 +65,7 @@ function ShowPlots(qOutTotal, mOutTotal, emissionPotential, rainData, lambda, Ti
         xlabel(X.axisLabel);
         set(get(axH(1), 'ylabel'), 'string', Var1.axisLabel);
         set(get(axH(2), 'ylabel'), 'string', Var2.axisLabel);
+        set(axH, {'ycolor'}, {Var1.color; Var2.color});
         if isfield(Var1, 'color')
             set(lH1, 'color', Var1.color);
         end
