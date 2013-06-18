@@ -40,17 +40,17 @@ function ShowPlots(qOutTotal, mOutTotal, emissionPotential, rainData, lambda, Ti
     
     %% Plot
     close all;
-    PlotYyWrapper(TInfo, PrecipInfo, EmissionPotentialInfo, 'NorthEast');
-
-    figPos = [100, 100, 500, 250];
-    PlotDoubleWrapper(TInfo, PrecipInfo, LeachateFluxInfo, 'NorthEast', figPos);
+%     PlotYyWrapper(TInfo, PrecipInfo, EmissionPotentialInfo, 'NorthEast');
+% 
+%     figPos = [100, 100, 500, 250];
+%     PlotDoubleWrapper(TInfo, PrecipInfo, LeachateFluxInfo, 'NorthEast', figPos);
     
     figPos = [200, 200, 500, 300];
     PlotYyWrapper(TInfo, LeachateFluxInfo, LeachateConcentrationInfo, 'NorthEast', figPos);
     
-    figPos = [300, 300, 500, 300];
-    PlotDoubleWrapper(TInfo, LeachateConcentrationInfo, EmissionPotentialInfo, ...
-        'NorthEast', figPos);
+%     figPos = [300, 300, 500, 300];
+%     PlotYyWrapper(TInfo, LeachateConcentrationInfo, EmissionPotentialInfo, ...
+%         'NorthEast', figPos);
 
     return
     
