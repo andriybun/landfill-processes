@@ -22,7 +22,7 @@ function ShowPlots(qOutTotal, mOutTotal, emissionPotential, rainData, lambda, Ti
     EmissionPotentialInfo = struct();
     EmissionPotentialInfo.data = emissionPotential(tShow);
     EmissionPotentialInfo.name = 'Emission potential';
-    EmissionPotentialInfo.axisLabel = 'concentration [m^3/m^3]';
+    EmissionPotentialInfo.axisLabel = 'emission potential m^3]';
     EmissionPotentialInfo.color = [0.4, 0.4, 0.4];
     
     LeachateFluxInfo = struct();
@@ -63,9 +63,9 @@ function ShowPlots(qOutTotal, mOutTotal, emissionPotential, rainData, lambda, Ti
         [axH, lH1, lH2] = plotyy(X.data, Var1.data, X.data, Var2.data);
         legend({Var1.name, Var2.name}, 'Location', legendLocation);
         xlabel(X.axisLabel);
+        set(axH, {'ycolor'}, {Var1.color; Var2.color});
         set(get(axH(1), 'ylabel'), 'string', Var1.axisLabel);
         set(get(axH(2), 'ylabel'), 'string', Var2.axisLabel);
-        set(axH, {'ycolor'}, {Var1.color; Var2.color});
         if isfield(Var1, 'color')
             set(lH1, 'color', Var1.color);
         end
