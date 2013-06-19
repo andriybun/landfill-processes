@@ -1,4 +1,8 @@
 function MainTravelTimes
+%% TODO: non-zero concentrations of input particles
+%% TODO: multi cell
+%% TODO: 
+
     close all
 
     addpath('../../Common/');
