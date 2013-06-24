@@ -234,9 +234,23 @@ name "fig:In-vs-Out-Flux"
 
 \end_layout
 
+\begin_layout Subsection
+Using travel times to simulate concentrations
+\end_layout
+
 \begin_layout Standard
-Our speculation is that leachate discharge rates and concentrations of compounds
- in it are highly related to each other (e.g.
+While flowing through the stream tube water may be present in two phases:
+ mobile and immobile.
+ Mobile water flows through the stream tube and exchanges with immobile
+ water.
+ Immobile water directly interacts with the waste present in solid phase
+ and participates in bio-geochemical processes.
+ Products of these reactions in the immobile water exchange with the mobile
+ water.
+ Mobile water flows into the drainage system and eventually forms leachate.
+ We assume that leachate discharge rates and leachate concentrations are
+ highly correlated due to dominant effect of dilution in the mobile water
+ because rainwater has low dissolved concentrations (e.g.
  
 \begin_inset CommandInset citation
 LatexCommand cite
@@ -245,13 +259,12 @@ key "Laner2011"
 \end_inset
 
 ).
- In addition, because rainfall is assumed to be clean, leachate quality
- is related to concentrations of compounds present inside the waste body
- 
+ Therefore, leachate quality will be controlled by the concentrations of
+ compounds present inside the waste body 
 \begin_inset Formula $c_{rem}\left(t\right)$
 \end_inset
 
-: 
+ and the time available for interaction with the waste body:
 \end_layout
 
 \begin_layout Standard
