@@ -62,7 +62,7 @@ function MainTravelTimes
     % Initial mass of solute
     mIni = cIni .* pv;
     
-    TimeParams.maxDays = 30;
+%     TimeParams.maxDays = 30;
     nT = TimeParams.maxDays * TimeParams.intervalsPerDay;
     t = t(1:nT);
     
@@ -132,13 +132,13 @@ function MainTravelTimes
         % Calculate the remaining concentrations
         cRemaining(:, iT + 1) = mRemaining(:, iT + 1) ./ pv;
         
-%         % Some checks
-%         if any(cRemaining(:, iT + 1) < 0)
-%             error('iT = %d: Concentration is negative.', iT);
-%         end
-%         if any(cRemaining(:, iT + 1) > 1)
-%             error('iT = %d: Concentration is too high.', iT);
-%         end
+        % Some checks
+        if any(cRemaining(:, iT + 1) < 0)
+            error('iT = %d: Concentration is negative.', iT);
+        end
+        if any(cRemaining(:, iT + 1) > 1)
+            error('iT = %d: Concentration is too high.', iT);
+        end
         
         % Output progress
         if mod(iT, 1000) == 0
