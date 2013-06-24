@@ -2,6 +2,7 @@
 Results/
 .directory
 *.*~
+#*#
 *.asv
 try_*
 *.mat

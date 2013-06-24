@@ -1,7 +1,9 @@
 function MainTravelTimes
 %% TODO: non-zero concentrations of input particles
 %% TODO: multi cell
-%% TODO: 
+%% TODO: concentration shouldn't drop to zero?
+%% TODO: water must flow even if no rain (two domain?)
+%%
 
     close all
 
@@ -56,11 +58,11 @@ function MainTravelTimes
     diffConst = 7e-1;
     
     % Initial concentration (immobile, mobile phases)
-    cIni = [1; 0];
+    cIni = [1; 1];
     % Initial mass of solute
     mIni = cIni .* pv;
     
-%     TimeParams.maxDays = 30;
+    TimeParams.maxDays = 30;
     nT = TimeParams.maxDays * TimeParams.intervalsPerDay;
     t = t(1:nT);
     
@@ -95,27 +97,19 @@ function MainTravelTimes
             pvMobUpd = pv(2) + rainData(iT);
             cRemaining(2, iT) = cRemaining(2, iT) * pv(2) / pvMobUpd;
             pv(2) = pvMobUpd;
-            
             % Every input impulse of water will cause (log-normal) response at the outlet. All the
-            % outflow during a given time step is considered as a particle with unique travel time.
+            % outflow during a given time step is considered as a particle with unique travel time
             qOutAfter = rainData(iT) * lognpdf(tAfter, mu, sigma) * dt;
             % We integrate volumes of all the particles flowing out at the same time intervals to
             % obtain Leachate volume flux.
             qOutTotal(iT:iTend) = qOutTotal(iT:iTend) + qOutAfter;
         end
         
-%         % Initial masses of solute(s) available in the system
-%         mStepIni = cRemaining(:, iT) .* pv;
-%         % Exchange equation is solved with respect to masses of solutes, since volumes of different
-%         % phases differ. Thus different volumes will have different effect on exchange
-        cOutAfter = OutConcentration([tAfter(1), tAfter(1) + dt], cRemaining(:, iT), kExch, lambda, pv);
-%         cOutAfter' * pv
-%         plot(cOutAfter');
-%         mOutAfter = OutConcentration([tAfter(1), tAfter(1) + dt], mStepIni, kExch, lambda);
-%         % Convert obtained masses of solutes after exchange to concentrations
-%         cOutAfter = mOutAfter ./ [pv, pv];
-%         % Save the remaining mass of solute to output vector
-%         mRemaining(:, iT + 1) = mOutAfter(:, 2);
+        % Solve exchange equation in order to obtain concentrations in both phases at the end of
+        % current time step. Different volumes will have different effect on exchange here
+        cOutAfter = OutConcentration(...
+            [tAfter(1), tAfter(1) + dt], cRemaining(:, iT), kExch, lambda, pv);
+        % Save the remaining mass of solute to output vector
         mRemaining(:, iT + 1) = cOutAfter(:, 2) .* pv;
         
         if RealGt(rainData(iT), 0, EPSILON)

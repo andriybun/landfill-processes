@@ -1,0 +1,462 @@
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
+\begin_document
+\begin_header
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_amsmath 1
+\use_esint 1
+\use_mhchem 1
+\use_mathdots 1
+\cite_engine basic
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+INVERSE MODELLING OF LANDFILL PROCESSES: ESTIMATING EMISSION POTENTIAL
+\end_layout
+
+\begin_layout Author
+A.
+ Bun*, T.
+ Heimovaara*, S.
+ Baviskar*
+\end_layout
+
+\begin_layout Address
+*Geoscience & Engineering Department, Faculty of CiTG, Delft University
+ of Technology, Stevinweg 1, 2628CN, Delft, Netherlands
+\end_layout
+
+\begin_layout Section
+Introduction
+\end_layout
+
+\begin_layout Standard
+Municipal solid waste landfills are very complex and heterogeneous systems
+ containing a heterogeneous mixture of a wide range of materials.
+ A number of processes of different nature occur within landfills.
+ Bio-geochemical processes in a landfill body lead to the development of
+ landfill gases.
+ Water flow through the landfill is the main driving force for leachate
+ generation.
+ This induces loss of matter via leachate and gas generation as a result
+ new pores become available for water flow and settlements take place.
+\end_layout
+
+\begin_layout Standard
+A transport function approach in combination with travel times is used in
+ this study to simulate dynamics of quantity and quality of leachate draining
+ into the drainage system of the landfill.
+ Our research aims to estimate the remaining emission potential of the landfill
+ under different landfill management scenarios using the data observed from
+ these dynamics.
+\end_layout
+
+\begin_layout Section
+Methodology
+\end_layout
+
+\begin_layout Subsection
+Transport function approach
+\end_layout
+
+\begin_layout Standard
+It is virtually impossible to observe processes within full scale landfills
+ in high detail because of difficulties in accessing the waste body.
+ Easily obtainable information is the amount of water from rainfall, irrigation
+ and recirculation infiltrating in to the waste body, 
+\begin_inset Formula $q_{in}\left(t\right)$
+\end_inset
+
+, and the amount and quality of leachate pumped out of the drainage system,
+ 
+\begin_inset Formula $q_{out}\left(t\right)$
+\end_inset
+
+ and 
+\begin_inset Formula $c_{out}\left(t\right)$
+\end_inset
+
+ respectively.
+ The challenge we face is to use this information to obtain a quantitative
+ estimate of the concentrations of compounds of interest within the waste
+ body.
+\end_layout
+
+\begin_layout Standard
+We assume that every single injection at the inlet of the landfill will
+ cause log-normally distributed response at the outlet.
+ In order to calculate final outflux we integrate all the responses to injection
+s that happened in the past:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+q_{out}\left(t\right)=\int_{0}^{t}q_{in}\left(t-\tau\right)\cdot f\left(\tau\right)d\tau,\label{eq:Q_out}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+where 
+\begin_inset Formula $f\left(\tau\right)$
+\end_inset
+
+ is a log-normal probability density function (PDF).
+ In this equation, the leachate volume flux 
+\begin_inset Formula $q_{out}\left(t\right)$
+\end_inset
+
+ leaving the landfill at time 
+\begin_inset Formula $t$
+\end_inset
+
+, is considered to consist of water that entered the waste body at earlier
+ times 
+\begin_inset Formula $\left(t-\tau\right)$
+\end_inset
+
+ multiplied by the probability 
+\begin_inset Formula $f\left(\tau\right)\cdot d\tau$
+\end_inset
+
+ of water in the landfill having a travel time.
+ Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:In-vs-Out-Flux"
+
+\end_inset
+
+ illustrates an example of application of this concept for a set of arbitrary
+ parameters.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename fig/in_out_flux_1440.tif
+	scale 70
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Simulation of outflux using transport function approach (eq.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:Q_out"
+
+\end_inset
+
+).
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:In-vs-Out-Flux"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Our speculation is that leachate discharge rates and concentrations of compounds
+ in it are highly related to each other (e.g.
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Laner2011"
+
+\end_inset
+
+).
+ In addition, because rainfall is assumed to be clean, leachate quality
+ is related to concentrations of compounds present inside the waste body
+ 
+\begin_inset Formula $c_{rem}\left(t\right)$
+\end_inset
+
+: 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+c_{out}\left(t\right)=F\left(q_{out}\left(t\right),c_{rem}\left(t\right)\right).
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+All water entering the landfill will flow through the waste body according
+ to the water flow PDF which is related to travel time (or residence time)
+ according to a given distribution 
+\begin_inset Formula $f\left(\tau\right)$
+\end_inset
+
+ from 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:Q_out"
+
+\end_inset
+
+.
+ During its residence inside the waste body, compounds dissolved in the
+ water participate in bio-geochemical reactions leading to changes in the
+ dissolved species.
+ When the water reaches the drainage layer this water will become leachate.
+\end_layout
+
+\begin_layout Standard
+To illustrate the approach we adopt a simple approach where we implement
+ a scenario where all mass is present in solution, we assume that all mobile
+ water in a streamline is well mixed, exchange between the mobile and the
+ immobile water is driven by the concentration gradient and that the dissolved
+ compounds undergo a first order degradation in the immobile water.
+ The concentrations in mobile and immobile water 
+\begin_inset Formula $c_{m}$
+\end_inset
+
+and 
+\begin_inset Formula $c_{im}$
+\end_inset
+
+ are described by the following set of coupled equations:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align}
+\frac{\partial c_{m}\left(\tau\right)}{\partial\tau} & =-v_{m}\cdot k_{ex}\cdot\left(c_{m}\left(\tau\right)-c_{im}\left(\tau\right)\right);\nonumber \\
+\frac{\partial c_{im}\left(\tau\right)}{\partial\tau} & =v_{im}\cdot k_{ex}\cdot\left(c_{m}\left(\tau\right)-c_{im}\left(\tau\right)\right)-\lambda\cdot c_{im}\left(\tau\right).\label{eq:c_out_exchange_decay}
+\end{align}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Here 
+\begin_inset Formula $\lambda$
+\end_inset
+
+ is a parameter describing the rate of decay and 
+\begin_inset Formula $k_{ex}$
+\end_inset
+
+ the rate of exchange between the immobile and mobile water, 
+\begin_inset Formula $v_{m}$
+\end_inset
+
+ and 
+\begin_inset Formula $v_{im}$
+\end_inset
+
+ are the volumes of liquid in mobile and immobile phases respectively.
+ The concentration at the outlet at time t is then calculated as:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+c\left(t\right)=\frac{m_{out}\left(t\right)}{q_{out}\left(t\right)},
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+where 
+\begin_inset Formula $m_{out}\left(t\right)$
+\end_inset
+
+ is a sum of all individual masses of solutes contained in particles leaving
+ the waste body at current time step:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+m_{out}\left(t\right)=\int_{0}^{t}c_{out}\left(t,\,\tau\right)\cdot q_{in}\left(t-\tau\right)\cdot f\left(\tau\right)\, d\tau.
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+and 
+\begin_inset Formula $c_{out}\left(t,\,\tau\right)$
+\end_inset
+
+ is a solution of the system of ODE’s 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:c_out_exchange_decay"
+
+\end_inset
+
+ solved with initial conditions 
+\begin_inset Formula $c_{m}\left(0\right)=c_{rem,m}\left(t-\tau\right)$
+\end_inset
+
+ and 
+\begin_inset Formula $c_{m}\left(0\right)=c_{rem,imm}\left(t-\tau\right)$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Section
+Experiments
+\end_layout
+
+\begin_layout Standard
+In order to verify the approach we model leaching in laboratory scale experiment
+s in a 2D set-up containing a mixture of sand and salt with randomly placed
+ impermeable plastic barriers.
+ Fresh water is supplied at known (varying) infiltration fluxes, discharge
+ rates as well as electrical conductivity are measured in the drainage tube
+ of the system.
+ Using these data we will aim to estimate the development of the salt mass
+ present in the landfill during the experiments.
+ A modification of marker-in-cell method 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Gerya2009"
+
+\end_inset
+
+ and finite cell method 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Sun1999"
+
+\end_inset
+
+ is used for simulations.
+\end_layout
+
+\begin_layout Standard
+These experiments will also provide us with shapes of response functions
+ to individual injections.
+ Such shapes are intended to eventually replace log-normal distribution
+ PDF used in a current study.
+\end_layout
+
+\begin_layout Standard
+The research is carried out on modeling bio-geochemical processes in the
+ landfills using a set of minimum required parameters.
+ This model will eventually replace exponential decay model used before.
+ 
+\end_layout
+
+\begin_layout Standard
+This approach will be applied to data obtained from three full-scale landfills
+ in the Netherlands.
+\end_layout
+
+\begin_layout Section
+Summary
+\end_layout
+
+\begin_layout Standard
+Text
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset bibtex
+LatexCommand bibtex
+bibfiles "References,References 2"
+options "plain"
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document
