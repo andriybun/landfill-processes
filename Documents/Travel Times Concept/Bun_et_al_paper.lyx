@@ -378,6 +378,17 @@ m_{out}\left(t\right)=\int_{0}^{t}c_{out}\left(t,\,\tau\right)\cdot q_{in}\left(
 \end_inset
 
 
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+Update description here.
+ Concept has changed.
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
