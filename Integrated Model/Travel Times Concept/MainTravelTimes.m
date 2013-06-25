@@ -1,8 +1,8 @@
 function MainTravelTimes
-%% TODO: non-zero concentrations of input particles
 %% TODO: multi cell
 %% TODO: concentration shouldn't drop to zero?
 %% TODO: water must flow even if no rain (two domain?)
+%% TODO: mass balance if lambda ~= 0
 %%
 
     close all
@@ -24,16 +24,11 @@ function MainTravelTimes
     PrecipitationData = load('precipitation');
     % Precipitation in meters per time interval dt
     rainData = PrecipitationData.rainData;
+    rainConcentrationData = 0 * ones(size(rainData));
     TimeParams = PrecipitationData.TimeParams;
 %     rainData = 0 * rainData;
 %     rainData(1:2) = 1e-3;
 %     rainData(91:92) = 1e-3;
-    
-%     rainData = repmat(rainData, [1, 2]);
-%     TimeParams.maxDays = TimeParams.maxDays * 2;
-%     TimeParams.numIntervals = TimeParams.maxDays * TimeParams.intervalsPerDay;
-%     TimeParams.t = 0:TimeParams.dt:TimeParams.maxDays - EPSILON;
-%     TimeParams.daysElapsed = TimeParams.t;
     
     % Time parameters
     tEnd = TimeParams.t(end);   % 100;
@@ -51,11 +46,11 @@ function MainTravelTimes
     pv = zLength .* theta;
     
     % Source/sink rate
-    lambda = 0 * 1e-4;
+    lambda = 0*1e-4;
     % Exchange rate between mobile-immobile phases
     kExch = 1e-2;
-    % Diffusion constant for particles
-    diffConst = 7e-1;
+    % Exchange rate between mobile phase and particles flowing
+    kExchPart = 5e-1;
     
     % Initial concentration (immobile, mobile phases)
     cIni = [1; 1];
@@ -92,10 +87,11 @@ function MainTravelTimes
         tAfter = tAfter(iCalcT);
         
         if RealGt(rainData(iT), 0, EPSILON)
-            % Add fresh rainwater to the system. Change volume of liquid and revise concentration
-            % in mobile phase
+            % Add (fresh) rainwater to the system. Change volume of liquid and revise mass and
+            % concentration of solute in mobile phase
             pvMobUpd = pv(2) + rainData(iT);
-            cRemaining(2, iT) = cRemaining(2, iT) * pv(2) / pvMobUpd;
+            mRemaining(2, iT) = mRemaining(2, iT) + rainData(iT) * rainConcentrationData(iT);
+            cRemaining(2, iT) = mRemaining(2, iT) / pvMobUpd;
             pv(2) = pvMobUpd;
             % Every input impulse of water will cause (log-normal) response at the outlet. All the
             % outflow during a given time step is considered as a particle with unique travel time
@@ -107,7 +103,7 @@ function MainTravelTimes
         
         % Solve exchange equation in order to obtain concentrations in both phases at the end of
         % current time step. Different volumes will have different effect on exchange here
-        cOutAfter = OutConcentration(...
+        cOutAfter = ConcentrationExchangePhases(...
             [tAfter(1), tAfter(1) + dt], cRemaining(:, iT), kExch, lambda, pv);
         % Save the remaining mass of solute to output vector
         mRemaining(:, iT + 1) = cOutAfter(:, 2) .* pv;
@@ -117,10 +113,10 @@ function MainTravelTimes
             % Particles of fresh water also exchange with the surrounding environment and tend to
             % increase content of solute. The longer particle resides in mobile phase and exchanges 
             % with it, the higher concentration at outlet will be
-%             cPart = cOutAfter(2, 2) * (1 - exp(-diffConst * tAfter));
-            a = 3e+0;
-            b = 3e+0;
-            cPart = cOutAfter(2, 2) * exp(-a ./ (tAfter .^ b));
+            cPartIni = [cOutAfter(2, 1); rainConcentrationData(iT)];
+            pvPart = [pv(2); rainData(iT)];
+            cPart = ConcentrationExchangePart(tAfter, cPartIni, kExchPart, lambda, pvPart);
+%             plotyy(tAfter, qOutAfter .* cPart, tAfter, cPart);
             mOutTotal(iT:iTend) = mOutTotal(iT:iTend) + qOutAfter .* cPart;
         end
         
@@ -133,10 +129,10 @@ function MainTravelTimes
         cRemaining(:, iT + 1) = mRemaining(:, iT + 1) ./ pv;
         
         % Some checks
-        if any(cRemaining(:, iT + 1) < 0)
+        if any(RealLt(cRemaining(:, iT + 1), 0, EPSILON))
             error('iT = %d: Concentration is negative.', iT);
         end
-        if any(cRemaining(:, iT + 1) > 1)
+        if any(RealGt(cRemaining(:, iT + 1), 1, EPSILON))
             error('iT = %d: Concentration is too high.', iT);
         end
         
@@ -214,54 +210,59 @@ function MainTravelTimes
 
     return
     
-    function cOut = OutConcentration(tau, cRemaining, kExch, lambda, pv)
+    function cOut = ConcentrationExchangePhases(tau, cIniX, kExchX, lambda, pv)
         if (tau(1) == tau(end))
-            cOut = cRemaining;
+            cOut = cIniX;
         else
-            cOutAn = Concentration(tau, cRemaining, kExch, lambda, pv);
+            cOutAn = Concentration(tau, cIniX, kExchX, lambda, pv);
             cOut = cOutAn;
         end
         
         return
         
-        function cTrend = Concentration(t, cIni, kExch, lambda, pv)
+        function cTrend = Concentration(t, cIniX, kExchX, lambda, pv)
             vRatioIm = pv(2) / (pv(1) + pv(2));
             vRatioM = pv(1) / (pv(1) + pv(2));
             
-            v01 = vRatioIm .* kExch;
-            v02 = vRatioM .* kExch;
-            v03 = v02 + v01 + lambda;
+            v01 = vRatioIm .* kExchX;
+            v02 = vRatioM .* kExchX;
+            v03 = v01 + v02 + lambda;
+            v04 = cIniX(2) .* (v01 - v02 + lambda);
             
-            v1 = v02 .^ 2;
-            v2 = 2 .* v01 .* v02;
-            v3 = 2 .* v02 .* lambda;
-            v4 = v01 .^ 2;
-            v5 = 2 .* v01 .* lambda;
-            v6 = sqrt(v1 + v2 - v3 + v4 + v5 + lambda .^ 2);
-            v7 = -0.5 .* (v01 + v02 + lambda);
-            v8 = v7 + 0.5 .* v6;
-            v9 = v7 - 0.5 .* v6;
+            v6 = sqrt((v01 + v02) .^ 2 - lambda .* (2 .* (v01 + v02) + lambda));
+            v8 = -0.5 .* (v03 - v6);
+            v9 = -0.5 .* (v03 + v6);
             v11 = exp(v8 .* t);
             v12 = exp(v9 .* t);
             
             C1_ = 0.5 .* (...
-                cIni(2) .* v6 + ...
-                2 .* cIni(1) .* v02 - ...
-                cIni(2) .* v02 + ...
-                cIni(2) .* v01 + ...
-                cIni(2) .* lambda) ./ v6;
+                cIniX(2) .* v6 + ...
+                2 .* cIniX(1) .* v02 + ...
+                v04) ./ v6;
             C2_ = 0.5 .* (...
-                - 2 .* cIni(1) .* v02 + ...
-                cIni(2) .* v02 - ...
-                cIni(2) .* v01 - ...
-                cIni(2) .* lambda + cIni(2) .* v6) ./ v6;
+                cIniX(2) .* v6 - ...
+                2 .* cIniX(1) .* v02 - ...
+                v04) ./ v6;
             
             cTrend = nan(2, numel(t));
-            cTrend(1, :) = ...
-                (C1_ .* v8 .* v11 + C2_ .* v9 .* v12 + v02 .* (C1_ .* v11 + C2_ .* v12)) ./ v02;
             cTrend(2, :) = ...
-                C1_ .* exp((0.5 .* (-v03 + v6)) .* t) + ...
-                C2_ .* exp(-(0.5 .* (v03 + v6)) .* t);
+                C1_ .* v11 + ...
+                C2_ .* v12;
+            cTrend(1, :) = ...
+                cTrend(2, :) + ...
+                (C1_ .* v8 .* v11 + C2_ .* v9 .* v12) ./ v02;
         end
+    end
+
+    function cPart = ConcentrationExchangePart(tau, cIniX, kExchX, lambda, pv)
+        cPart = ConcentrationExchangePhases(tau, cIniX, kExchX, 0, pv);
+        cPart(1, :) = [];
+%         % Diffusion constant for particles
+%         diffConst = 7e-1;
+%         cPart = cIniX(1) * (1 - exp(-diffConst * tau));
+%         Constants
+%         a = 3e+0;
+%         b = 3e+0;
+%         cPart = cIniX(1) * exp(-a ./ (tau .^ b));
     end
 end
