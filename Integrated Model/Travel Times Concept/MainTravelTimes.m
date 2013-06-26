@@ -37,7 +37,7 @@ function MainTravelTimes
 
     % Log-normal parameters
     mu = 0;
-    sigma = 0.999;
+    sigma = 1;
 
     % Other geometrical
     zLength = abs(ModelDim.zin(1) - ModelDim.zin(end));
@@ -57,7 +57,7 @@ function MainTravelTimes
     % Initial mass of solute
     mIni = cIni .* pv;
     
-%     TimeParams.maxDays = 30;
+    TimeParams.maxDays = 30;
     nT = TimeParams.maxDays * TimeParams.intervalsPerDay;
     t = t(1:nT);
     
@@ -146,39 +146,40 @@ function MainTravelTimes
 %     profile off
 %     profile viewer
     
+    % Results:
+    % Out concentration
+    cOutRes = mOutTotal(1:nT) ./ qOutTotal(1:nT);
+    cOutRes(qOutTotal == 0) = 0;
+    % Mass of contaminants removed
+    mOutRes = mOutTotal(1:nT);
+    % Emission potential
+    mRemRes = sum(mRemaining(:, 1:nT), 1);
+
     %% Error check
-    mEnd = cRemaining(:, end) .* pv;
-    if ~RealEq(sum(mIni) - sum(mOutTotal), sum(mEnd), EPSILON)
+    if ~RealEq(sum(mIni) - sum(mOutTotal), mRemRes(end), EPSILON)
         warning('ResultCheck:MassBalanceError', 'Absolute error is too high: err = %3.2e', ...
-            abs(abs(sum(mIni) - sum(mOutTotal) - sum(mEnd))));
+            abs(abs(sum(mIni) - sum(mOutTotal) - mRemRes(end))));
     end
     %% End error check
-    
+
     % Validate
     NO_VALIDATION = 0;
     SAVE_RESULTS = 1;
     COMPARE_RESULTS = 2;
     BASELINE_FILE_NAME = '../Data/baseline';
-    COMP_VARS = {'cOutRes', 'mOutRes', 'cRemRes'};
-    
-    % Results:
-    % Out concentration
-    cOutRes = mOutTotal(1:nT) ./ qOutTotal(1:nT);
-    cOutRes(qOutTotal == 0) = 0;
-    mOutRes = mOutTotal(1:nT);
-    cRemRes = sum(cRemaining(:, 1:nT));
-    emissionPotential = sum(mRemaining(:, 1:nT), 1);
+    COMP_VARS = {'cOutRes', 'mOutRes', 'mRemRes'};
     
 %     action = SAVE_RESULTS;
     action = COMPARE_RESULTS;
+%     action = NO_VALIDATION;
     if (action == SAVE_RESULTS)
-        save(BASELINE_FILE_NAME, 'cOutRes', 'mOutRes', 'cRemRes', 'qOutTotal');
+        save(BASELINE_FILE_NAME, 'cOutRes', 'mOutRes', 'mRemRes', 'qOutTotal');
     elseif (action == COMPARE_RESULTS)
         BaselineRes = load(BASELINE_FILE_NAME);
         nEl = min(numel(cOutRes), numel(BaselineRes.cOutRes));
         DiffBl.cOutRes = cOutRes(1:nEl) - BaselineRes.cOutRes(1:nEl);
         DiffBl.mOutRes = mOutRes(1:nEl) - BaselineRes.mOutRes(1:nEl);
-        DiffBl.cRemRes = cRemRes(1:nEl) - BaselineRes.cRemRes(1:nEl);
+        DiffBl.mRemRes = mRemRes(1:nEl) - BaselineRes.mRemRes(1:nEl);
         
         fprintf('Error analysis:\n');
         for varIdx = 1:numel(COMP_VARS)
@@ -190,7 +191,7 @@ function MainTravelTimes
     %% Plotting
 %     tShow = (TimeParams.daysElapsed > 150) & (TimeParams.daysElapsed < 250);
 %     ShowPlots(qOutTotal, mOutTotal, emissionPotential, rainData, lambda, TimeParams, tShow);
-    ShowPlots(qOutTotal, mOutTotal, emissionPotential, rainData, lambda, TimeParams);
+    ShowPlots(qOutTotal, mOutTotal, mRemRes, rainData, lambda, TimeParams);
     
 %     %% Compare with fourier transform
 %     lognpdfVec = lognpdf(t, mu, sigma) * dt;
