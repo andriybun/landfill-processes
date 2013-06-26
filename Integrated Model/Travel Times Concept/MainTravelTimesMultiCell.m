@@ -167,7 +167,7 @@ function MainTravelTimesMultiCell
     % Results:
     cOutRes = cOutTotal(1, 1:nT);
     mOutRes = mOutTotal(1, 1:nT);
-    mRemRes = sum(sum(mRemaining(:, 1:nT, :), 3), 1);
+    mRemRes = sum(sum(mRemaining(:, 2:nT+1, :), 3), 1);
 
     %% Error check
     if ~RealEq(sum(sum(mIni, 3), 1) - sum(mOutTotal(1, :)), mRemRes(end), EPSILON)
