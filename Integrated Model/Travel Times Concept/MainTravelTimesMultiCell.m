@@ -19,8 +19,8 @@ function MainTravelTimesMultiCell
     
     % Dimensions
     zTop = 0;
-    zBottom = -0.9;
-    dz = 0.3;
+    zBottom = -1;
+    dz = 1;
     ModelDim = InitializeNodes('z', zBottom, zTop, dz);
     ModelDim.zPerc = ModelDim.zin / ModelDim.zin(1);
     
@@ -43,7 +43,7 @@ function MainTravelTimesMultiCell
 
     % Log-normal parameters
     mu = 0;
-    sigma = 0.999;
+    sigma = 1;
 
     % Pore volume
     theta = [0.4, 0.04];
@@ -164,18 +164,10 @@ function MainTravelTimesMultiCell
 %     profile off
 %     profile viewer
     
-    % Validate
-    NO_VALIDATION = 0;
-    SAVE_RESULTS = 1;
-    COMPARE_RESULTS = 2;
-    BASELINE_FILE_NAME = '../Data/baseline';
-    COMP_VARS = {'cOutRes', 'mOutRes', 'mRemRes'};
-    
     % Results:
     cOutRes = cOutTotal(1, 1:nT);
     mOutRes = mOutTotal(1, 1:nT);
     mRemRes = sum(sum(mRemaining(:, 1:nT, :), 3), 1);
-    emissionPotential = sum(sum(mRemaining(:, 1:nT, :), 3), 1);
 
     %% Error check
     if ~RealEq(sum(sum(mIni, 3), 1) - sum(mOutTotal(1, :)), mRemRes(end), EPSILON)
@@ -184,10 +176,16 @@ function MainTravelTimesMultiCell
     end
     %% End error check
 
+    % Validate
+    NO_VALIDATION = 0;
+    SAVE_RESULTS = 1;
+    COMPARE_RESULTS = 2;
+    BASELINE_FILE_NAME = '../Data/baseline';
+    COMP_VARS = {'cOutRes', 'mOutRes', 'mRemRes'};
     
 %     action = SAVE_RESULTS;
-%     action = COMPARE_RESULTS;
-    action = NO_VALIDATION;
+    action = COMPARE_RESULTS;
+%     action = NO_VALIDATION;
     if (action == SAVE_RESULTS)
         save(BASELINE_FILE_NAME, 'cOutRes', 'mOutRes', 'mRemRes', 'qOutTotal');
     elseif (action == COMPARE_RESULTS)
@@ -207,7 +205,7 @@ function MainTravelTimesMultiCell
     %% Plotting
 %     tShow = (TimeParams.daysElapsed > 150) & (TimeParams.daysElapsed < 250);
 %     ShowPlots(qOutTotal, mOutTotal, emissionPotential, rainData, lambda, TimeParams, tShow);
-    ShowPlots(qOutTotal(1, 1:nT), mOutRes, emissionPotential, rainData, lambda, TimeParams);
+    ShowPlots(qOutTotal(1, 1:nT), mOutRes, mRemRes, rainData, lambda, TimeParams);
     
 %     %% Compare with fourier transform
 %     lognpdfVec = lognpdf(t, mu, sigma) * dt;
