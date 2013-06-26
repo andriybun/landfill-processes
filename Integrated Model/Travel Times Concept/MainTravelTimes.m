@@ -1,5 +1,4 @@
 function MainTravelTimes
-%% TODO: multi cell
 %% TODO: concentration shouldn't drop to zero?
 %% TODO: water must flow even if no rain (two domain?)
 %% TODO: mass balance if lambda ~= 0
@@ -46,7 +45,7 @@ function MainTravelTimes
     pv = zLength .* theta;
     
     % Source/sink rate
-    lambda = 0*1e-4;
+    lambda = 0 * 1e-4;
     % Exchange rate between mobile-immobile phases
     kExch = 1e-2;
     % Exchange rate between mobile phase and particles flowing
@@ -153,7 +152,7 @@ function MainTravelTimes
     % Mass of contaminants removed
     mOutRes = mOutTotal(1:nT);
     % Emission potential
-    mRemRes = sum(mRemaining(:, 1:nT), 1);
+    mRemRes = sum(mRemaining(:, 2:nT+1), 1);
 
     %% Error check
     if ~RealEq(sum(mIni) - sum(mOutTotal), mRemRes(end), EPSILON)
