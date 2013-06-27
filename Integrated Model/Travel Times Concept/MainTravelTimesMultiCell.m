@@ -47,7 +47,7 @@ function MainTravelTimesMultiCell
 
     % Pore volume
     theta = [0.4, 0.04];
-    pv = permute(ModelDim.dzin * theta, [1, 3 2]);
+    pv = permute(ModelDim.dzin * theta, [1, 3, 2]);
     
     % Source/sink rate
     lambda = 0*1e-4;
@@ -57,7 +57,7 @@ function MainTravelTimesMultiCell
     kExchPart = 5e-1;
     
     % Initial concentration (immobile, mobile phases)
-    cIni = repmat([1, 0.1], [nZn, 1]);
+    cIni = repmat([1, 1], [nZn, 1]);
     % Initial mass of solute
     mIni = pv .* permute(cIni, [1, 3, 2]);
     
@@ -165,7 +165,8 @@ function MainTravelTimesMultiCell
 %     profile viewer
     
     % Results:
-    cOutRes = cOutTotal(1, 1:nT);
+    cOutRes = mOutTotal(:, 1:nT, :) ./ qOutTotal(:, 1:nT, :);
+    cOutRes(qOutTotal == 0) = 0;
     mOutRes = mOutTotal(1, 1:nT);
     mRemRes = sum(sum(mRemaining(:, 2:nT+1, :), 3), 1);
 
@@ -191,6 +192,7 @@ function MainTravelTimesMultiCell
     elseif (action == COMPARE_RESULTS)
         BaselineRes = load(BASELINE_FILE_NAME);
         nEl = min(numel(cOutRes), numel(BaselineRes.cOutRes));
+plot(t, cOutRes(1:nEl)); hold on; plot(t, BaselineRes.cOutRes(1:nEl), 'g'); hold off;
         DiffBl.cOutRes = cOutRes(1:nEl) - BaselineRes.cOutRes(1:nEl);
         DiffBl.mOutRes = mOutRes(1:nEl) - BaselineRes.mOutRes(1:nEl);
         DiffBl.mRemRes = mRemRes(1:nEl) - BaselineRes.mRemRes(1:nEl);
