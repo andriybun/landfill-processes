@@ -20,7 +20,7 @@ function MainTravelTimesMultiCell
     % Dimensions
     zTop = 0;
     zBottom = -1;
-    dz = 1;
+    dz = 0.5;
     ModelDim = InitializeNodes('z', zBottom, zTop, dz);
     ModelDim.zPerc = ModelDim.zin / ModelDim.zin(1);
     
@@ -122,9 +122,6 @@ function MainTravelTimesMultiCell
             pvPart = cat(3, pv(nZn, :, 2), rainData(iT));
             cPart = ConcentrationExchangePart(tAfter, cPartIni, kExchPart, lambda, pvPart);
             mOutTotal(nZn, iT:iTend) = mOutTotal(nZn, iT:iTend) + qOutAfter(nZn, :) .* cPart;
-            if (~RealEq(qOutTotal(nZn, iT), 0, EPSILON))
-                cOutTotal(nZn, iT) = mOutTotal(nZn, iT) ./ qOutTotal(nZn, iT);
-            end
             
             for iN = nZn-1:-1:1
                 cPartIni = cat(3, cOutAfter(iN, 1, 2), cOutTotal(iN + 1, iT));
@@ -137,21 +134,26 @@ function MainTravelTimesMultiCell
             end
         end
         
+        if (~RealEq(qOutTotal(nZn, iT), 0, EPSILON))
+            cOutTotal(nZn, iT) = mOutTotal(nZn, iT) ./ qOutTotal(nZn, iT);
+        end
+
         % Withdraw solute leaving together with leachate and compute remaining masses of solutes
         % in both phases
         mRemaining(:, iT + 1, 2) = mRemaining(:, iT + 1, 2) - mOutTotal(:, iT);
+        [qOutTotal(:, iT), mOutTotal(:, iT), mRemaining(:, iT + 1, 2)]
         % Remove volume of drained leachate from the volume of liquid in the system.
-        pv(:, :, 2) = pv(:, :, 2) - qOutTotal(iT);
+        pv(:, :, 2) = pv(:, :, 2) - qOutTotal(:, iT);
         % Calculate the remaining concentrations
         cRemaining(:, iT + 1, :) = mRemaining(:, iT + 1, :) ./ pv;
         
-%         % Some checks
-%         if any(RealLt(cRemaining(:, iT + 1, :), 0, EPSILON))
-%             error('iT = %d: Concentration is negative.', iT);
-%         end
-%         if any(RealGt(cRemaining(:, iT + 1, :), 1, EPSILON))
-%             error('iT = %d: Concentration is too high.', iT);
-%         end
+        % Some checks
+        if any(RealLt(cRemaining(:, iT + 1, :), 0, EPSILON))
+            error('iT = %d: Concentration is negative.', iT);
+        end
+        if any(RealGt(cRemaining(:, iT + 1, :), 1, EPSILON))
+            error('iT = %d: Concentration is too high.', iT);
+        end
         
         % Output progress
         if mod(iT, 1000) == 0
@@ -165,8 +167,7 @@ function MainTravelTimesMultiCell
 %     profile viewer
     
     % Results:
-    cOutRes = mOutTotal(:, 1:nT, :) ./ qOutTotal(:, 1:nT, :);
-    cOutRes(qOutTotal == 0) = 0;
+    cOutRes = cOutTotal(1, 1:nT);
     mOutRes = mOutTotal(1, 1:nT);
     mRemRes = sum(sum(mRemaining(:, 2:nT+1, :), 3), 1);
 
@@ -192,10 +193,11 @@ function MainTravelTimesMultiCell
     elseif (action == COMPARE_RESULTS)
         BaselineRes = load(BASELINE_FILE_NAME);
         nEl = min(numel(cOutRes), numel(BaselineRes.cOutRes));
-plot(t, cOutRes(1:nEl)); hold on; plot(t, BaselineRes.cOutRes(1:nEl), 'g'); hold off;
-        DiffBl.cOutRes = cOutRes(1:nEl) - BaselineRes.cOutRes(1:nEl);
-        DiffBl.mOutRes = mOutRes(1:nEl) - BaselineRes.mOutRes(1:nEl);
-        DiffBl.mRemRes = mRemRes(1:nEl) - BaselineRes.mRemRes(1:nEl);
+% plot(t, cOutRes(1:nEl)); hold on; plot(t, BaselineRes.cOutRes(1:nEl), 'g'); hold off;
+% plot(t, qOutTotal(1, 1:nEl)); hold on; plot(t, BaselineRes.qOutTotal(1:nEl), 'g'); hold off;
+        DiffBl.cOutRes = cOutRes(1, 1:nEl) - BaselineRes.cOutRes(1:nEl);
+        DiffBl.mOutRes = mOutRes(1, 1:nEl) - BaselineRes.mOutRes(1:nEl);
+        DiffBl.mRemRes = mRemRes(1, 1:nEl) - BaselineRes.mRemRes(1:nEl);
         
         fprintf('Error analysis:\n');
         for varIdx = 1:numel(COMP_VARS)
@@ -207,7 +209,7 @@ plot(t, cOutRes(1:nEl)); hold on; plot(t, BaselineRes.cOutRes(1:nEl), 'g'); hold
     %% Plotting
 %     tShow = (TimeParams.daysElapsed > 150) & (TimeParams.daysElapsed < 250);
 %     ShowPlots(qOutTotal, mOutTotal, emissionPotential, rainData, lambda, TimeParams, tShow);
-    ShowPlots(qOutTotal(1, 1:nT), mOutRes, mRemRes, rainData, lambda, TimeParams);
+    ShowPlots(qOutTotal, mOutRes, mRemRes, rainData, lambda, TimeParams);
     
 %     %% Compare with fourier transform
 %     lognpdfVec = lognpdf(t, mu, sigma) * dt;
