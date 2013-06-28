@@ -20,7 +20,7 @@ function MainTravelTimesMultiCell
     % Dimensions
     zTop = 0;
     zBottom = -1;
-    dz = 1;
+    dz = 0.5;
     ModelDim = InitializeNodes('z', zBottom, zTop, dz);
     ModelDim.zPerc = ModelDim.zin / ModelDim.zin(1);
     
@@ -91,19 +91,20 @@ function MainTravelTimesMultiCell
         tAfter = tAfter(iCalcT);
         
         if RealGt(rainData(iT), 0, EPSILON)
-            % Add (fresh) rainwater to the system. Change volume of liquid and revise mass and
-            % concentration of solute in the top cell of mobile phase
-            pvMobUpd = pv(nZn, 1, 2) + rainData(iT);
-            mRemaining(nZn, iT, 2) = mRemaining(nZn, iT, 2) + ...
-                rainData(iT) * rainConcentrationData(iT);
-            cRemaining(nZn, iT, 2) = mRemaining(nZn, iT, 2) / pvMobUpd;
-            pv(nZn, 1, 2) = pvMobUpd;
             % Every input impulse of water will cause (log-normal) response at the outlet. All the
             % outflow during a given time step is considered as a particle with unique travel time
             qOutAfter = ModelDim.zPerc(1:nZn) * (rainData(iT) * lognpdf(tAfter, mu, sigma) * dt);
             % We integrate volumes of all the particles flowing out at the same time intervals to
             % obtain Leachate volume flux.
             qOutTotal(:, iT:iTend) = qOutTotal(:, iT:iTend) + qOutAfter;
+            fluxIn = cat(1, qOutTotal(1:nZn, iT), rainData(iT));
+            % Add (fresh) rainwater to the system. Change volume of liquid and revise mass and
+            % concentration of solute in the top cell of mobile phase
+            pvMobUpd = pv(:, 1, 2) + fluxIn(2:nZn+1);
+            mRemaining(:, iT, 2) = mRemaining(:, iT, 2) + ...
+                fluxIn(2:nZn+1) * rainConcentrationData(iT);
+            cRemaining(:, iT, 2) = mRemaining(:, iT, 2) ./ pvMobUpd;
+            pv(:, 1, 2) = pvMobUpd;
         end
         
         % Solve exchange equation in order to obtain concentrations in both phases at the end of
@@ -125,7 +126,6 @@ function MainTravelTimesMultiCell
             if (~RealEq(qOutTotal(nZn, iT), 0, EPSILON))
                 cOutTotal(nZn, iT) = mOutTotal(nZn, iT) ./ qOutTotal(nZn, iT);
             end
-            
             for iN = nZn-1:-1:1
                 cPartIni = cat(3, cOutAfter(iN, 1, 2), cOutTotal(iN + 1, iT));
                 pvPart = cat(3, pv(iN, :, 2), qOutTotal(iN + 1, iT));
@@ -141,7 +141,7 @@ function MainTravelTimesMultiCell
         % in both phases
         mRemaining(:, iT + 1, 2) = mRemaining(:, iT + 1, 2) - mOutTotal(:, iT);
         % Remove volume of drained leachate from the volume of liquid in the system.
-        pv(:, :, 2) = pv(:, :, 2) - qOutTotal(iT);
+        pv(:, :, 2) = pv(:, :, 2) - fluxIn(1:nZn);
         % Calculate the remaining concentrations
         cRemaining(:, iT + 1, :) = mRemaining(:, iT + 1, :) ./ pv;
         
