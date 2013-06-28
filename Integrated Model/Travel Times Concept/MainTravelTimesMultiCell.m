@@ -20,7 +20,7 @@ function MainTravelTimesMultiCell
     % Dimensions
     zTop = 0;
     zBottom = -1;
-    dz = 0.5;
+    dz = 1;
     ModelDim = InitializeNodes('z', zBottom, zTop, dz);
     ModelDim.zPerc = ModelDim.zin / ModelDim.zin(1);
     
@@ -65,7 +65,7 @@ function MainTravelTimesMultiCell
     nT = TimeParams.maxDays * TimeParams.intervalsPerDay;
     t = t(1:nT);
     
-    qOutTotal = zeros(nZn, nT);
+    qOutTotal = zeros(nZn + 1, nT);
     mOutTotal = zeros(nZn, nT);
     cOutTotal = zeros(nZn, nT);
     cRemaining = nan(nZn, nT + 1, 2);
@@ -90,60 +90,66 @@ function MainTravelTimesMultiCell
         iTend = iT + nCalcT - 1;
         tAfter = tAfter(iCalcT);
         
+        % Initialize internodal flux
+        qOutAfter = zeros(nZn + 1, nCalcT);
+        qOutAfter(nZn + 1, 1) = rainData(iT);
+        
         if RealGt(rainData(iT), 0, EPSILON)
-            % Add (fresh) rainwater to the system. Change volume of liquid and revise mass and
-            % concentration of solute in the top cell of mobile phase
-            pvMobUpd = pv(nZn, 1, 2) + rainData(iT);
-            mRemaining(nZn, iT, 2) = mRemaining(nZn, iT, 2) + ...
-                rainData(iT) * rainConcentrationData(iT);
-            cRemaining(nZn, iT, 2) = mRemaining(nZn, iT, 2) / pvMobUpd;
-            pv(nZn, 1, 2) = pvMobUpd;
             % Every input impulse of water will cause (log-normal) response at the outlet. All the
             % outflow during a given time step is considered as a particle with unique travel time
-            qOutAfter = ModelDim.zPerc(1:nZn) * (rainData(iT) * lognpdf(tAfter, mu, sigma) * dt);
+            muScaled = mu + log(ModelDim.zPerc(1:nZn));
+            qOutAfter(1:nZn, :) = rainData(iT) * ...
+                lognpdf(repmat(tAfter, [nZn, 1]), repmat(muScaled, [1, nCalcT]), sigma) * dt;
             % We integrate volumes of all the particles flowing out at the same time intervals to
             % obtain Leachate volume flux.
-            qOutTotal(:, iT:iTend) = qOutTotal(:, iT:iTend) + qOutAfter;
+            qOutTotal(:, iT:iTend) = qOutTotal(:, iT:iTend) + qOutAfter(:, :);
         end
+        
+        % ########### Add comment ###########
+        qFluxIn = qOutTotal(:, iT);
+        cFluxIn = cat(1, cRemaining(:, iT, 2), rainConcentrationData(iT));
+        mFluxIn = qFluxIn .* cFluxIn;
+        pvIni = pv;
+        pv(:, 1, 2) = pv(:, 1, 2) + qFluxIn(2:nZn+1) - qFluxIn(1:nZn);
+        mRemaining(:, iT, 2) = mRemaining(:, iT, 2) + mFluxIn(2:nZn+1) - mFluxIn(1:nZn);
+        cRemaining(:, iT, :) = mRemaining(:, iT, :) ./ pv;
         
         % Solve exchange equation in order to obtain concentrations in both phases at the end of
         % current time step. Different volumes will have different effect on exchange here
         cOutAfter = ConcentrationExchangePhases(...
             [tAfter(1), tAfter(1) + dt], cRemaining(:, iT, :), kExch, lambda, pv);
+        
+
+%             % We integrate masses of solutes in all particles.
+%             % Particles of fresh water also exchange with the surrounding environment and tend to
+%             % increase content of solute. The longer particle resides in mobile phase and exchanges 
+%             % with it, the higher concentration at outlet will be
+
+        cPart = cat(3, cRemaining(:, iT, 2), cFluxIn(2:nZn+1, 1));
+        pvPart = cat(3, pv(:, :, 2), qFluxIn(2:nZn+1, 1));
+        cPart = ConcentrationExchangePart(tAfter, cPart, kExchPart, lambda, pvPart);
+        mOutTotal(:, iT:iTend) = mOutTotal(:, iT:iTend) + qOutAfter(1:nZn, :) .* cPart;
+        
+        cOutTotal(:, iT) = mOutTotal(:, iT) ./ qOutTotal(1:nZn, iT);
+        isZeroFlux = RealEq(qOutTotal(:, iT), 0, EPSILON);
+        cOutTotal(isZeroFlux, iT) = 0;
+
         % Save the remaining mass of solute to output vector
         mRemaining(:, iT + 1, :) = cOutAfter(:, 2, :) .* pv;
-        
-        if RealGt(rainData(iT), 0, EPSILON)
-            % We integrate masses of solutes in all particles.
-            % Particles of fresh water also exchange with the surrounding environment and tend to
-            % increase content of solute. The longer particle resides in mobile phase and exchanges 
-            % with it, the higher concentration at outlet will be
-            cPartIni = cat(3, cOutAfter(nZn, 1, 2), rainConcentrationData(iT));
-            pvPart = cat(3, pv(nZn, :, 2), rainData(iT));
-            cPart = ConcentrationExchangePart(tAfter, cPartIni, kExchPart, lambda, pvPart);
-            mOutTotal(nZn, iT:iTend) = mOutTotal(nZn, iT:iTend) + qOutAfter(nZn, :) .* cPart;
-            
-            for iN = nZn-1:-1:1
-                cPartIni = cat(3, cOutAfter(iN, 1, 2), cOutTotal(iN + 1, iT));
-                pvPart = cat(3, pv(iN, :, 2), qOutTotal(iN + 1, iT));
-                cPart = ConcentrationExchangePart(tAfter, cPartIni, kExchPart, lambda, pvPart);
-                mOutTotal(iN, iT:iTend) = mOutTotal(iN, iT:iTend) + qOutAfter(iN, :) .* cPart;
-                if (~RealEq(qOutTotal(iN, iT), 0, EPSILON))
-                    cOutTotal(iN, iT) = mOutTotal(iN, iT) ./ qOutTotal(iN, iT);
-                end
-            end
-        end
-        
-        if (~RealEq(qOutTotal(nZn, iT), 0, EPSILON))
-            cOutTotal(nZn, iT) = mOutTotal(nZn, iT) ./ qOutTotal(nZn, iT);
-        end
-
         % Withdraw solute leaving together with leachate and compute remaining masses of solutes
         % in both phases
         mRemaining(:, iT + 1, 2) = mRemaining(:, iT + 1, 2) - mOutTotal(:, iT);
-        [qOutTotal(:, iT), mOutTotal(:, iT), mRemaining(:, iT + 1, 2)]
-        % Remove volume of drained leachate from the volume of liquid in the system.
-        pv(:, :, 2) = pv(:, :, 2) - qOutTotal(:, iT);
+%         [qOutTotal(:, iT), mOutTotal(:, iT), mRemaining(:, iT + 1, 2)]
+
+%         % Add (fresh) rainwater to the system. Change volume of liquid and revise mass and
+%         % concentration of solute in the top cell of mobile phase
+%         pvMobUpd = pv(:, 1, 2) + qFluxIn(2:nZn+1) - qFluxIn(1:nZn);
+%         cRemaining(:, iT, 2) = mRemaining(:, iT, 2) ./ pvMobUpd;
+%         pv(:, 1, 2) = pvMobUpd;
+        if ~RealEq(sum(sum(pvIni)) + qFluxIn(nZn + 1) - qFluxIn(1), sum(sum(pv)), EPSILON)
+            warning('Error on %d-th step\n', iT);
+        end
+
         % Calculate the remaining concentrations
         cRemaining(:, iT + 1, :) = mRemaining(:, iT + 1, :) ./ pv;
         
@@ -161,6 +167,9 @@ function MainTravelTimesMultiCell
         end
     end
     
+% plot(t, qOutTotal);
+% return
+
     toc
     
 %     profile off

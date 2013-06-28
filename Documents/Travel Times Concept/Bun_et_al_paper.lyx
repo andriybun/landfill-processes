@@ -319,8 +319,8 @@ and
 \begin_layout Standard
 \begin_inset Formula 
 \begin{align}
-\frac{\partial c_{m}\left(\tau\right)}{\partial\tau} & =-v_{m}\cdot k_{ex}\cdot\left(c_{m}\left(\tau\right)-c_{im}\left(\tau\right)\right);\nonumber \\
-\frac{\partial c_{im}\left(\tau\right)}{\partial\tau} & =v_{im}\cdot k_{ex}\cdot\left(c_{m}\left(\tau\right)-c_{im}\left(\tau\right)\right)-\lambda\cdot c_{im}\left(\tau\right).\label{eq:c_out_exchange_decay}
+\frac{\partial c_{m}\left(\tau\right)}{\partial\tau} & =-V_{m}\cdot k_{ex}\cdot\left(c_{m}\left(\tau\right)-c_{im}\left(\tau\right)\right);\nonumber \\
+\frac{\partial c_{im}\left(\tau\right)}{\partial\tau} & =V_{im}\cdot k_{ex}\cdot\left(c_{m}\left(\tau\right)-c_{im}\left(\tau\right)\right)-\lambda\cdot c_{im}\left(\tau\right).\label{eq:c_out_exchange_decay}
 \end{align}
 
 \end_inset
@@ -338,11 +338,11 @@ Here
 \end_inset
 
  the rate of exchange between the immobile and mobile water, 
-\begin_inset Formula $v_{m}$
+\begin_inset Formula $V_{m}$
 \end_inset
 
  and 
-\begin_inset Formula $v_{im}$
+\begin_inset Formula $V_{im}$
 \end_inset
 
  are the volumes of liquid in mobile and immobile phases respectively.
