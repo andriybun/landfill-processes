@@ -20,7 +20,7 @@ function MainTravelTimesMultiCell
     % Dimensions
     zTop = 0;
     zBottom = -1;
-    dz = 1;
+    dz = 0.5;
     ModelDim = InitializeNodes('z', zBottom, zTop, dz);
     ModelDim.zPerc = ModelDim.zin / ModelDim.zin(1);
     
@@ -32,8 +32,8 @@ function MainTravelTimesMultiCell
     rainData = PrecipitationData.rainData;
     rainConcentrationData = 0 * ones(size(rainData));
     TimeParams = PrecipitationData.TimeParams;
-%     rainData = 0 * rainData;
-%     rainData(1:2) = 1e-3;
+    rainData = 0 * rainData;
+    rainData(1) = 1e-3;
 %     rainData(91:92) = 1e-3;
     
     % Time parameters
@@ -65,12 +65,13 @@ function MainTravelTimesMultiCell
     nT = TimeParams.maxDays * TimeParams.intervalsPerDay;
     t = t(1:nT);
     
-    qOutTotal = zeros(nZn + 1, nT);
-    mOutTotal = zeros(nZn, nT);
+    qOutTotal = zeros(nZn+1, nT);
+    mOutTotal = zeros(nZn+1, nT);
+    mOutTotal(nZn+1, :) = rainData(1:nT) .* rainConcentrationData(1:nT);
     cOutTotal = zeros(nZn, nT);
-    cRemaining = nan(nZn, nT + 1, 2);
+    cRemaining = nan(nZn, nT+1, 2);
     cRemaining(:, 1, :) = cIni;
-    mRemaining = nan(nZn, nT + 1, 2);
+    mRemaining = nan(nZn, nT+1, 2);
     mRemaining(:, 1, :) = mIni;
     
 %     profile on
@@ -108,10 +109,10 @@ function MainTravelTimesMultiCell
         % ########### Add comment ###########
         qFluxIn = qOutTotal(:, iT);
         cFluxIn = cat(1, cRemaining(:, iT, 2), rainConcentrationData(iT));
-        mFluxIn = qFluxIn .* cFluxIn;
+%         mFluxIn = qFluxIn .* cFluxIn;
         pvIni = pv;
         pv(:, 1, 2) = pv(:, 1, 2) + qFluxIn(2:nZn+1) - qFluxIn(1:nZn);
-        mRemaining(:, iT, 2) = mRemaining(:, iT, 2) + mFluxIn(2:nZn+1) - mFluxIn(1:nZn);
+        mRemaining(:, iT, 2) = mRemaining(:, iT, 2) + mOutTotal(2:nZn+1, iT) - mOutTotal(1:nZn, iT);
         cRemaining(:, iT, :) = mRemaining(:, iT, :) ./ pv;
         
         % Solve exchange equation in order to obtain concentrations in both phases at the end of
@@ -119,26 +120,24 @@ function MainTravelTimesMultiCell
         cOutAfter = ConcentrationExchangePhases(...
             [tAfter(1), tAfter(1) + dt], cRemaining(:, iT, :), kExch, lambda, pv);
         
-
 %             % We integrate masses of solutes in all particles.
 %             % Particles of fresh water also exchange with the surrounding environment and tend to
 %             % increase content of solute. The longer particle resides in mobile phase and exchanges 
 %             % with it, the higher concentration at outlet will be
-
-        cPart = cat(3, cRemaining(:, iT, 2), cFluxIn(2:nZn+1, 1));
+        cPartIni = cat(3, cRemaining(:, iT, 2), cFluxIn(2:nZn+1, 1));
         pvPart = cat(3, pv(:, :, 2), qFluxIn(2:nZn+1, 1));
-        cPart = ConcentrationExchangePart(tAfter, cPart, kExchPart, lambda, pvPart);
-        mOutTotal(:, iT:iTend) = mOutTotal(:, iT:iTend) + qOutAfter(1:nZn, :) .* cPart;
+        cPart = ConcentrationExchangePart(tAfter, cPartIni, kExchPart, lambda, pvPart);
+        mOutTotal(1:nZn, iT:iTend) = mOutTotal(1:nZn, iT:iTend) + qOutAfter(1:nZn, :) .* cPart;
         
-        cOutTotal(:, iT) = mOutTotal(:, iT) ./ qOutTotal(1:nZn, iT);
-        isZeroFlux = RealEq(qOutTotal(:, iT), 0, EPSILON);
+        cOutTotal(:, iT) = mOutTotal(1:nZn, iT) ./ qOutTotal(1:nZn, iT);
+        isZeroFlux = RealEq(qOutTotal(1:nZn, iT), 0, EPSILON);
         cOutTotal(isZeroFlux, iT) = 0;
 
         % Save the remaining mass of solute to output vector
         mRemaining(:, iT + 1, :) = cOutAfter(:, 2, :) .* pv;
-        % Withdraw solute leaving together with leachate and compute remaining masses of solutes
-        % in both phases
-        mRemaining(:, iT + 1, 2) = mRemaining(:, iT + 1, 2) - mOutTotal(:, iT);
+%         % Withdraw solute leaving together with leachate and compute remaining masses of solutes
+%         % in both phases
+%         mRemaining(:, iT + 1, 2) = mRemaining(:, iT + 1, 2) - mOutTotal(1:nZn, iT);
 %         [qOutTotal(:, iT), mOutTotal(:, iT), mRemaining(:, iT + 1, 2)]
 
 %         % Add (fresh) rainwater to the system. Change volume of liquid and revise mass and
@@ -153,13 +152,13 @@ function MainTravelTimesMultiCell
         % Calculate the remaining concentrations
         cRemaining(:, iT + 1, :) = mRemaining(:, iT + 1, :) ./ pv;
         
-        % Some checks
-        if any(RealLt(cRemaining(:, iT + 1, :), 0, EPSILON))
-            error('iT = %d: Concentration is negative.', iT);
-        end
-        if any(RealGt(cRemaining(:, iT + 1, :), 1, EPSILON))
-            error('iT = %d: Concentration is too high.', iT);
-        end
+%         % Some checks
+%         if any(RealLt(cRemaining(:, iT + 1, :), 0, EPSILON))
+%             error('iT = %d: Concentration is negative.', iT);
+%         end
+%         if any(RealGt(cRemaining(:, iT + 1, :), 1, EPSILON))
+%             error('iT = %d: Concentration is too high.', iT);
+%         end
         
         % Output progress
         if mod(iT, 1000) == 0
