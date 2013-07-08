@@ -28,6 +28,8 @@ function MainTravelTimes
 %     rainData = 0 * rainData;
 %     rainData(1:2) = 1e-3;
 %     rainData(91:92) = 1e-3;
+%     rainData = 1e-2 * ones(size(rainData));
+%     rainConcentrationData(1:5) = 1;
     
     % Time parameters
     tEnd = TimeParams.t(end);   % 100;
@@ -49,7 +51,7 @@ function MainTravelTimes
     % Exchange rate between mobile-immobile phases
     kExch = 1e-2;
     % Exchange rate between mobile phase and particles flowing
-    kExchPart = 5e-1;
+    kExchPart = 8e-1;
     
     % Initial concentration (immobile, mobile phases)
     cIni = [1; 1];
@@ -66,6 +68,10 @@ function MainTravelTimes
     cRemaining(:, 1) = cIni;
     mRemaining = nan(2, nT + 1);
     mRemaining(:, 1) = mIni;
+    
+    % Following arrays dimensions (entry time - leave time)
+    qPartOut = zeros(nT, nT);
+    mPartOut = zeros(nT, nT);
     
 %     profile on
     tic
@@ -97,6 +103,7 @@ function MainTravelTimes
             % We integrate volumes of all the particles flowing out at the same time intervals to
             % obtain Leachate volume flux.
             qOutTotal(iT:iTend) = qOutTotal(iT:iTend) + qOutAfter;
+            qPartOut(iT, iT:iTend) = qOutAfter;
         end
         
         % Solve exchange equation in order to obtain concentrations in both phases at the end of
@@ -106,17 +113,19 @@ function MainTravelTimes
         % Save the remaining mass of solute to output vector
         mRemaining(:, iT + 1) = cOutAfter(:, 2) .* pv;
         
-        if RealGt(rainData(iT), 0, EPSILON)
-            % We integrate masses of solutes in all particles.
-            % Particles of fresh water also exchange with the surrounding environment and tend to
-            % increase content of solute. The longer particle resides in mobile phase and exchanges 
-            % with it, the higher concentration at outlet will be
-            cPartIni = [cOutAfter(2, 1); rainConcentrationData(iT)];
-            pvPart = [pv(2); rainData(iT)];
-            cPart = ConcentrationExchangePart(tAfter, cPartIni, kExchPart, lambda, pvPart);
-%             plotyy(tAfter, qOutAfter .* cPart, tAfter, cPart);
-            mOutTotal(iT:iTend) = mOutTotal(iT:iTend) + qOutAfter .* cPart;
-        end
+        cPartOut = mPartOut(1:iT, iT:iTend) ./ qPartOut(1:iT, iT:iTend);
+        cPartOut(RealEq(qPartOut(1:iT, iT:iTend), 0, EPSILON)) = 0;
+        cPartOutR = ...
+            cat(1, repmat(cOutAfter(2, 1), [1, 1, iT * nCalcT]), reshape(cPartOut, 1, 1, []));
+        pvPartOutR = ...
+            cat(1, repmat(pv(2), [1, 1, iT * nCalcT]), reshape(qPartOut(1:iT, iT:iTend), 1, 1, []));
+%         cPartR = ConcentrationExchangePart(...
+%             [tAfter(1), tAfter(1) + dt], cPartOutR, 10 * kExchPart, lambda, pvPartOutR);
+        cPartR = ConcentrationExchangePart(...
+            [tAfter(1), tAfter(1) + dt], cPartOutR, kExchPart, lambda, pvPartOutR);
+        cPart = reshape(cPartR(:, 2, :), [iT, nCalcT]);
+        mPartOut(1:iT, iT:iTend) = qPartOut(1:iT, iT:iTend) .* cPart;
+        mOutTotal(iT) = sum(mPartOut(1:iT, iT));
         
         % Withdraw solute leaving together with leachate and compute remaining masses of solutes
         % in both phases
@@ -126,13 +135,13 @@ function MainTravelTimes
         % Calculate the remaining concentrations
         cRemaining(:, iT + 1) = mRemaining(:, iT + 1) ./ pv;
         
-        % Some checks
-        if any(RealLt(cRemaining(:, iT + 1), 0, EPSILON))
-            error('iT = %d: Concentration is negative.', iT);
-        end
-        if any(RealGt(cRemaining(:, iT + 1), 1, EPSILON))
-            error('iT = %d: Concentration is too high.', iT);
-        end
+%         % Some checks
+%         if any(RealLt(cRemaining(:, iT + 1), 0, EPSILON))
+%             error('iT = %d: Concentration is negative.', iT);
+%         end
+%         if any(RealGt(cRemaining(:, iT + 1), 1, EPSILON))
+%             error('iT = %d: Concentration is too high.', iT);
+%         end
         
         % Output progress
         if mod(iT, 1000) == 0
@@ -154,6 +163,9 @@ function MainTravelTimes
     % Emission potential
     mRemRes = sum(mRemaining(:, 2:nT+1), 1);
 
+%     plotyy(t, qOutTotal(1:nT), t, mOutTotal(1:nT))
+%     return
+    
     %% Error check
     if ~RealEq(sum(mIni) - sum(mOutTotal), mRemRes(end), EPSILON)
         warning('ResultCheck:MassBalanceError', 'Absolute error is too high: err = %3.2e', ...
@@ -216,9 +228,15 @@ function MainTravelTimes
         
         return
         
-        function cTrend = Concentration(t, cIniX, kExchX, lambda, pv)
-            vRatioIm = pv(2) / (pv(1) + pv(2));
-            vRatioM = pv(1) / (pv(1) + pv(2));
+        function cTrend = Concentration(tX, cIniX, kExchX, lambda, pvX)
+            % Input arrays may have following dimensions:
+            %   nPhases x nTimeSteps x nElements (cells, particles etc.)
+            
+            [nPhases, ~, nElements] = size(cIniX);
+            ntX = numel(tX);
+            
+            vRatioIm = pvX(2, :, :) ./ (pvX(1, :, :) + pvX(2, :, :));
+            vRatioM = pvX(1, :, :) ./ (pvX(1, :, :) + pvX(2, :, :));
             
             v01 = vRatioIm .* kExchX;
             v02 = vRatioM .* kExchX;
@@ -226,10 +244,10 @@ function MainTravelTimes
             v04 = cIniX(2) .* (v01 - v02 + lambda);
             
             v6 = sqrt((v01 + v02) .^ 2 - lambda .* (2 .* (v01 + v02) + lambda));
-            v8 = -0.5 .* (v03 - v6);
-            v9 = -0.5 .* (v03 + v6);
-            v11 = exp(v8 .* t);
-            v12 = exp(v9 .* t);
+            v8 = repmat(-0.5 .* (v03 - v6), [1, ntX, 1]);
+            v9 = repmat(-0.5 .* (v03 + v6), [1, ntX, 1]);
+            v11 = exp(v8 .* repmat(tX, [1, 1, nElements]));
+            v12 = exp(v9 .* repmat(tX, [1, 1, nElements]));
             
             C1_ = 0.5 .* (...
                 cIniX(2) .* v6 + ...
@@ -240,25 +258,28 @@ function MainTravelTimes
                 2 .* cIniX(1) .* v02 - ...
                 v04) ./ v6;
             
-            cTrend = nan(2, numel(t));
-            cTrend(2, :) = ...
+            C1_ = repmat(C1_, [1, ntX, 1]);
+            C2_ = repmat(C2_, [1, ntX, 1]);
+            
+            cTrend = nan(nPhases, ntX, nElements);
+            cTrend(2, :, :) = ...
                 C1_ .* v11 + ...
                 C2_ .* v12;
-            cTrend(1, :) = ...
-                cTrend(2, :) + ...
-                (C1_ .* v8 .* v11 + C2_ .* v9 .* v12) ./ v02;
+            cTrend(1, :, :) = ...
+                cTrend(2, :, :) + ...
+                (C1_ .* v8 .* v11 + C2_ .* v9 .* v12) ./ repmat(v02, [1, ntX, 1]);
         end
     end
 
-    function cPart = ConcentrationExchangePart(tau, cIniX, kExchX, lambda, pv)
-        cPart = ConcentrationExchangePhases(tau, cIniX, kExchX, 0, pv);
-        cPart(1, :) = [];
-%         % Diffusion constant for particles
-%         diffConst = 7e-1;
-%         cPart = cIniX(1) * (1 - exp(-diffConst * tau));
-%         Constants
-%         a = 3e+0;
-%         b = 3e+0;
-%         cPart = cIniX(1) * exp(-a ./ (tau .^ b));
+    function cPart = ConcentrationExchangePart(tauX, cIniX, kExchX, lambda, pvX)
+%         cPart = ConcentrationExchangePhases(tau, cIniX, kExchX, 0, pv);
+%         cPart(1, :, :) = [];
+        [~, ~, nElements] = size(cIniX);
+        ntX = numel(tauX);
+
+        tauX = repmat(tauX, [1, 1, nElements]);
+        rate = 1 - exp(-(log(1.5) / exp(mu - sigma^2)) .* tauX);
+        cIniX = repmat(cIniX, [1, ntX, 1]);
+        cPart = cIniX(2, :, :) + (cIniX(1, :, :) - cIniX(2, :, :)) .* rate;
     end
 end
