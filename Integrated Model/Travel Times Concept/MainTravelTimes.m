@@ -199,20 +199,8 @@ function MainTravelTimes
     %% Plotting
 %     tShow = (TimeParams.daysElapsed > 150) & (TimeParams.daysElapsed < 250);
 %     ShowPlots(qOutTotal, mOutTotal, emissionPotential, rainData, lambda, TimeParams, tShow);
-    ShowPlots(qOutTotal, mOutTotal, mRemRes, rainData, lambda, TimeParams);
+%     ShowPlots(qOutTotal, mOutTotal, mRemRes, rainData, lambda, TimeParams);
     
-%     %% Compare with fourier transform
-%     lognpdfVec = lognpdf(t, mu, sigma) * dt;
-%     
-%     rainDataF = fft(rainData);
-%     lognpdfVecF = fft(lognpdfVec);
-%     
-%     qOutF = rainDataF .* lognpdfVecF;
-%     qOutIft = ifft(qOutF);
-% 
-%     plot(t, cat(1, qOutTotal, qOutIft));
-%     legend('Numerical integration', 'Fourier transform');
-
     return
     
     function cOut = ConcentrationExchangePhases(tau, cIniX, kExchX, lambda, pv)
@@ -269,8 +257,6 @@ function MainTravelTimes
     end
 
     function cPart = ConcentrationExchangePart(tauX, cIniX, kExchX, lambda, pvX)
-%         cPart = ConcentrationExchangePhases(tau, cIniX, kExchX, 0, pv);
-%         cPart(1, :, :) = [];
         [~, ~, nElements] = size(cIniX);
         ntX = numel(tauX);
 
