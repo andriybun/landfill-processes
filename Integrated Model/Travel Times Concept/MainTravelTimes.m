@@ -69,9 +69,9 @@ function MainTravelTimes
     mRemaining = nan(2, nT + 1);
     mRemaining(:, 1) = mIni;
     
-    % Following arrays dimensions (entry time - leave time)
-    qPartOut = zeros(nT, nT);
-    mPartOut = zeros(nT, nT);
+    % Initialize object to keep information about volumes and concentrations
+    % dimensions of arrays (entry time x leave time)
+    PartInfo = ConcentrationCl(zeros(nT, nT), zeros(nT, nT));
     
 %     profile on
     tic
@@ -103,7 +103,8 @@ function MainTravelTimes
             % We integrate volumes of all the particles flowing out at the same time intervals to
             % obtain Leachate volume flux.
             qOutTotal(iT:iTend) = qOutTotal(iT:iTend) + qOutAfter;
-            qPartOut(iT, iT:iTend) = qOutAfter;
+            
+            PartInfo = PartInfo.AddVolume(qOutAfter, iT, iT:iTend);
         end
         
         % Solve exchange equation in order to obtain concentrations in both phases at the end of
@@ -113,19 +114,15 @@ function MainTravelTimes
         % Save the remaining mass of solute to output vector
         mRemaining(:, iT + 1) = cOutAfter(:, 2) .* pv;
         
-        cPartOut = mPartOut(1:iT, iT:iTend) ./ qPartOut(1:iT, iT:iTend);
-        cPartOut(RealEq(qPartOut(1:iT, iT:iTend), 0, EPSILON)) = 0;
-        cPartOutR = ...
-            cat(1, repmat(cOutAfter(2, 1), [1, 1, iT * nCalcT]), reshape(cPartOut, 1, 1, []));
-        pvPartOutR = ...
-            cat(1, repmat(pv(2), [1, 1, iT * nCalcT]), reshape(qPartOut(1:iT, iT:iTend), 1, 1, []));
-%         cPartR = ConcentrationExchangePart(...
-%             [tAfter(1), tAfter(1) + dt], cPartOutR, 10 * kExchPart, lambda, pvPartOutR);
+        cPartOutR = cat(1, repmat(cOutAfter(2, 1), [1, 1, iT * nCalcT]), ...
+            reshape(PartInfo.GetConcentration(1:iT, iT:iTend), 1, 1, []));
+        pvPartOutR = cat(1, repmat(pv(2), [1, 1, iT * nCalcT]), ...
+            reshape(PartInfo.GetVolume(1:iT, iT:iTend), 1, 1, []));
         cPartR = ConcentrationExchangePart(...
             [tAfter(1), tAfter(1) + dt], cPartOutR, kExchPart, lambda, pvPartOutR);
         cPart = reshape(cPartR(:, 2, :), [iT, nCalcT]);
-        mPartOut(1:iT, iT:iTend) = qPartOut(1:iT, iT:iTend) .* cPart;
-        mOutTotal(iT) = sum(mPartOut(1:iT, iT));
+        PartInfo = PartInfo.SetConcentration(cPart, 1:iT, iT:iTend);
+        mOutTotal(iT) = sum(PartInfo.GetMass(1:iT, iT));
         
         % Withdraw solute leaving together with leachate and compute remaining masses of solutes
         % in both phases
