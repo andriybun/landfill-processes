@@ -25,11 +25,23 @@ function MainTravelTimes
     rainData = PrecipitationData.rainData;
     rainConcentrationData = 0 * ones(size(rainData));
     TimeParams = PrecipitationData.TimeParams;
-%     rainData = 0 * rainData;
-%     rainData(1:2) = 1e-3;
-%     rainData(91:92) = 1e-3;
+    
+    % Initial concentration (immobile, mobile phases)
+    cIni = [1; 1];
+    
+    %% Some test cases
+%     % Case #1:
+%     %   initial concentrations = [0; 0]
+%     %   constant rain, injection of solute at initial time steps
+%     cIni = [0; 0];
 %     rainData = 1e-2 * ones(size(rainData));
 %     rainConcentrationData(1:5) = 1;
+%     % Case #2:
+%     %   initial concentrations = [1; 1]
+%     %   short clean rain at initial time steps
+%     rainData = 0 * rainData;
+%     rainData(1:5) = 1e-3;
+    %% End test cases
     
     % Time parameters
     tEnd = TimeParams.t(end);   % 100;
@@ -53,8 +65,6 @@ function MainTravelTimes
     % Exchange rate between mobile phase and particles flowing
     kExchPart = 8e-1;
     
-    % Initial concentration (immobile, mobile phases)
-    cIni = [1; 1];
     % Initial mass of solute
     mIni = cIni .* pv;
     
@@ -71,7 +81,7 @@ function MainTravelTimes
     
     % Initialize object to keep information about volumes and concentrations
     % dimensions of arrays (entry time x leave time)
-    PartInfo = ConcentrationCl(zeros(nT, nT), zeros(nT, nT));
+    PartInfo = ConcentrationCl(zeros(1, nT), zeros(1, nT));
     
 %     profile on
     tic
@@ -103,8 +113,8 @@ function MainTravelTimes
             % We integrate volumes of all the particles flowing out at the same time intervals to
             % obtain Leachate volume flux.
             qOutTotal(iT:iTend) = qOutTotal(iT:iTend) + qOutAfter;
-            
-            PartInfo = PartInfo.AddVolume(qOutAfter, iT, iT:iTend);
+            % Increase volume of water leaving the system at future times
+            PartInfo = PartInfo.AddVolume(qOutAfter, iT:iTend);
         end
         
         % Solve exchange equation in order to obtain concentrations in both phases at the end of
@@ -114,15 +124,15 @@ function MainTravelTimes
         % Save the remaining mass of solute to output vector
         mRemaining(:, iT + 1) = cOutAfter(:, 2) .* pv;
         
-        cPartOutR = cat(1, repmat(cOutAfter(2, 1), [1, 1, iT * nCalcT]), ...
-            reshape(PartInfo.GetConcentration(1:iT, iT:iTend), 1, 1, []));
-        pvPartOutR = cat(1, repmat(pv(2), [1, 1, iT * nCalcT]), ...
-            reshape(PartInfo.GetVolume(1:iT, iT:iTend), 1, 1, []));
+        cPartOutR = cat(1, repmat(cOutAfter(2, 1), [1, 1, nCalcT]), ...
+            reshape(PartInfo.GetConcentration(iT:iTend), 1, 1, []));
+        pvPartOutR = cat(1, repmat(pv(2), [1, 1, nCalcT]), ...
+            reshape(PartInfo.GetVolume(iT:iTend), 1, 1, []));
         cPartR = ConcentrationExchangePart(...
             [tAfter(1), tAfter(1) + dt], cPartOutR, kExchPart, lambda, pvPartOutR);
-        cPart = reshape(cPartR(:, 2, :), [iT, nCalcT]);
-        PartInfo = PartInfo.SetConcentration(cPart, 1:iT, iT:iTend);
-        mOutTotal(iT) = sum(PartInfo.GetMass(1:iT, iT));
+        cPart = reshape(cPartR(:, 2, :), [1, nCalcT]);
+        PartInfo = PartInfo.SetConcentration(cPart, iT:iTend);
+        mOutTotal(iT) = PartInfo.GetMass(iT);
         
         % Withdraw solute leaving together with leachate and compute remaining masses of solutes
         % in both phases
@@ -199,7 +209,7 @@ function MainTravelTimes
     %% Plotting
 %     tShow = (TimeParams.daysElapsed > 150) & (TimeParams.daysElapsed < 250);
 %     ShowPlots(qOutTotal, mOutTotal, emissionPotential, rainData, lambda, TimeParams, tShow);
-%     ShowPlots(qOutTotal, mOutTotal, mRemRes, rainData, lambda, TimeParams);
+    ShowPlots(qOutTotal, mOutTotal, mRemRes, rainData, lambda, TimeParams);
     
     return
     
