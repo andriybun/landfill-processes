@@ -1,6 +1,12 @@
-function ShowPlots(qOutTotal, mOutTotal, emissionPotential, rainData, lambda, TimeParams, tShow)
+function ShowPlots(ModelOutput, rainData, lambda, TimeParams, tShow)
 
-    if nargin < 7
+    % Unpack resulting arrays
+    nT = ModelOutput.nT;
+    qOutTotal = ModelOutput.qOutTotal;
+    mOutTotal = ModelOutput.mOutTotal;
+    emissionPotential = sum(ModelOutput.mRemaining(:, 2:nT+1), 1);
+
+    if nargin < 5
         nT = TimeParams.maxDays * TimeParams.intervalsPerDay;
         tShow = true(1, nT);
         t = TimeParams.t(1:nT);
