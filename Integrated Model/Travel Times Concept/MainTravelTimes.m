@@ -1,5 +1,4 @@
 function MainTravelTimes
-%% TODO: concentration shouldn't drop to zero?
 %% TODO: water must flow even if no rain (two domain?)
 %% TODO: mass balance if lambda ~= 0
 %%
@@ -55,7 +54,11 @@ function MainTravelTimes
     % Other geometrical
     zLength = abs(ModelDim.zin(1) - ModelDim.zin(end));
     % Pore volume
-    theta = [0.4; 0.04];
+    totalPv = 0.44;
+    % Immobile-mobile volume ratio
+    beta = 10;
+    % Immobile-mobile pore volumes
+    theta = [totalPv - totalPv / (1 + beta); totalPv / (1 + beta)];
     pv = zLength .* theta;
     
     % Source/sink rate
@@ -63,12 +66,12 @@ function MainTravelTimes
     % Exchange rate between mobile-immobile phases
     kExch = 1e-2;
     % Exchange rate between mobile phase and particles flowing
-    kExchPart = 8e-1;
+    kExchPart = -(log(1.5) / exp(mu - sigma^2));
     
     % Initial mass of solute
     mIni = cIni .* pv;
     
-    TimeParams.maxDays = 30;
+%     TimeParams.maxDays = 30;
     nT = TimeParams.maxDays * TimeParams.intervalsPerDay;
     t = t(1:nT);
     
@@ -142,13 +145,13 @@ function MainTravelTimes
         % Calculate the remaining concentrations
         cRemaining(:, iT + 1) = mRemaining(:, iT + 1) ./ pv;
         
-%         % Some checks
-%         if any(RealLt(cRemaining(:, iT + 1), 0, EPSILON))
-%             error('iT = %d: Concentration is negative.', iT);
-%         end
-%         if any(RealGt(cRemaining(:, iT + 1), 1, EPSILON))
-%             error('iT = %d: Concentration is too high.', iT);
-%         end
+        % Some checks
+        if any(RealLt(cRemaining(:, iT + 1), 0, EPSILON))
+            error('iT = %d: Concentration is negative.', iT);
+        end
+        if any(RealGt(cRemaining(:, iT + 1), 1, EPSILON))
+            error('iT = %d: Concentration is too high.', iT);
+        end
         
         % Output progress
         if mod(iT, 1000) == 0
@@ -271,7 +274,7 @@ function MainTravelTimes
         ntX = numel(tauX);
 
         tauX = repmat(tauX, [1, 1, nElements]);
-        rate = 1 - exp(-(log(1.5) / exp(mu - sigma^2)) .* tauX);
+        rate = 1 - exp(kExchX .* tauX);
         cIniX = repmat(cIniX, [1, ntX, 1]);
         cPart = cIniX(2, :, :) + (cIniX(1, :, :) - cIniX(2, :, :)) .* rate;
     end
