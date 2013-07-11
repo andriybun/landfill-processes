@@ -118,8 +118,8 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
     ModelOutput.mRemaining = mRemaining;
     
     % Add also concentration at the outlet
-    ModelOutput.cOutRes = mOutTotal ./ qOutTotal;
-    ModelOutput.cOutRes(qOutTotal == 0) = 0;
+    ModelOutput.cOutTotal = mOutTotal ./ qOutTotal;
+    ModelOutput.cOutTotal(qOutTotal == 0) = 0;
     
     return
     
