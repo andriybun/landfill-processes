@@ -80,7 +80,7 @@ function MainTravelTimes
     
     % Validate
     BASELINE_FILE_NAME = '../Data/baseline';
-    COMP_VARS = {'cOutRes', 'mOutRes', 'mRemRes'};
+    COMP_VARS = {'cOutTotal', 'mOutTotal', 'mRemRes'};
 %     action = SAVE_RESULTS;
     action = COMPARE_RESULTS;
 %     action = NO_VALIDATION;

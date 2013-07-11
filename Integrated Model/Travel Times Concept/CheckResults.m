@@ -20,16 +20,17 @@ function CheckResults(ModelOutput, action, BASELINE_FILE_NAME, COMP_VARS)
     if (action == SAVE_RESULTS)
         varList = {'cOutTotal', 'mOutTotal', 'qOutTotal', 'mRemRes'};
         for var = varList
-            eval(sprintf('%s = ModelOutput.%s;', var{:}, var{:}));
+            varName = var{:};
+            eval(sprintf('%s = ModelOutput.%s;', varName, varName));
         end
         save(BASELINE_FILE_NAME, varList{:});
     elseif (action == COMPARE_RESULTS)
         BaselineRes = load(BASELINE_FILE_NAME);
-        nEl = min(numel(ModelOutput.cOutRes), numel(BaselineRes.cOutRes));
-        DiffBl.cOutRes = ModelOutput.cOutRes(1:nEl) - BaselineRes.cOutRes(1:nEl);
-        DiffBl.mOutRes = ModelOutput.mOutTotal(1:nEl) - BaselineRes.mOutRes(1:nEl);
-        DiffBl.mRemRes = ModelOutput.mRemRes(1:nEl) - BaselineRes.mRemRes(1:nEl);
-        
+        nEl = min(numel(ModelOutput.cOutTotal), numel(BaselineRes.cOutTotal));
+        for var = COMP_VARS
+            varName = var{:};
+            DiffBl.(varName) = ModelOutput.(varName)(1:nEl) - BaselineRes.(varName)(1:nEl);
+        end
         fprintf('Error analysis:\n');
         for varIdx = 1:numel(COMP_VARS)
             var = COMP_VARS{varIdx};
