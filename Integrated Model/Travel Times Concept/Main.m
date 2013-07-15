@@ -1,4 +1,4 @@
-function MainTravelTimes
+function Main
 %% TODO: water must flow even if no rain (two domain?)
 %% TODO: mass balance if lambda ~= 0
 %%

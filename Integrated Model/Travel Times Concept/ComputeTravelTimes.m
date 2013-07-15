@@ -108,8 +108,11 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
         end
     end
     
+    fprintf('100%% complete\n\n');
+    
     % Pack outputs to a struct
     ModelOutput = struct();
+    ModelOutput.t = t;
     ModelOutput.nT = nT;
     ModelOutput.mIni = mIni;
     ModelOutput.qOutTotal = qOutTotal;
@@ -181,8 +184,10 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
         ntX = numel(tauX);
         
         tauX = repmat(tauX, [1, 1, nElements]);
+        pvX = repmat(pvX, [1, ntX, 1]);
         rate = 1 - exp(kExchX .* tauX);
         cIniX = repmat(cIniX, [1, ntX, 1]);
-        cPart = cIniX(2, :, :) + (cIniX(1, :, :) - cIniX(2, :, :)) .* rate;
+        cPart = cIniX(2, :, :) + (cIniX(1, :, :) - cIniX(2, :, :)) .* ...
+            pvX(1, :, :) ./ (pvX(1, :, :) + pvX(2, :, :)) .* rate;
     end
 end

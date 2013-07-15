@@ -1,4 +1,4 @@
-function CheckResults(ModelOutput, action, BASELINE_FILE_NAME, COMP_VARS)
+function CheckResults(ModelOutput, action, FILE_NAME, COMP_VARS)
 
     global EPSILON NUM_SIGMAS 
     global NO_VALIDATION SAVE_RESULTS COMPARE_RESULTS
@@ -18,14 +18,14 @@ function CheckResults(ModelOutput, action, BASELINE_FILE_NAME, COMP_VARS)
 
     % Validate against previous runs
     if (action == SAVE_RESULTS)
-        varList = {'cOutTotal', 'mOutTotal', 'qOutTotal', 'mRemRes'};
+        varList = {'t', 'cOutTotal', 'mOutTotal', 'qOutTotal', 'mRemRes'};
         for var = varList
             varName = var{:};
             eval(sprintf('%s = ModelOutput.%s;', varName, varName));
         end
-        save(BASELINE_FILE_NAME, varList{:});
+        save(FILE_NAME, varList{:});
     elseif (action == COMPARE_RESULTS)
-        BaselineRes = load(BASELINE_FILE_NAME);
+        BaselineRes = load(FILE_NAME);
         nEl = min(numel(ModelOutput.cOutTotal), numel(BaselineRes.cOutTotal));
         for var = COMP_VARS
             varName = var{:};

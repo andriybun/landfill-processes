@@ -372,19 +372,8 @@ where
 \begin_layout Standard
 \begin_inset Formula 
 \begin{equation}
-m_{out}\left(t\right)=\int_{0}^{t}c_{out}\left(t,\,\tau\right)\cdot q_{in}\left(t-\tau\right)\cdot f\left(\tau\right)\, d\tau.
+m_{out}\left(t\right)=\int_{0}^{t}c_{out}\left(t,\,\tau\right)\cdot q_{in}\left(t-\tau\right)\cdot f\left(\tau\right)\, d\tau,
 \end{equation}
-
-\end_inset
-
-
-\begin_inset Note Note
-status open
-
-\begin_layout Plain Layout
-Update description here.
- Concept has changed.
-\end_layout
 
 \end_inset
 
@@ -396,22 +385,210 @@ and
 \begin_inset Formula $c_{out}\left(t,\,\tau\right)$
 \end_inset
 
- is a solution of the system of ODE’s 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "eq:c_out_exchange_decay"
+ is a concentration of solute in the leachate leaving the system from the
+ bottom.
+ This concentration is calculated as follows:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+c_{out}(t,\,\tau)=c_{in}\left(t-\tau\right)+(c_{rem,m}\left(t-\tau\right)\cdot\frac{V_{m}}{V_{m}+q_{out}\left(t\right)}\cdot\left(1-e^{\#c_{ex}\#\cdot\tau}\right)).\label{eq:c_out_part_decay}
+\end{equation}
 
 \end_inset
 
- solved with initial conditions 
-\begin_inset Formula $c_{m}\left(0\right)=c_{rem,m}\left(t-\tau\right)$
+
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+Think about some nice letter for 
+\begin_inset Formula $c_{ex}$
 \end_inset
 
- and 
-\begin_inset Formula $c_{m}\left(0\right)=c_{rem,imm}\left(t-\tau\right)$
+
+\end_layout
+
 \end_inset
 
-.
+
+\end_layout
+
+\begin_layout Standard
+were 
+\begin_inset Formula $c_{in}\left(t-\tau\right)$
+\end_inset
+
+ is a concentration of solute at the inlet of the system.
+\end_layout
+
+\begin_layout Section
+Sensitivity analysis
+\end_layout
+
+\begin_layout Standard
+Text
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename fig/Sensitivity_Beta.tif
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Fig2
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Text
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename fig/Sensitivity_kExch.tif
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Fig3
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Text
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename fig/Sensitivity_kExchPart.tif
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Fig4
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Text
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename fig/Sensitivity_Lambda.tif
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Fig5
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Text
 \end_layout
 
 \begin_layout Section
