@@ -38,6 +38,8 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
     mRemaining = nan(2, nT + 1);
     mRemaining(:, 1) = mIni;
     
+    mDecay = zeros(1, nT);
+    
     for iT = 1:nT
         tOffset = t(iT);
         tAfter = t(iT:nT) - tOffset;
@@ -73,6 +75,7 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
         % current time step. Different volumes will have different effect on exchange here
         cOutAfter = ConcentrationExchangePhases(...
             [tAfter(1), tAfter(1) + dt], cRemaining(:, iT), kExch, lambda, pv);
+        
         % Save the remaining mass of solute to output vector
         mRemaining(:, iT + 1) = cOutAfter(:, 2) .* pv;
         
@@ -93,6 +96,8 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
         pv(2) = pv(2) - qOutTotal(iT);
         % Calculate the remaining concentrations
         cRemaining(:, iT + 1) = mRemaining(:, iT + 1) ./ pv;
+        
+        mDecay(iT) = sum(mRemaining(:, iT)) - (sum(mRemaining(:, iT + 1)) + mOutTotal(iT));
         
         % Some checks
         if any(RealLt(cRemaining(:, iT + 1), 0, EPSILON))
@@ -123,6 +128,8 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
     % Add also concentration at the outlet
     ModelOutput.cOutTotal = mOutTotal ./ qOutTotal;
     ModelOutput.cOutTotal(qOutTotal == 0) = 0;
+    
+    ModelOutput.mDecay = mDecay;
     
     return
     
