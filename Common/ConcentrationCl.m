@@ -21,33 +21,27 @@ classdef ConcentrationCl
             self.m = vIni .* cIni;
         end
         
-        function self = SetVolume(self, v, i, j)
+        function self = SetVolume(self, v, varargin)
             if (nargin == 2)
                 self.v = v;
-            elseif (nargin == 3)
-                self.v(i) = v(i);
-            elseif (nargin == 4)
-                self.v(i, j) = v(i, j);
+            elseif (nargin > 2)
+                self.v(varargin{:}) = v(varargin{:});
             end
         end
         
-        function self = SetConcentration(self, c, i, j)
+        function self = SetConcentration(self, c, varargin)
             if (nargin == 2)
                 self.m = self.v .* c;
-            elseif (nargin == 3)
-                self.m(i) = self.v(i) .* c;
-            elseif (nargin == 4)
-                self.m(i, j) = self.v(i, j) .* c;
+            elseif (nargin > 2)
+                self.m(varargin{:}) = self.v(varargin{:}) .* c;
             end
         end
         
-        function self = AddVolume(self, dv, i, j)
+        function self = AddVolume(self, dv, varargin)
             if (nargin == 2)
                 self.v = self.v + dv;
-            elseif (nargin == 3)
-                self.v(i) = self.v(i) + dv;
-            elseif (nargin == 4)
-                self.v(i, j) = self.v(i, j) + dv;
+            elseif (nargin > 2)
+                self.v(varargin{:}) = self.v(varargin{:}) + dv;
             end
         end
         
@@ -57,37 +51,30 @@ classdef ConcentrationCl
             self.m = self.m + dm;
         end
         
-        function v = GetVolume(self, i, j)
+        function v = GetVolume(self, varargin)
             if (nargin == 1)
                 v = self.v;
-            elseif (nargin == 2)
-                v = self.v(i);
-            elseif (nargin == 3)
-                v = self.v(i, j);
+            elseif (nargin > 1)
+                v = self.v(varargin{:});
             end
         end
         
-        function c = GetConcentration(self, i, j)
+        function c = GetConcentration(self, varargin)
             if (nargin == 1)
                 c = self.m ./ self.v;
                 isZero = (self.v == 0);
-            elseif (nargin == 2)
-                c = self.m(i) ./ self.v(i);
-                isZero = (self.v(i) == 0);
-            elseif (nargin == 3)
-                c = self.m(i, j) ./ self.v(i, j);
-                isZero = (self.v(i, j) == 0);
+            elseif (nargin > 1)
+                c = self.m(varargin{:}) ./ self.v(varargin{:});
+                isZero = (self.v(varargin{:}) == 0);
             end
             c(isZero) = 0;
         end
         
-        function m = GetMass(self, i, j)
+        function m = GetMass(self, varargin)
             if (nargin == 1)
                 m = self.m;
-            elseif (nargin == 2)
-                m = self.m(i);
-            elseif (nargin == 3)
-                m = self.m(i, j);
+            elseif (nargin > 1)
+                m = self.m(varargin{:});
             end
         end
     end
