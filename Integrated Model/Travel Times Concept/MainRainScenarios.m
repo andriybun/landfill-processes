@@ -1,4 +1,4 @@
-function MainRunScenarios
+function MainRainScenarios
 
     close all
 
@@ -6,7 +6,7 @@ function MainRunScenarios
     addpath('../Data/');
     
     Const = DefineConstants();
-    
+        
     % Dimensions
     zTop = 0;
     zBottom = -1;
@@ -39,33 +39,49 @@ function MainRunScenarios
     % Exchange rate between mobile phase and particles flowing
     ModelParams.kExchPart = -(log(1.5) / exp(ModelParams.mu - ModelParams.sigma ^ 2));
 
-    %% Parameter to investigate for sensitivity
-    Parameter = struct();
-%     Parameter.Name = 'beta';
-%     Parameter.Values = [0.1, 1, 5, 10];
-%     Parameter.Name = 'kExchPart';
-%     Parameter.Values = [-0.11, -1.1022, -2.2];
-%     Parameter.Name = 'kExch';
-%     Parameter.Values = [1e-4, 1e-2, 1e-1];
-    Parameter.Name = 'lambda';
-    Parameter.Values = [0, 1e-3, 1e-2];
+    %% Irrigation scenarios
+    [~, nT] = size(rainData);
+    nScenarios = 4;
+    scenarioInfo = cell(1, nScenarios);
+    sumRain = sum(rainData);
+    nRainIntervals = sum(abs(rainData) > 0);
+    rainInterval = nT / nRainIntervals;
+    maxRainIntensity = max(abs(rainData));
+    rainDataAll = zeros(nScenarios, nT);
+    rainDataAll(1, :) = rainData;
+    scenarioInfo{1} = 'Real_Data';
+    rainDataAll(2, 1:rainInterval:nT) = sumRain / nRainIntervals;
+    scenarioInfo{2} = 'Uniform_Intervals';
+    rainDataAll(3, 1:nRainIntervals) = sumRain / nRainIntervals;
+    scenarioInfo{3} = 'All_at_Once';
+    rainDataAll(4, :) = sumRain / nT;
+    scenarioInfo{4} = 'Uniform_Intervals';
+    % Append some dry period to buffer all delays at the end
+    daysExtra = 30;
+    ntExtra = daysExtra * TimeParams.intervalsPerDay;
+    rainDataAll = cat(2, rainDataAll, zeros(nScenarios, ntExtra));
+    rainConcentrationData = cat(2, rainConcentrationData, zeros(1, ntExtra));
+    TimeParams.t = cat(2, TimeParams.t, TimeParams.t(end) + TimeParams.dt .* (1:ntExtra));
+    TimeParams.numIntervals = TimeParams.numIntervals + ntExtra;
+    TimeParams.maxDays = TimeParams.maxDays + daysExtra;
+    TimeParams.daysElapsed = TimeParams.t;
     %%
     
 %     TimeParams.maxDays = 30;
 
     tic
     
-    for iVal = 1:numel(Parameter.Values)
-        ModelParams.(Parameter.Name) = Parameter.Values(iVal);
+    for iVal = 1:nScenarios
+        rainData = rainDataAll(iVal, :);
         ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentrationData, ...
             ModelDim, ModelParams, cIni);
         
-        FILENAME_TEMPLATE = '../Data/results_%s_%5.4f.mat';
+        FILENAME_TEMPLATE = '../Data/results_%s_%s.mat';
         COMP_VARS = {'cOutTotal', 'mOutTotal', 'mRemRes'};
         
         action = Const.SAVE_RESULTS;
         
-        resultsFileName = sprintf(FILENAME_TEMPLATE, Parameter.Name, Parameter.Values(iVal));
+        resultsFileName = sprintf(FILENAME_TEMPLATE, 'Rain_Data', scenarioInfo{iVal});
         CheckResults(ModelOutput, action, resultsFileName, COMP_VARS);
     end
 

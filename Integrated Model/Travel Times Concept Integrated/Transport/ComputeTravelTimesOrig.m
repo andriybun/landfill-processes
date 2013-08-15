@@ -3,6 +3,28 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
 
     Const = DefineConstants();
     
+%% Andre's block
+pname = '../';
+addpath(genpath(pname));
+% modus = ExtraPar.modus;
+modus = 0;
+[IC, Comp, Pm, S, Rp, H] = initialize_ODE(modus, modus);
+ORI = initialize_ORI(Comp, 0);
+nSpecies = numel(IC);
+nSpecies = 1;
+nPhases = 2;
+
+global Call V2 tt Rall
+Call = [];  V2 = []; tt = []; Rall = [];
+options = odeset('OutputFcn','StoreC','Refine',1, 'AbsTol', 1e-8, 'RelTol', 1e-8);
+cIni = repmat(permute(IC(1:nSpecies), [3, 1, 2]), [nPhases, 1, 1]);
+rainConcentrationData = repmat(rainConcentrationData, [1, 1, nSpecies]);
+%% END
+
+%%
+%% TODO: debug / validate vs. previous version.
+%%
+    
 	% Time parameters
     tEnd = TimeParams.t(end);
     dt = TimeParams.dt;
@@ -40,6 +62,8 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
     
     mDecay = zeros(1, nT);
     
+    nPercent = ceil(10 * nT / 100);
+    
     for iT = 1:nT
         tOffset = t(iT);
         tAfter = t(iT:nT) - tOffset;
@@ -58,7 +82,8 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
             % Add (fresh) rainwater to the system. Change volume of liquid and revise mass and
             % concentration of solute in mobile phase
             pvMobUpd = pv(2) + rainData(iT);
-            mRemaining(2, iT) = mRemaining(2, iT) + rainData(iT) * rainConcentrationData(iT);
+            mRemaining(2, iT) = mRemaining(2, iT) + ...
+                rainData(iT) * rainConcentrationData(iT);
             cRemaining(2, iT) = mRemaining(2, iT) / pvMobUpd;
             pv(2) = pvMobUpd;
             % Every input impulse of water will cause (log-normal) response at the outlet. All the
@@ -71,6 +96,18 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
             PartInfo = PartInfo.AddVolume(qOutAfter, iT:iTend);
         end
         
+        tRange = [tAfter(1), tAfter(1) + dt];
+        
+%% Andre's block
+IC(1:nSpecies) = cRemaining(1, iT, 1:nSpecies);
+% tic
+[tChem, MT] = ode15s(@bioreactor, linspace(tRange(1), tRange(2), 3), ...
+    IC, options, Comp, Pm, S, Rp, ORI, H);
+% toc
+IC(1:nSpecies) = MT(end, 1:nSpecies);
+cRemaining(1, iT, :) = IC(1:nSpecies);
+%% END
+
         % Solve exchange equation in order to obtain concentrations in both phases at the end of
         % current time step. Different volumes will have different effect on exchange here
         cOutAfter = ConcentrationExchangePhases(...
@@ -103,12 +140,12 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
         if any(RealLt(cRemaining(:, iT + 1), 0, Const.EPSILON))
             error('iT = %d: Concentration is negative.', iT);
         end
-        if any(RealGt(cRemaining(:, iT + 1), 1, Const.EPSILON))
-            error('iT = %d: Concentration is too high.', iT);
-        end
+%         if any(RealGt(cRemaining(:, iT + 1), 1, Const.EPSILON))
+%             error('iT = %d: Concentration is too high.', iT);
+%         end
         
         % Output progress
-        if mod(iT, 1000) == 0
+        if mod(iT, nPercent ) == 0
             fprintf('%5.3f%% complete\n', iT / nT * 100);
         end
     end

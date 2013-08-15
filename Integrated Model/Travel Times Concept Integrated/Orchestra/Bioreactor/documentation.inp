@@ -1,0 +1,46 @@
+ORCHESTRA Example 1
+
+This example calculates the chemical speciation of carbonate in water as a funtion of pH.
+Start the calculations by clicking the run button above.
+The calculated ouput will appear under the output tab on the right. 
+
+
+The tabs on the right: 
+
+Chemistry
+Here you can define the substances and reactions that are included in the calculations.
+The "Change View" button allows to switch between text and graphical input mode.
+
+
+Input
+Here you can give values for selected cell variables.
+You can use (nested) sweeps/ loops of variables, but also directly  
+paste tables from a spreadsheet here. 
+Any variable that is used within the chemistry module can be given a value here.
+
+Examples of possible input variables:
+CO3-2.liter // total amount of CO3-2 per liter
+HCO3-.k   // formation constant of HCO3- species
+
+
+Output
+After a run the calculated ouput appears here.
+Note that ORCHESTRA uses the column headers in the output file to determine the output
+for the next run. So you can change the ouput by editing the column headers, and re-run the model.
+
+The format of output and input files is  the same,
+so ouput of one calculation could used as input for another calculation.
+
+Any variable that is used within the chemistry module can used for output.
+
+Examples of output variables:
+HCO3-.con // concentration  of HCO3- species
+HCO3-.logact // log activity of HCO3- species
+HCO3-.k   // its formation constant
+
+
+
+Hans Meeussen
+March  2008
+e-mail: meeussen@ecn.nl
+

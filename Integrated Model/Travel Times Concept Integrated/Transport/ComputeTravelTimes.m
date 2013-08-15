@@ -3,6 +3,28 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
 
     Const = DefineConstants();
     
+%% Andre's block
+pname = '../';
+addpath(genpath(pname));
+% modus = ExtraPar.modus;
+modus = 0;
+[IC, Comp, Pm, S, Rp, H] = initialize_ODE(modus, modus);
+ORI = initialize_ORI(Comp, 0);
+nSpecies = numel(IC);
+nSpecies = 1;
+nPhases = 2;
+
+global Call V2 tt Rall
+Call = [];  V2 = []; tt = []; Rall = [];
+options = odeset('OutputFcn','StoreC','Refine',1, 'AbsTol', 1e-8, 'RelTol', 1e-8);
+cIni = repmat(permute(IC(1:nSpecies), [3, 1, 2]), [nPhases, 1, 1]);
+rainConcentrationData = repmat(rainConcentrationData, [1, 1, nSpecies]);
+%% END
+
+%%
+%% TODO: debug / validate vs. previous version.
+%%
+
 	% Time parameters
     tEnd = TimeParams.t(end);
     dt = TimeParams.dt;
@@ -25,20 +47,22 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
     pv = zLength .* theta;
     
     % Initial mass of solute
-    mIni = cIni .* pv;
+    mIni = cIni .* repmat(pv, [1, 1, nSpecies]);
     
     % Initialize object to keep information about volumes and concentrations
-    % dimensions of arrays (entry time x leave time)
-    PartInfo = ConcentrationCl(zeros(1, nT), zeros(1, nT));
+    % dimensions of arrays (1 x leave time)
+    PartInfo = ConcentrationCl(zeros(1, nT, nSpecies), zeros(1, nT, nSpecies));
 
     qOutTotal = zeros(1, nT);
-    mOutTotal = zeros(1, nT);
-    cRemaining = nan(2, nT + 1);
-    cRemaining(:, 1) = cIni;
-    mRemaining = nan(2, nT + 1);
-    mRemaining(:, 1) = mIni;
+    mOutTotal = zeros(1, nT, nSpecies);
+    cRemaining = nan(nPhases, nT + 1, nSpecies);
+    cRemaining(:, 1, :) = cIni;
+    mRemaining = nan(nPhases, nT + 1, nSpecies);
+    mRemaining(:, 1, :) = mIni;
+
+    mDecay = zeros(1, nT, nSpecies);
     
-    mDecay = zeros(1, nT);
+    nPercent = ceil(10 * nT / 100);
     
     for iT = 1:nT
         tOffset = t(iT);
@@ -58,8 +82,9 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
             % Add (fresh) rainwater to the system. Change volume of liquid and revise mass and
             % concentration of solute in mobile phase
             pvMobUpd = pv(2) + rainData(iT);
-            mRemaining(2, iT) = mRemaining(2, iT) + rainData(iT) * rainConcentrationData(iT);
-            cRemaining(2, iT) = mRemaining(2, iT) / pvMobUpd;
+            mRemaining(2, iT, :) = mRemaining(2, iT, :) + ...
+                rainData(iT) * rainConcentrationData(1, iT, :);
+            cRemaining(2, iT, :) = mRemaining(2, iT, :) / pvMobUpd;
             pv(2) = pvMobUpd;
             % Every input impulse of water will cause (log-normal) response at the outlet. All the
             % outflow during a given time step is considered as a particle with unique travel time
@@ -70,45 +95,57 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
             % Increase volume of water leaving the system at future times
             PartInfo = PartInfo.AddVolume(qOutAfter, iT:iTend);
         end
+
+        tRange = [tAfter(1), tAfter(1) + dt];
+        
+%% Andre's block
+IC(1:nSpecies) = cRemaining(1, iT, 1:nSpecies);
+% tic
+[tChem, MT] = ode15s(@bioreactor, linspace(tRange(1), tRange(2), 3), ...
+    IC, options, Comp, Pm, S, Rp, ORI, H);
+% toc
+IC(1:nSpecies) = MT(end, 1:nSpecies);
+cRemaining(1, iT, :) = IC(1:nSpecies);
+%% END
         
         % Solve exchange equation in order to obtain concentrations in both phases at the end of
         % current time step. Different volumes will have different effect on exchange here
         cOutAfter = ConcentrationExchangePhases(...
-            [tAfter(1), tAfter(1) + dt], cRemaining(:, iT), kExch, lambda, pv);
+            tRange, cRemaining(:, iT, :), kExch, lambda, pv);
         
         % Save the remaining mass of solute to output vector
-        mRemaining(:, iT + 1) = cOutAfter(:, 2) .* pv;
-        
-        cPartOutR = cat(1, repmat(cOutAfter(2, 1), [1, 1, nCalcT]), ...
-            reshape(PartInfo.GetConcentration(iT:iTend), 1, 1, []));
-        pvPartOutR = cat(1, repmat(pv(2), [1, 1, nCalcT]), ...
-            reshape(PartInfo.GetVolume(iT:iTend), 1, 1, []));
+        mRemaining(:, iT + 1, :) = cOutAfter(:, 2, :) .* repmat(pv, [1, 1, nSpecies]);
+        cPartOutR = cat(1, repmat(cOutAfter(2, 1, :), [1, 1, nCalcT]), ...
+            reshape(PartInfo.GetConcentration(1, iT:iTend, :), 1, 1, []));
+        pvPartOutR = cat(1, repmat(pv(2), [1, 1, nCalcT * nSpecies]), ...
+            reshape(PartInfo.GetVolume(1, iT:iTend, :), 1, 1, []));
         cPartR = ConcentrationExchangePart(...
             [tAfter(1), tAfter(1) + dt], cPartOutR, kExchPart, lambda, pvPartOutR);
-        cPart = reshape(cPartR(:, 2, :), [1, nCalcT]);
-        PartInfo = PartInfo.SetConcentration(cPart, iT:iTend);
-        mOutTotal(iT) = PartInfo.GetMass(iT);
+        cPart = reshape(cPartR(:, 2, :), 1, nCalcT, []);
+        PartInfo = PartInfo.SetConcentration(cPart, 1, iT:iTend, :);
+        mOutTotal(1, iT, :) = PartInfo.GetMass(1, iT, :);
         
         % Withdraw solute leaving together with leachate and compute remaining masses of solutes
         % in both phases
-        mRemaining(2, iT + 1) = mRemaining(2, iT + 1) - mOutTotal(iT);
+        mRemaining(2, iT + 1, :) = mRemaining(2, iT + 1, :) - mOutTotal(1, iT, :);
         % Remove volume of drained leachate from the volume of liquid in the system.
         pv(2) = pv(2) - qOutTotal(iT);
         % Calculate the remaining concentrations
-        cRemaining(:, iT + 1) = mRemaining(:, iT + 1) ./ pv;
+        cRemaining(:, iT + 1, :) = mRemaining(:, iT + 1, :) ./ repmat(pv, [1, 1, nSpecies]);
         
-        mDecay(iT) = sum(mRemaining(:, iT)) - (sum(mRemaining(:, iT + 1)) + mOutTotal(iT));
+        mDecay(1, iT, :) = sum(mRemaining(:, iT, :)) - (sum(mRemaining(:, iT + 1, :)) + ...
+            mOutTotal(1, iT, :));
         
         % Some checks
-        if any(RealLt(cRemaining(:, iT + 1), 0, Const.EPSILON))
+        if any(RealLt(cRemaining(:, iT + 1, :), 0, Const.EPSILON))
             error('iT = %d: Concentration is negative.', iT);
         end
-        if any(RealGt(cRemaining(:, iT + 1), 1, Const.EPSILON))
-            error('iT = %d: Concentration is too high.', iT);
-        end
+%         if any(RealGt(cRemaining(:, iT + 1), 1, Const.EPSILON))
+%             error('iT = %d: Concentration is too high.', iT);
+%         end
         
         % Output progress
-        if mod(iT, 1000) == 0
+        if mod(iT, nPercent ) == 0
             fprintf('%5.3f%% complete\n', iT / nT * 100);
         end
     end
@@ -125,8 +162,11 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
     ModelOutput.cRemaining = cRemaining;
     ModelOutput.mRemaining = mRemaining;
     
+%     ModelOutput.cSpecies = cSpecies(:, 2:nT+1);
+    ModelOutput.cAll = Call(2:2:end, :);
+    
     % Add also concentration at the outlet
-    ModelOutput.cOutTotal = mOutTotal ./ qOutTotal;
+    ModelOutput.cOutTotal = squeeze(mOutTotal(:, :, 1)) ./ qOutTotal;
     ModelOutput.cOutTotal(qOutTotal == 0) = 0;
     
     ModelOutput.mDecay = mDecay;
@@ -149,6 +189,10 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
             
             [nPhases, ~, nElements] = size(cIniX);
             ntX = numel(tX);
+            
+            if (size(pvX, 3) == 1)
+                pvX = repmat(pvX, [1, 1, nElements]);
+            end
             
             vRatioIm = pvX(2, :, :) ./ (pvX(1, :, :) + pvX(2, :, :));
             vRatioM = pvX(1, :, :) ./ (pvX(1, :, :) + pvX(2, :, :));

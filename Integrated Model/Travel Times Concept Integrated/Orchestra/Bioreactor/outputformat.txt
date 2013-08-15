@@ -1,0 +1,1 @@
+Var: pH H+.con H+.tot OH-.con H2O.con H[Acetate].con Acetate-.con HCO3-.con H2CO3.con CO3-2.con Ca+2.con Calcite.min CO2[g].con CO2[g].tot pCO2[g] NH4+.con Na+.con NaHCO3.con NaCO3-.con Natron.min SO4-2.con HSO4-.con Gypsum.min CaSO4.con H2S.con HS-.con Ca[Acetate]+.con Na[Acetate].con H2CO3.tot H2O.con HCO3-.k 

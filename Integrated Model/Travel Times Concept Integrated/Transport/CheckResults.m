@@ -6,18 +6,20 @@ function CheckResults(ModelOutput, action, FILE_NAME, COMP_VARS)
     nT = ModelOutput.nT;
     
     % Remaining emission potential
-    mRemRes = sum(ModelOutput.mRemaining(:, 2:nT+1), 1);
-    ModelOutput.mRemRes = mRemRes;
+    mRemRes = sum(ModelOutput.mRemaining(:, 2:nT+1, 1), 1);
+    ModelOutput.mRemRes = mRemRes(:, :, 1);
 
+    mIniSum = sum(ModelOutput.mIni(:, :, 1));
+    mOutSum = sum(ModelOutput.mOutTotal(:, :, 1));
     % Error check
-    if ~RealEq(sum(ModelOutput.mIni) - sum(ModelOutput.mOutTotal), mRemRes(end), Const.EPSILON)
+    if ~RealEq(mIniSum - mOutSum, mRemRes(end), Const.EPSILON)
         warning('ResultCheck:MassBalanceError', 'Absolute error is too high: err = %3.2e', ...
-            abs(abs(sum(ModelOutput.mIni) - sum(ModelOutput.mOutTotal) - mRemRes(end))));
+            abs(abs(mIniSum - mOutSum - mRemRes(end))));
     end
 
     % Validate against previous runs
     if (action == Const.SAVE_RESULTS)
-        varList = {'t', 'cOutTotal', 'mOutTotal', 'qOutTotal', 'mRemRes'};
+        varList = {'t', 'cOutTotal', 'mOutTotal', 'qOutTotal', 'mRemRes', 'cAll'};
         for var = varList
             varName = var{:};
             eval(sprintf('%s = ModelOutput.%s;', varName, varName));

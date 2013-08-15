@@ -1,0 +1,214 @@
+//********* Version: 14 March 2013 9:15  *******
+@logactivities:  // Indicates that this version uses log activities for entities.  (name.logact) 
+
+// Adding   @forceLogKreactions:   here will force the graphical editor to rewrite all reactions in log K format.  
+// Adding   @forceLinKreactions:   here will force the graphical editor to rewrite all reactions in linear K format. 
+// The grapical editor will not change the original format of reactions in inputfile otherwise. 
+
+//********* The database file(s) *******
+// This section list the database files that are used by the interactive chemistry editor
+// Syntax for local files:                   @database: minteq.txt
+// Syntax for files on the internet:         @database: www.meeussen.nl/orchestra/minteqv4.txt
+
+@database: home/Databases/minteqv4.txt
+@database: home/Databases/adsmodels.txt
+//********* End of the database file(s) *******
+
+
+//********* Generate output variables  *******
+@output(pH)
+@output(H+.con)
+@output(H+.tot)
+@output(OH-.con)
+@output(H2O.con)
+@output(H[Acetate].con)
+@output(Acetate-.con)
+@output(HCO3-.con)
+@output(H2CO3.con)
+@output(CO3-2.con)
+@output(Ca+2.con)
+@output(Calcite, min, .min)
+@output(CO2[g].con)
+@output(CO2[g].tot)
+@output(pCO2[g])
+@output(NH4+.con)
+@output(Na+.con)
+@output(NaHCO3.con)
+@output(NaCO3-.con)
+@output(Natron, min, .min)
+@output(SO4-2.con)
+@output(HSO4-.con)
+@output(Gypsum, min, .min)
+@output(CaSO4.con)
+@output(H2S.con)
+@output(HS-.con)
+@output(Ca[Acetate]+.con)
+@output(Na[Acetate].con)
+@output(H2CO3.tot)
+@output(H2O.con)
+@output(HCO3-.k)
+//********* End of output variables  *******
+
+
+
+//********* The variables *******
+@globalvar: H2O.logact 0
+@Var: CO2[g].act 1.0  //   
+@Var: H+.act 1.0  //   
+@Var: H+.logact 1.0  //  **
+@Var: T 298.15  //   
+@Var: Tr 298.15  //   
+@Var: density 1.0  //   
+@Var: e-.act 1.0  //   
+@Var: gasvolume 1.0  //   
+@Var: pCO2[g] 3.0  //   
+@Var: pH 7.0  //   
+@Var: pe 1.0  //   
+@Var: totvolume 1.0  //   
+@Var: watervolume 1.0  //   
+//********* End of the variables *******
+
+
+//********* The extra expressions *******
+//*  The format of extra expressions is: 
+//*  Stage:(1,"expression") 
+//* (Stage: is used instead of Calc: here to prevent interpretation by the GUI.)
+//*  For the calculations Stage: and Calc: are equivalent.
+//********* End of the extra expressions *******
+
+//********* The phases *******
+@phase(tot)
+@phase(liter)
+@link_phase(liter, tot, "watervolume")
+@phase(gas)
+@link_phase(gas, tot, "gasvolume")
+@link_phase(gas, liter, "0")
+@phase(diss)
+@link_phase(diss, liter, "1")
+@phase(min)
+@link_phase(min, liter, "1")
+//********* End of the phases *******
+
+// The uiobjects1 class can be used to add user defined content. 
+// It is literally read and written by the GUI.
+@class: uiobjects1(){%
+   @include: ../Orchestra/Databases/objects2013.txt
+   @Calc:(1,"HCO3-.k = 4.44630e-7*exp(0.01*(Tr-T))")	
+   @Calc:(1,"NH4+.k = 1.75388e9/exp(0.07*(Tr-T))")
+   @Calc:(1,"OH-.k = 1.00693e-14*exp(0.076*(Tr-T))")
+   @Calc:(1,"HS-.k = 9.54993e-8*exp(0.029*(Tr-T))")
+   @Calc:(1,"Calcite.k = 1/((10^(-171.9065-0.077993*T+2839.319/T+71.595*log10(T)))*4.7973344863669016E16)")	
+%}
+@uiobjects1()
+
+@globalvar: I .1
+@davies()
+
+//********* The primary entities *******
+@species(Ca+2, 2)
+@primary_entity(Ca+2, -9.0, tot, 1.0E-9)
+@species(Cl-, -1)
+@primary_entity(Cl-, -9.0, tot, 1.0E-9)
+@Global: pH
+@Var: H+.logact  1 **
+@Calc:(1, "H+.logact = -pH")
+@species(H+, 1)
+@primary_entity(H+, pH, -7.0, lin, 0.1, tot, 1.0E-9)
+@species(H2CO3, 0)
+@primary_entity(H2CO3, -9.0)
+@entity(H2O, diss, 55.6 )
+@primary_entity(H2O, 0.0)
+@species(H2S, 0)
+@primary_entity(H2S, -9.0, tot, 1.0E-9)
+@species(H[Acetate], 0)
+@primary_entity(H[Acetate], -9.0, tot, 1.0E-9)
+@species(NH3, 0)
+@primary_entity(NH3, -9.0, tot, 1.0E-9)
+@species(Na+, 1)
+@primary_entity(Na+, -9.0, tot, 1.0E-9)
+@species(SO4-2, -2)
+@primary_entity(SO4-2, -9.0, tot, 1.0E-9)
+//******************************
+
+//********* The entities *******
+
+@species(Acetate-, -1)
+@reaction(Acetate-,  1.74985e-5  , -1.0, H+, 1.0, H[Acetate])
+@species(CO3-2, -2)
+@reaction(CO3-2,  2.08451e-17 , -2.0, H+, 1.0, H2CO3)
+@species(CaHCO3+, 1)
+@reaction(CaHCO3+,  8.27942e-6  , 1.0, Ca+2, -1.0, H+, 1.0, H2CO3)
+@species(CaNH3+2, 2)
+@reaction(CaNH3+2,  1.25893     , 1.0, Ca+2, 1.0, NH3)
+@species(CaOH+, 1)
+@reaction(CaOH+,  2.00909e-13 , 1.0, Ca+2, -1.0, H+, 1.0, H2O)
+@species(Ca[Acetate]+, 1)
+@reaction(Ca[Acetate]+,  2.64850e-4  , 1.0, Ca+2, -1.0, H+, 1.0, H[Acetate])
+@species(Ca[NH3]2+2, 2)
+@reaction(Ca[NH3]2+2,  5.01187e-1  , 1.0, Ca+2, 2.0, NH3)
+@species(HCO3-, -1)
+@reaction(HCO3-,  4.44630e-7  , -1.0, H+, 1.0, H2CO3)
+@species(HS-, -1)
+@reaction(HS-,  9.54993e-8  , -1.0, H+, 1.0, H2S)
+@species(HSO4-, -1)
+@reaction(HSO4-,  97.7233     , 1.0, H+, 1.0, SO4-2)
+@species(NH4+, 1)
+@reaction(NH4+,  1.75388e9   , 1.0, H+, 1.0, NH3)
+@species(NH4SO4-, -1)
+@reaction(NH4SO4-,  1.87932e10  , 1.0, H+, 1.0, NH3, 1.0, SO4-2)
+@species(NaCO3-, -1)
+@reaction(NaCO3-,  3.88149e-16 , -2.0, H+, 1.0, H2CO3, 1.0, Na+)
+@species(NaHCO3, 0)
+@reaction(NaHCO3,  2.50035e-7  , -1.0, H+, 1.0, H2CO3, 1.0, Na+)
+@species(NaSO4-, -1)
+@reaction(NaSO4-,  5.37033     , 1.0, Na+, 1.0, SO4-2)
+@species(Na[Acetate], 0)
+@reaction(Na[Acetate],  1.15611e-5  , -1.0, H+, 1.0, H[Acetate], 1.0, Na+)
+@species(OH-, -1)
+@reaction(OH-,  1.00693e-14 , -1.0, H+, 1.0, H2O)
+@species(S-2, -2)
+@reaction(S-2,  4.78630e-25 , -2.0, H+, 1.0, H2S)
+
+@class: extra_entities(){%
+ // Here you can put some arbitrary extra code.   
+%}
+@extra_entities()
+
+
+
+
+//********* The minerals *******
+// This version can use external mineral files.
+
+// Syntax: @xternal_mineral_file: name.txt
+@mineral(Calcite)
+@reaction(Calcite,  6.29505e-9  , 1.0, Ca+2, -2.0, H+, 1.0, H2CO3)
+@mineral(Gypsum)
+@reaction(Gypsum,  4.07380e4   , 1.0, Ca+2, 2.0, H2O, 1.0, SO4-2)
+@mineral(Natron)
+@reaction(Natron,  4.26581e-16 , -2.0, H+, 1.0, H2CO3, 10.0, H2O, 2.0, Na+)
+//********* End of the minerals *******
+
+
+@class: extra_entities2(){%
+ // Here you can write ORCHESTRA code that will be used in the calculations, but will not be interpreted by the GUI.  
+%}
+@extra_entities2()
+
+
+
+
+
+//********* Adsorption Models *******
+
+//********* End of Adsorption Models *******
+
+@class: extra_entities3(){%
+ // Here you can write ORCHESTRA code that will be used in the calculations, but will not be interpreted by the GUI.  
+%}
+@extra_entities3()
+
+
+
+
+//********* add @userfriendlyformat: to get output of reactions in user friendly format *******

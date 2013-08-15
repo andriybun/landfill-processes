@@ -1,0 +1,21 @@
+// The Composer handles the files listed here.
+// Changes in this file are effective after refreshing or restarting the composer.
+//    <Title>     <Tab>       <Filename>
+Font:  13
+
+File: Documentation 	null 	documentation.inp
+HFile: outputformat 	null 	outputformat.txt
+CHEMFile: Chemistry 	null 	chemistry.inp
+HFile: Column 	null 	column.dat
+File: Input 	null 	input.dat
+File: Output 	null 	output.dat
+File: Concert 	null 	concert.xml
+HFile: uiobjects 	null 	uiobjects.txt
+HFile: composer 	null 	composer.inp
+HSize: 1312
+VSize: 960
+HPos:  212
+VPos:  216
+ProxyPort: 8080
+IntroPage: none
+Concertfile: concert.xml

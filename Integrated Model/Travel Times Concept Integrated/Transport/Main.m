@@ -5,7 +5,7 @@ function Main
 
     close all
 
-    addpath('../../Common/');
+    addpath('../../../Common/');
     addpath('../Data/');
     
     Const = DefineConstants();
@@ -58,7 +58,7 @@ function Main
 %     rainData(1:5) = 1e-3;
     %% End test cases
 
-%     profile on
+    profile on
     tic
     
     ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentrationData, ...
@@ -66,14 +66,14 @@ function Main
 
     toc
     
-%     profile off
-%     profile viewer
+    profile off
+    profile viewer
     
 %     plotyy(t, qOutTotal(1:nT), t, mOutTotal(1:nT))
 %     return
     
     % Validate
-    BASELINE_FILE_NAME = '../Data/baseline';
+    BASELINE_FILE_NAME = '../Data/baseline_chem';
     COMP_VARS = {'cOutTotal', 'mOutTotal', 'mRemRes'};
 %     action = Const.SAVE_RESULTS;
     action = Const.COMPARE_RESULTS;

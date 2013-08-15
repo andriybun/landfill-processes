@@ -1,0 +1,8 @@
+@maxiter: 300
+@include: www.meeussen.nl/orchestra/objects2008.txt
+
+
+
+@stop:
+
+

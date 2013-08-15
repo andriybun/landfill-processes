@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Concert>
+
+   <Nodes TypeFile="column.dat" NrNodes="1" />
+
+   <Task Name="Read node composition" Type="InstreamGroup">
+      <File>input.dat</File>
+      <Nodes>(0)</Nodes>
+   </Task>
+
+   <Task Name="Equilibrate node" Type="NodeGroup" Threads="1">
+      <Calculator>chemistry</Calculator>
+      <Nodes>(0)</Nodes>
+   </Task>
+
+   <Task Name="Write output" Type="OutstreamGroup">
+      <File>output.dat</File>
+      <Nodes>(0)</Nodes>
+   </Task>
+
+
+   <Task Name="loop" Type="RepeatingTaskGroup">
+     <DoTask Name="Read node composition" />
+     <DoTask Name="Equilibrate node" />
+     <DoTask Name="Write output" />
+   </Task>
+
+   <Task Name="Run" Type="TaskGroup">
+     <DoTask Name="loop" />
+   </Task>
+
+</Concert>
