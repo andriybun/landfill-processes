@@ -38,11 +38,11 @@ function Main
     % Source/sink rate
     ModelParams.lambda = 0 * 1e-4;
     % Exchange rate between mobile-immobile phases
-    ModelParams.kExch = 1e-2;
+    ModelParams.kExch = 1e-1;
     % Exchange rate between mobile phase and particles flowing
     ModelParams.kExchPart = -(log(1.5) / exp(ModelParams.mu - ModelParams.sigma ^ 2));
 
-    TimeParams.maxDays = 30;
+%     TimeParams.maxDays = 30;
 
     %% Some test cases
 %     % Case #1:

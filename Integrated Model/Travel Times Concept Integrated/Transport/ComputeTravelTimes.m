@@ -11,7 +11,7 @@ modus = 0;
 [IC, Comp, Pm, S, Rp, H] = initialize_ODE(modus, modus);
 ORI = initialize_ORI(Comp, 0);
 nSpecies = numel(IC);
-nSpecies = 1;
+% nSpecies = 1;
 nPhases = 2;
 
 global Call V2 tt Rall
@@ -104,14 +104,15 @@ IC(1:nSpecies) = cRemaining(1, iT, 1:nSpecies);
 [tChem, MT] = ode15s(@bioreactor, linspace(tRange(1), tRange(2), 3), ...
     IC, options, Comp, Pm, S, Rp, ORI, H);
 % toc
-IC(1:nSpecies) = MT(end, 1:nSpecies);
-cRemaining(1, iT, :) = IC(1:nSpecies);
+cChem = nan(nPhases, 1, nSpecies);
+cChem(1, :, :) = MT(end, 1:nSpecies);
+cChem(2, :, :) = cRemaining(2, iT, :);
+% cRemaining(1, iT, :) = IC(1:nSpecies);
 %% END
         
         % Solve exchange equation in order to obtain concentrations in both phases at the end of
         % current time step. Different volumes will have different effect on exchange here
-        cOutAfter = ConcentrationExchangePhases(...
-            tRange, cRemaining(:, iT, :), kExch, lambda, pv);
+        cOutAfter = ConcentrationExchangePhases(tRange, cChem, kExch, lambda, pv);
         
         % Save the remaining mass of solute to output vector
         mRemaining(:, iT + 1, :) = cOutAfter(:, 2, :) .* repmat(pv, [1, 1, nSpecies]);
@@ -200,7 +201,7 @@ cRemaining(1, iT, :) = IC(1:nSpecies);
             v01 = vRatioIm .* kExchX;
             v02 = vRatioM .* kExchX;
             v03 = v01 + v02 + lambda;
-            v04 = cIniX(2) .* (v01 - v02 + lambda);
+            v04 = cIniX(2, :, :) .* (v01 - v02 + lambda);
             
             v6 = sqrt((v01 + v02) .^ 2 - lambda .* (2 .* (v01 + v02) + lambda));
             v8 = repmat(-0.5 .* (v03 - v6), [1, ntX, 1]);
@@ -209,12 +210,12 @@ cRemaining(1, iT, :) = IC(1:nSpecies);
             v12 = exp(v9 .* repmat(tX, [1, 1, nElements]));
             
             C1_ = 0.5 .* (...
-                cIniX(2) .* v6 + ...
-                2 .* cIniX(1) .* v02 + ...
+                cIniX(2, :, :) .* v6 + ...
+                2 .* cIniX(1, :, :) .* v02 + ...
                 v04) ./ v6;
             C2_ = 0.5 .* (...
-                cIniX(2) .* v6 - ...
-                2 .* cIniX(1) .* v02 - ...
+                cIniX(2, :, :) .* v6 - ...
+                2 .* cIniX(1, :, :) .* v02 - ...
                 v04) ./ v6;
             
             C1_ = repmat(C1_, [1, ntX, 1]);
