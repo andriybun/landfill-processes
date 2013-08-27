@@ -1,10 +1,12 @@
 function ShowPlots(ModelOutput, rainData, lambda, TimeParams, tShow)
 
+    iSpecies = 10;
+
     % Unpack resulting arrays
     nT = ModelOutput.nT;
     qOutTotal = ModelOutput.qOutTotal;
     mOutTotal = ModelOutput.mOutTotal;
-    emissionPotential = sum(ModelOutput.mRemaining(:, 2:nT+1), 1);
+    emissionPotential = sum(ModelOutput.mRemaining(:, 2:nT+1, iSpecies), 1);
 
     if nargin < 5
         nT = TimeParams.maxDays * TimeParams.intervalsPerDay;
@@ -38,34 +40,37 @@ function ShowPlots(ModelOutput, rainData, lambda, TimeParams, tShow)
     LeachateFluxInfo.color = [0.55, 0.25, 0.08];
     
     LeachateConcentrationInfo = struct();
-    LeachateConcentrationInfo.data = mOutTotal(:, tShow) ./ qOutTotal(1, tShow);
+    LeachateConcentrationInfo.data = mOutTotal(:, tShow, iSpecies) ./ qOutTotal(1, tShow);
     LeachateConcentrationInfo.data(qOutTotal(1, tShow) == 0) = 0;
     LeachateConcentrationInfo.name = 'Leachate concentration';
     LeachateConcentrationInfo.axisLabel = 'concentration [kg/m^3]';
     LeachateConcentrationInfo.color = [1, 0.5, 0.15];
     
     ImmobileConcentrationInfo = struct();
-    ImmobileConcentrationInfo.data = ModelOutput.cRemaining(1, 2:nT+1);
+    ImmobileConcentrationInfo.data = ModelOutput.cRemaining(1, 2:nT+1, iSpecies);
     ImmobileConcentrationInfo.name = 'Remaining concentration';
     ImmobileConcentrationInfo.axisLabel = 'concentration [kg/m^3]';
     ImmobileConcentrationInfo.color = [1, 0.15, 0.15];
     
-    %% Plot
-    close all;
-    PlotYyWrapper(TInfo, PrecipInfo, EmissionPotentialInfo, 'NorthEast');
-
-    figPos = [100, 100, 500, 250];
-    PlotDoubleWrapper(TInfo, PrecipInfo, LeachateFluxInfo, 'NorthEast', figPos);
-    
-    figPos = [200, 200, 500, 300];
-    PlotYyWrapper(TInfo, LeachateFluxInfo, LeachateConcentrationInfo, 'NorthEast', figPos);
-    
-    figPos = [300, 300, 500, 300];
-    PlotYyWrapper(TInfo, LeachateConcentrationInfo, EmissionPotentialInfo, ...
-        'NorthEast', figPos);
+%     %% Plot
+%     close all;
+%     PlotYyWrapper(TInfo, PrecipInfo, EmissionPotentialInfo, 'NorthEast');
+% 
+%     figPos = [100, 100, 500, 250];
+%     PlotDoubleWrapper(TInfo, PrecipInfo, LeachateFluxInfo, 'NorthEast', figPos);
+%     
+%     figPos = [200, 200, 500, 300];
+%     PlotYyWrapper(TInfo, LeachateFluxInfo, LeachateConcentrationInfo, 'NorthEast', figPos);
+%     
+%     figPos = [300, 300, 500, 300];
+%     PlotYyWrapper(TInfo, LeachateConcentrationInfo, EmissionPotentialInfo, ...
+%         'NorthEast', figPos);
 
     figPos = [400, 400, 500, 250];
-    PlotDoubleWrapper(TInfo, LeachateConcentrationInfo, ImmobileConcentrationInfo, 'NorthEast', figPos);
+    PlotDoubleWrapper(TInfo, LeachateConcentrationInfo, ImmobileConcentrationInfo, ...
+        'NorthEast', figPos);
+%     PlotDoubleWrapper(TInfo, ImmobileConcentrationInfo, ImmobileConcentrationInfo, ...
+%         'NorthEast', figPos);
     
     return
     

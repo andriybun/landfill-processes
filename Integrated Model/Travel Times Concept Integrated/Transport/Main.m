@@ -8,6 +8,8 @@ function Main
     addpath('../../../Common/');
     addpath('../Data/');
     
+    BASELINE_FILE_NAME = '../Data/baseline_chem_all_species';
+    
     Const = DefineConstants();
 
     % Dimensions
@@ -20,8 +22,18 @@ function Main
     PrecipitationData = load('precipitation');
     % Precipitation in meters per time interval dt
     rainData = PrecipitationData.rainData;
+    
+rainData = cat(2, rainData, rainData);
+% rainData(:) = 0;
+
     rainConcentrationData = 0 * ones(size(rainData));
     TimeParams = PrecipitationData.TimeParams;
+
+TimeParams.numIntervals = numel(rainData);
+TimeParams.maxDays = TimeParams.numIntervals / TimeParams.intervalsPerDay;
+TimeParams.t = (1:TimeParams.numIntervals) * TimeParams.dt;
+TimeParams.daysElapsed = TimeParams.t / (TimeParams.dt * TimeParams.intervalsPerDay);
+
     
     % Initial concentration (immobile, mobile phases)
     cIni = [1; 1];
@@ -40,7 +52,7 @@ function Main
     % Exchange rate between mobile-immobile phases
     ModelParams.kExch = 1e-1;
     % Exchange rate between mobile phase and particles flowing
-    ModelParams.kExchPart = -(log(1.5) / exp(ModelParams.mu - ModelParams.sigma ^ 2));
+    ModelParams.kExchPart = (log(1.5) / exp(ModelParams.mu - ModelParams.sigma ^ 2));
 
 %     TimeParams.maxDays = 30;
 
@@ -58,28 +70,32 @@ function Main
 %     rainData(1:5) = 1e-3;
     %% End test cases
 
-    profile on
-    tic
-    
-    ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentrationData, ...
-        ModelDim, ModelParams, cIni);
+    resultSource = Const.CALCULATE_RESULTS;
+    resultSource = Const.LOAD_SAVED_RESULTS;
 
-    toc
-    
-    profile off
-    profile viewer
+    validateAction = Const.SAVE_RESULTS;
+%     validateAction = Const.COMPARE_RESULTS;
+%     validateAction = Const.NO_VALIDATION;
+
+    if (resultSource == Const.CALCULATE_RESULTS)
+%         profile on
+        tic
+        ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentrationData, ...
+            ModelDim, ModelParams, cIni);
+        toc
+%         profile off
+%         profile viewer
+    elseif (resultSource == Const.LOAD_SAVED_RESULTS)
+        ModelOutput = load(BASELINE_FILE_NAME);
+        validateAction = Const.NO_VALIDATION;
+    end
     
 %     plotyy(t, qOutTotal(1:nT), t, mOutTotal(1:nT))
 %     return
     
     % Validate
-    BASELINE_FILE_NAME = '../Data/baseline_chem';
     COMP_VARS = {'cOutTotal', 'mOutTotal', 'mRemRes'};
-%     action = Const.SAVE_RESULTS;
-    action = Const.COMPARE_RESULTS;
-%     action = Const.NO_VALIDATION;
-    
-    CheckResults(ModelOutput, action, BASELINE_FILE_NAME, COMP_VARS);
+    CheckResults(ModelOutput, validateAction, BASELINE_FILE_NAME, COMP_VARS);
 
     %% Plotting
 %     tShow = (TimeParams.daysElapsed > 150) & (TimeParams.daysElapsed < 250);
