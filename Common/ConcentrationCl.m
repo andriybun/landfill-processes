@@ -20,7 +20,12 @@ classdef ConcentrationCl
         function self = ConcentrationCl(vIni, cIni)
             cDim = size(cIni);
             self.nDims = numel(cDim);
-            self.nSolutes = cDim(end);
+            % Get number of solutes. If array has two dimensions, no solutes are considered
+            if (self.nDims < 3)
+                self.nSolutes = 1;
+            else
+                self.nSolutes = cDim(self.nDims);
+            end
             self.nEl = numel(vIni);
             self.v = vIni;
             self.m = self.op(vIni, cIni, @times);
@@ -73,7 +78,9 @@ classdef ConcentrationCl
                 isZero = (self.v(varargin{1:self.nDims-1}) == 0);
             end
             nCopies = ones(1, self.nDims);
-            nCopies(self.nDims) = numel(varargin{end});
+            if (numel(varargin) >= 3)
+                nCopies(end) = numel(varargin{end});
+            end
             c(repmat(isZero, nCopies)) = 0;
         end
         
@@ -92,7 +99,12 @@ classdef ConcentrationCl
             % arrays, where second array has an extra dimension, while all other dimensions are the
             % same.
             arSize = size(ar2);
-            nSolutesX = arSize(end);
+            if (numel(arSize) < 3)
+                nSolutesX = 1;
+                self.nDims = 3;
+            else
+                nSolutesX = arSize(end);
+            end
             res = zeros(size(ar2));
             idx = cell(1, self.nDims);
             for iDim = 1:self.nDims-1
