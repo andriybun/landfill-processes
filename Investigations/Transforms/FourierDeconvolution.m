@@ -1,13 +1,14 @@
 function FourierDeconvolution
     addpath('../../Common');
 
+    MAT_FILE_DIR = 'mat/';
 %     CASE_NAME = 'CaseStudy_Real_Rain_Data';
 %     CASE_NAME = 'CaseStudy_Random_Rain_Data';
     CASE_NAME = 'CaseStudy_Real_Rain_Data_2D_Homogeneous';
 %     CASE_NAME = 'CaseStudy_Real_Rain_Data_2D_Heterogeneous_Blocks';
 %     CASE_NAME = 'CaseStudy_Real_Rain_Data_2D_Heterogeneous_Unifrnd';
     
-    RawData = load(CASE_NAME);
+    RawData = load([MAT_FILE_DIR CASE_NAME]);
     
     % Get data for processing
     inpSel = 1:numel(RawData.t);
