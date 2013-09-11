@@ -80,6 +80,417 @@ Methodology
 \end_layout
 
 \begin_layout Standard
+It is virtually impossible to observe processes within full scale landfills
+ in high detail because of difficulties in accessing the waste body.
+ Easily obtainable information is the amount of water from rainfall, irrigation
+ and recirculation infiltrating in to the waste body, 
+\begin_inset Formula $q_{in}\left(t\right)$
+\end_inset
+
+, and the amount and quality of leachate pumped out of the drainage system,
+ 
+\begin_inset Formula $q_{out}\left(t\right)$
+\end_inset
+
+ and 
+\begin_inset Formula $c_{out}\left(t\right)$
+\end_inset
+
+ respectively.
+ The challenge we face is to use this information to obtain a quantitative
+ estimate of the concentrations of compounds of interest within the waste
+ body.
+\end_layout
+
+\begin_layout Standard
+We assume that every single injection at the inlet of the landfill will
+ cause response at the outlet of certain shape.
+ Final outflux can be calculated by integrating all the responses to injections
+ that happened in the past:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+q_{out}\left(t\right)=\int_{0}^{t}q_{in}\left(t-\tau\right)\cdot f\left(\tau\right)d\tau,\label{eq:Q_out}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+where 
+\begin_inset Formula $f\left(\tau\right)$
+\end_inset
+
+ is a probability density function (PDF) specifying distribution of travel
+ times.
+ In this equation, the leachate volume flux 
+\begin_inset Formula $q_{out}\left(t\right)$
+\end_inset
+
+ leaving the landfill at time 
+\begin_inset Formula $t$
+\end_inset
+
+, is considered to consist of water that entered the waste body at earlier
+ times 
+\begin_inset Formula $\left(t-\tau\right)$
+\end_inset
+
+ multiplied by the probability 
+\begin_inset Formula $f\left(\tau\right)\cdot d\tau$
+\end_inset
+
+ of water in the landfill having a travel time.
+ The operation described by 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:Q_out"
+
+\end_inset
+
+ is called convolution and can be written in a form:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+q_{out}\left(t\right)=(q_{in}\text{∗}\, f)(t),
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+where ∗ denotes convolution operation.
+ It also corresponds to product of functions in Fourier frequency domain:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+\hat{q}_{out}\left(\xi\right)=\hat{q}_{in}\left(\xi\right)\cdot\hat{f}\left(\xi\right).\label{eq:conv_fourier_domain}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+However travel time distribution is unknown in real life, while outflux
+ is easily obtainable.
+ Therefore from 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:conv_fourier_domain"
+
+\end_inset
+
+ one can see that travel time PDF in frequency domain can be computed by
+ division of outflux by influx:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+\hat{f}\left(\xi\right)=\frac{\hat{q}_{out}\left(\xi\right)}{\hat{q}_{in}\left(\xi\right)}.\label{eq:inv_conv_fourier_domain}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Then by applying inverse Fourier transform to quotient 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:inv_conv_fourier_domain"
+
+\end_inset
+
+ travel time PDF is derived.
+\end_layout
+
+\begin_layout Section
+Numerical experiments
+\end_layout
+
+\begin_layout Standard
+A number of numerical experiments have been conducted in order to verify
+ the described approach.
+ In all cases input datasets have been generated using numerical solutions
+ to Richards equation on arbitrary one- or two-dimensional domains with
+ arbitrary influx data.
+\end_layout
+
+\begin_layout Standard
+The first experiment was conducted for one-dimensional homogeneous column.
+ Two different input flux datasets have been applied with the same total
+ amount of water.
+ In the first case water was applied at the inlet at uniformly distributed
+ random periods of random duration.
+ The second case used real rainfall data that featured long dry periods
+ as well as periods with frequent and intense rains.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename /home/andriybun/Workspace/landfill-processes/Investigations/Transforms/fig/CaseStudy_Random_Rain_Data_PDF.jpg
+	scale 50
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename /home/andriybun/Workspace/landfill-processes/Investigations/Transforms/fig/CaseStudy_Real_Rain_Data_PDF.jpg
+	scale 50
+	noUnzip
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+PDF's estimated by deconvolution vs.
+ fitted log-normal PDF's for different sequences of input flux.
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:1d_PDF_comparison"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+As can be seen from figures 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:1d_PDF_comparison"
+
+\end_inset
+
+ the estimated distributions are very similar as well as parameters of fitted
+ log-normal PDF's.
+ However some variations exist in the second case which may be explained
+ by longer dry periods that affect distribution obtained by deconvolution.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename /home/andriybun/Workspace/landfill-processes/Investigations/Transforms/fig/CaseStudy_Real_Rain_Data_(de)convolution.jpg
+	scale 60
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Comparison of outflux calculated by convolution using estimated PDF and
+ fitted log-normal PDF vs.
+ real outflux.
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:1d_outflux_comparison"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:1d_outflux_comparison"
+
+\end_inset
+
+ shows that outflux can be quite accurately simulated by convolution.
+ However using estimated travel time PDF leads to somewhat erratic behavior
+ of flux during low discharge periods.
+ This is because in these periods the flux is almost completely composed
+ of the tailing flux (see fig.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:1d_PDF_comparison"
+
+\end_inset
+
+, b).
+\end_layout
+
+\begin_layout Standard
+Another test cases investigated were two-dimensional soils with different
+ types of heterogeneity introduced.
+ In the first case two low permeability blocks have been placed within investiga
+ted system.
+ These blocks slowed down or diverted stream from the shortest route.
+ In the second case entire system is represented by a grid with random hydraulic
+ conductivities.
+ Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:2d_PDF_comparison"
+
+\end_inset
+
+ shows comparison of estimated travel time PDF's with fitted log-normal
+ curves.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename /home/andriybun/Workspace/landfill-processes/Investigations/Transforms/fig/CaseStudy_Real_Rain_Data_2D_Heterogeneous_Blocks_PDF.jpg
+	scale 50
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename /home/andriybun/Workspace/landfill-processes/Investigations/Transforms/fig/CaseStudy_Real_Rain_Data_2D_Heterogeneous_Unifrnd_PDF.jpg
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+PDF's estimated by deconvolution vs.
+ fitted log-normal PDF's for different types of soil heterogeneity.
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:2d_PDF_comparison"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Despite log-normal curves don't fit corresponding distributions, application
+ of log-normal distribution gives much better approximation of outflux (figure
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:2d_outflux_comparison"
+
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename /home/andriybun/Workspace/landfill-processes/Investigations/Transforms/fig/CaseStudy_Real_Rain_Data_2D_Heterogeneous_Unifrnd_(de)convolution.jpg
+	scale 60
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Comparison of outflux calculated by convolution using estimated PDF and
+ fitted log-normal PDF vs.
+ real outflux.
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:2d_outflux_comparison"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
 
 \end_layout
 

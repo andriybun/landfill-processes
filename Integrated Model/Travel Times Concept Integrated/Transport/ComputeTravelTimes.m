@@ -3,35 +3,30 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
 
 %% TODO: all masses and concentrations are in moles and moles/liter
 %% TODO: Orchestra volume is 325 liters
+%% TODO: setting concentration of cloride Comp.consti = XX; Is already concentration (unit = mol/l).
+%%       Is very inert.
 %%
-    
-    
+   
     Const = DefineConstants();
     
-%% Andre's block
-pname = '../';
-addpath(genpath(pname));
-% modus = ExtraPar.modus;
-modus = 0;
-[mIni, Comp, Pm, S, Rp, H] = initialize_ODE(modus, modus);
-ORI = initialize_ORI(Comp, 0);
-
-nSpecies = numel(mIni);
-iSpecies = [1:5, 8:12];
-nSpeciesDiffuse = numel(iSpecies);
-
-nPhases = 2;
-
-global Call V2 tt Rall
-Call = [];  V2 = []; tt = []; Rall = [];
-options = odeset('OutputFcn','StoreC','Refine',1, 'AbsTol', 1e-9, 'RelTol', 1e-7);
-rainConcentrationData = repmat(rainConcentrationData, [1, 1, nSpecies]);
-%% END
-
-%%
-%% TODO: debug / validate vs. previous version.
-%%
-
+    %% Initializing chemical module
+    CHEM_MODEL_DIR = '../';
+    addpath(genpath(CHEM_MODEL_DIR));
+    modus = 0;
+    [mIni, Comp, Pm, S, Rp, H] = initialize_ODE(modus, modus);
+    ORI = initialize_ORI(Comp, 0);
+    
+    nSpecies = numel(mIni);
+    iSpecies = [1:5, 8:12];
+    nSpeciesDiffuse = numel(iSpecies);
+    
+    nPhases = 2;
+    
+    global Call V2 tt Rall
+    Call = [];  V2 = []; tt = []; Rall = [];
+    options = odeset('OutputFcn','StoreC','Refine',1, 'AbsTol', 1e-8, 'RelTol', 1e-8);
+    
+    %% Extracting some inputs from input structures
 	% Time parameters
     tEnd = TimeParams.t(end);
     dt = TimeParams.dt;
@@ -59,12 +54,12 @@ rainConcentrationData = repmat(rainConcentrationData, [1, 1, nSpecies]);
     % Initial concentrations of solutes
     mIni = repmat(permute(mIni, [3, 1, 2]), [nPhases, 1, 1]) * pvAdj;
     cIni = mIni ./ repmat(pv, [1, 1, nSpecies]);
-%     mIni = cIni .* repmat(pv, [1, 1, nSpecies]);
     
     % Initialize object to keep information about volumes and concentrations
     % dimensions of arrays (1 x leave time)
     PartInfo = ConcentrationCl(zeros(1, nT), zeros(1, nT, nSpecies));
 
+    %% Initializing output arrays
     qOutTotal = zeros(1, nT);
     mOutTotal = zeros(1, nT, nSpecies);
     cRemaining = nan(nPhases, nT + 1, nSpecies);
@@ -72,10 +67,8 @@ rainConcentrationData = repmat(rainConcentrationData, [1, 1, nSpecies]);
     mRemaining = nan(nPhases, nT + 1, nSpecies);
     mRemaining(:, 1, :) = mIni;
 
-%     mDecay = zeros(1, nT, nSpecies);
-    
+    %% Main loop
     nPercent = ceil(10 * nT / 100);
-    
     for iT = 1:nT
         tOffset = t(iT);
         tAfter = t(iT:nT) - tOffset;
@@ -95,12 +88,14 @@ rainConcentrationData = repmat(rainConcentrationData, [1, 1, nSpecies]);
             % concentration of solute in mobile phase
             pvMobUpd = pv(2) + rainData(iT);
             mRemaining(2, iT, :) = mRemaining(2, iT, :) + ...
-                rainData(iT) * rainConcentrationData(1, iT, :);
+                rainData(iT) * rainConcentrationData(iT);
             cRemaining(2, iT, :) = mRemaining(2, iT, :) / pvMobUpd;
             pv(2) = pvMobUpd;
             % Every input impulse of water will cause (log-normal) response at the outlet. All the
             % outflow during a given time step is considered as a particle with unique travel time
             qOutAfter = rainData(iT) * lognpdf(tAfter, mu, sigma) * dt;
+%             mRemaining(2, iT, :) = mRemaining(2, iT, :) + ...
+%                 rainData(iT) * rainConcentrationData(1, iT, :);
             % We integrate volumes of all the particles flowing out at the same time intervals to
             % obtain Leachate volume flux.
             qOutTotal(iT:iTend) = qOutTotal(iT:iTend) + qOutAfter;
@@ -109,7 +104,7 @@ rainConcentrationData = repmat(rainConcentrationData, [1, 1, nSpecies]);
         end
 
         tRange = [tAfter(1), tAfter(1) + dt];
-        
+
 %% Andre's block
 DO_BIOCHEMISTRY = true;
 if DO_BIOCHEMISTRY
@@ -138,15 +133,11 @@ mRemaining(2, iT + 1, :) = mRemaining(2, iT, :);
 %         pvPartOutR = cat(1, repmat(pv(2), [1, 1, nCalcT * nSpeciesDiffuse]), ...
 %             reshape(PartInfo.GetVolume(1, iT:iTend, iSpecies), 1, 1, []));
 
-        cPartOutR = cat(1, cOutAfter(2, 2, :), ...
-            permute(PartInfo.GetConcentration(1, iT:iTend, iSpecies), [2, 1, 3]));
-        pvPartOutR = cat(1, pv(2), ...
-            permute(PartInfo.GetVolume(1, iT:iTend), [2, 1, 3]));
-%% TODO: maybe not to mess, change order of dimensions?
+        cPartOutR = cat(2, cOutAfter(2, 2, :), PartInfo.GetConcentration(1, iT:iTend, iSpecies));
+        pvPartOutR = cat(2, pv(2), PartInfo.GetVolume(1, iT:iTend));
         cPartR = ConcentrationExchangeParticles(...
             [tAfter(1), tAfter(1) + dt], cPartOutR, kExchPart, pvPartOutR);
-        cPart = permute(cPartR(2:(nCalcT+1), 2, :), [2, 1, 3]);
-        PartInfo = PartInfo.SetConcentration(cPart, 1, iT:iTend, iSpecies);
+        PartInfo = PartInfo.SetConcentration(cPartR(2, 2:(nCalcT+1), :), 1, iT:iTend, iSpecies);
         mOutTotal(1, iT, iSpecies) = PartInfo.GetMass(1, iT, iSpecies);
         
         % Withdraw solute leaving together with leachate and compute remaining masses of solutes
@@ -157,17 +148,11 @@ mRemaining(2, iT + 1, :) = mRemaining(2, iT, :);
         % Calculate the remaining concentrations
         cRemaining(:, iT + 1, :) = mRemaining(:, iT + 1, :) ./ repmat(pv, [1, 1, nSpecies]);
         
-%         mDecay(1, iT, :) = sum(mRemaining(:, iT, :)) - (sum(mRemaining(:, iT + 1, :)) + ...
-%             mOutTotal(1, iT, :));
-        
         % Some checks
         if any(RealLt(reshape(cRemaining(:, iT + 1, iSpecies), 1, []), 0, ...
                 Const.CONCENTRATION_EPSILON))
             error('iT = %d: Concentration is negative.', iT);
         end
-%         if any(RealGt(reshape(cRemaining(:, iT + 1, iSpecies), 1, []), 1, Const.EPSILON))
-%             error('iT = %d: Concentration is too high.', iT);
-%         end
         
         % Output progress
         if mod(iT, nPercent) == 0
@@ -175,8 +160,9 @@ mRemaining(2, iT + 1, :) = mRemaining(2, iT, :);
         end
     end
     
-    fprintf('100%% complete\n\n');
+%     fprintf('100%% complete\n\n');
     
+    %% Storing outputs to structures
     % Pack outputs to a struct
     ModelOutput = struct();
     ModelOutput.t = t;
@@ -194,10 +180,9 @@ mRemaining(2, iT + 1, :) = mRemaining(2, iT, :);
     ModelOutput.cOutTotal = mOutTotal ./ qOutTotalRep;
     ModelOutput.cOutTotal(qOutTotalRep == 0) = 0;
     
-%     ModelOutput.mDecay = mDecay;
-    
     return
     
+    %%
     function cOut = ConcentrationExchangePhases(tau, cIniX, kExchX, lambda, pv)
         if (tau(1) == tau(end))
             cOut = cIniX;
@@ -258,6 +243,7 @@ mRemaining(2, iT + 1, :) = mRemaining(2, iT, :);
         end
     end
 
+    %%
     function cPart = ConcentrationExchangeParticles(tauX, cIniX, kExchX, pvX)
         % Function to do calculate exchange of solutes between main container and different 
         % particles residing in it. The first element along elements' axis is the main container.
@@ -266,19 +252,19 @@ mRemaining(2, iT + 1, :) = mRemaining(2, iT, :);
         %   tauX        - time span for calculations
         %   cIniX       - initial concentrations of solutes in main container (cIniX(1, 1, :)) and
         %                 other particles (cIniX(2:end, 1, :)). Dimensions of array are:
-        %                 (nElements + 1) x nTimeSteps x nSolutes
+        %                 nTimeSteps x (nElements + 1) x nSolutes
         %   kExchX      - exchange coefficient between phases
         %   pvX         - volumes of main container (pv(1)) and particles (pv(2:end))
         
         % Get dimensions of a problem
-        [nElX, ~, nSolutes] = size(cIniX);
+        [~, nElX, nSolutes] = size(cIniX);
         nElX = nElX - 1;
         nTX = numel(tauX);
         
         % Initialize output array
-        cPart = zeros(nElX+1, nTX, nSolutes);
+        cPart = zeros(nTX, nElX+1, nSolutes);
         % First element along time axis is initial concentration
-        cPart(:, 1, :) = cIniX;
+        cPart(1, :, :) = cIniX;
 
         % Find elements with zero volume.
         isPvZero = RealEq(pvX, 0, Const.EPSILON);
@@ -289,7 +275,7 @@ mRemaining(2, iT + 1, :) = mRemaining(2, iT, :);
         if (sum(isPvNotZero) == 0)
             % If all elements have zero volume, they don't exist and we don't need to do 
             % calculations. Just repeat initial concentrations for all time steps
-            cPart(1, 2:nTX, :) = repmat(cIniX(1, 1, :), [1, nTX-1, 1]);
+            cPart(2:nTX, 1, :) = repmat(cIniX(1, 1, :), [nTX-1, 1, 1]);
         else
             % Calculate total volume of all elements. This will be needed for computing average
             % concentration
@@ -297,46 +283,46 @@ mRemaining(2, iT + 1, :) = mRemaining(2, iT, :);
             % And perform calculations for all time steps
             for iTX = 2:nTX
                 tX = tauX(iTX);
-                cPart(1, iTX, :) = cPart(1, iTX-1, :);
+                cPart(iTX, 1, :) = cPart(iTX-1, 1, :);
                 mElTot = zeros(1, 1, nSolutes);
-                dmEl = zeros(nElX, 1, nSolutes);
+                dmEl = zeros(1, nElX, nSolutes);
                 
                 % First we run through all the elements and calculate total masses of solutes in
                 % particles and potential mass exchange between them and main container given
                 % difference in concentration
                 for iEl = 1:nElX
                     if isPvNotZero(iEl+1)
-                        mElTot = mElTot + cPart(iEl+1, iTX-1, :) * pvX(iEl+1);
-                        dmEl(iEl, 1, :) = pvX(1) .* pvX(iEl+1) ./ (pvX(1) + pvX(iEl+1)) .* ...
-                            (cPart(1, iTX-1, :) - cPart(iEl+1, iTX-1, :)) .* ...
+                        mElTot = mElTot + cPart(iTX-1, iEl+1, :) * pvX(iEl+1);
+                        dmEl(1, iEl, :) = pvX(1) .* pvX(iEl+1) ./ (pvX(1) + pvX(iEl+1)) .* ...
+                            (cPart(iTX-1, 1, :) - cPart(iTX-1, iEl+1, :)) .* ...
                             kExchX * (tX - tauX(iTX-1));
                     end
                 end
                 % Then calculate mass exchange assuming average concentration of all the elements
                 % with the main container
                 dmAll = pvX(1) * pvAll / (pvX(1) + pvAll) * ...
-                    (cPart(1, iTX-1, :) - mElTot / pvAll) .* kExchX .* (tX - tauX(iTX-1));
-                dmAllSum = sum(dmEl, 1);
+                    (cPart(iTX-1, 1, :) - mElTot / pvAll) .* kExchX .* (tX - tauX(iTX-1));
+                dmAllSum = sum(dmEl, 2);
                 for iSoluteX = 1:nSolutes
                     % For each particle and solute mass exchange is adjusted to match averaged mass 
                     % exchange, but keep relative mass change of particles constant 
                     if ~RealEq(dmAll(1, 1, iSoluteX), 0, Const.EPSILON)
                         if RealEq(dmAllSum(1, 1, iSoluteX), 0, Const.EPSILON)
-                            dmAdj = zeros(nElX, 1, 1);
+                            dmAdj = zeros(1, nElX, 1);
                         else
-                            dmAdj = dmEl(:, 1, iSoluteX) .* dmAll(1, 1, iSoluteX) ./ ...
+                            dmAdj = dmEl(1, :, iSoluteX) .* dmAll(1, 1, iSoluteX) ./ ...
                                 dmAllSum(1, 1, iSoluteX);
                         end
                     else
-                        dmAdj = dmEl(:, 1, iSoluteX);
+                        dmAdj = dmEl(1, :, iSoluteX);
                         dmAll(1, 1, iSoluteX) = dmAllSum(1, 1, iSoluteX);
                     end
                     % Update resulting concentrations based on computed before data
-                    cPart(isPvNotZero, iTX, iSoluteX) = cPart(isPvNotZero, iTX-1, iSoluteX) + ...
+                    cPart(iTX, isPvNotZero, iSoluteX) = cPart(iTX-1, isPvNotZero, iSoluteX) + ...
                         dmAdj(isPvNotZero(2:nElX+1)) ./ pvX(isPvNotZero);
-                    cPart(isPvZero, iTX, iSoluteX) = 0;
+                    cPart(iTX, isPvZero, iSoluteX) = 0;
                 end
-                cPart(1, iTX, :) = cPart(1, iTX, :) - dmAll ./ pvX(1);
+                cPart(iTX, 1, :) = cPart(iTX, 1, :) - dmAll ./ pvX(1);
             end
         end
     end

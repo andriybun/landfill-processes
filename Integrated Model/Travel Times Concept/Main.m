@@ -42,7 +42,7 @@ function Main
     % Exchange rate between mobile phase and particles flowing
     ModelParams.kExchPart = -(log(1.5) / exp(ModelParams.mu - ModelParams.sigma ^ 2));
 
-    TimeParams.maxDays = 30;
+%     TimeParams.maxDays = 30;
 
     %% Some test cases
 %     % Case #1:
@@ -75,8 +75,8 @@ function Main
     % Validate
     BASELINE_FILE_NAME = '../Data/baseline';
     COMP_VARS = {'cOutTotal', 'mOutTotal', 'mRemRes'};
-%     action = Const.SAVE_RESULTS;
-    action = Const.COMPARE_RESULTS;
+    action = Const.SAVE_RESULTS;
+%     action = Const.COMPARE_RESULTS;
 %     action = Const.NO_VALIDATION;
     
     CheckResults(ModelOutput, action, BASELINE_FILE_NAME, COMP_VARS);

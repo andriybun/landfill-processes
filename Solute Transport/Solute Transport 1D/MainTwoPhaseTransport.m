@@ -51,8 +51,8 @@ SimulationPar.tRange = tRange;
 SimulationPar.TIME_EPSILON = 1e-7;
 
 % Initialize fraction of mobile phase volume
-ModelDim.mobileFraction = linspace(0.9, 0.01, ModelDim.znn)';
-% ModelDim.mobileFraction = 0.5 * ones(ModelDim.znn, 1);
+% ModelDim.mobileFraction = linspace(0.9, 0.01, ModelDim.znn)';
+ModelDim.mobileFraction = 0.5 * ones(ModelDim.znn, 1);
 
 % Saturated conductivity
 kSat = 1e-2;             % m^3 water per m^2 soil per day

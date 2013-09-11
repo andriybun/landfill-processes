@@ -1,14 +1,12 @@
-function ShowPlots(ModelOutput, rainData, lambda, TimeParams, tShow)
-
-    iSpecies = 10;
-
+function ShowPlots(ModelOutput, rainData, lambda, TimeParams, iSpecies, tShow)
+ 
     % Unpack resulting arrays
     nT = ModelOutput.nT;
     qOutTotal = ModelOutput.qOutTotal;
     mOutTotal = ModelOutput.mOutTotal;
     emissionPotential = sum(ModelOutput.mRemaining(:, 2:nT+1, iSpecies), 1);
 
-    if nargin < 5
+    if nargin < 6
         nT = TimeParams.maxDays * TimeParams.intervalsPerDay;
         tShow = true(1, nT);
         t = TimeParams.t(1:nT);
@@ -58,10 +56,10 @@ function ShowPlots(ModelOutput, rainData, lambda, TimeParams, tShow)
 % 
 %     figPos = [100, 100, 500, 250];
 %     PlotDoubleWrapper(TInfo, PrecipInfo, LeachateFluxInfo, 'NorthEast', figPos);
-%     
-%     figPos = [200, 200, 500, 300];
-%     PlotYyWrapper(TInfo, LeachateFluxInfo, LeachateConcentrationInfo, 'NorthEast', figPos);
-%     
+    
+    figPos = [200, 200, 500, 300];
+    PlotYyWrapper(TInfo, LeachateFluxInfo, LeachateConcentrationInfo, 'NorthEast', figPos);
+    
 %     figPos = [300, 300, 500, 300];
 %     PlotYyWrapper(TInfo, LeachateConcentrationInfo, EmissionPotentialInfo, ...
 %         'NorthEast', figPos);

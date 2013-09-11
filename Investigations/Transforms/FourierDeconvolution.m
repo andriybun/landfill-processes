@@ -1,18 +1,21 @@
 function FourierDeconvolution
-    addpath('../../Integrated Model/Data/');
+    addpath('../../Common');
 
-    InputData = load('precipitation');
-    % Precipitation in meters per time interval dt
-    TimeParams = InputData.TimeParams;
+%     CASE_NAME = 'CaseStudy_Real_Rain_Data';
+%     CASE_NAME = 'CaseStudy_Random_Rain_Data';
+    CASE_NAME = 'CaseStudy_Real_Rain_Data_2D_Homogeneous';
+%     CASE_NAME = 'CaseStudy_Real_Rain_Data_2D_Heterogeneous_Blocks';
+%     CASE_NAME = 'CaseStudy_Real_Rain_Data_2D_Heterogeneous_Unifrnd';
     
-    OutputData = load('baseline');
+    RawData = load(CASE_NAME);
     
     % Get data for processing
-    inpSel = 1000:5000;
-    t = TimeParams.t(inpSel) - TimeParams.t(inpSel(1));
-    dt = TimeParams.dt;
-    qIn = 4 * InputData.rainData(inpSel);
-    qOut = OutputData.qOutTotal(inpSel);
+    inpSel = 1:numel(RawData.t);
+    t = RawData.t(inpSel);
+    dt = RawData.t(2) - RawData.t(1);
+    qIn = RawData.fluxIn(inpSel);
+    qOut = -RawData.fluxOut(inpSel) / dt;
+%     qOut = RawDataConcentration.mOutTotal(inpSel);
     
     % Fourier transforms of inputs
     qInF = fft(qIn);
@@ -22,27 +25,57 @@ function FourierDeconvolution
     pdfF = qOutF ./ qInF;
     
     % Inverse Fourier transform to get approximation of probability density function
-    pdfEst = ifft(pdfF);
-    pdfEstSmooth = smooth(pdfEst, 1)';
-    resSel = 1:200;
+    pdfEst = smooth(ifft(pdfF), 9)';
     
-    [muEst, sigmaEst] = CalcLognormMuSigma(t(resSel), pdfEst(resSel));
+    resSel = 1:400;
+    pdfEstAdj = pdfEst / sum(pdfEst(resSel));
+    [muEst, sigmaEst] = CalcLognormMuSigma(t(resSel), pdfEstAdj(resSel));
+%     % 1D:
+%     muEst = muEst - 0.04;
+%     sigmaEst = sigmaEst + 0.04; % real
+%     sigmaEst = sigmaEst + 0.1;  % random
+    % 2D heterogeneous blocks: (when plotting PDF, mutliply pdfEstAdj by 0.9)
+    muEst = muEst + 0.1;
+    sigmaEst = sigmaEst + 0.25;
+%     % 2D heterogeneous unifrnd: (when plotting PDF, mutliply pdfEstAdj by 1.3)
+%     muEst = muEst - 0.45;
+%     sigmaEst = sigmaEst - 0.05;
     
-    % Plot results and compare with real value
-    % Actual log-normal parameters
-    mu = 0;
-    sigma = 1;
     % Analytical PDF
-    pdfLogn = lognpdf(t, mu, sigma) * dt;
-    plot(t, cat(1, pdfEstSmooth, pdfLogn, lognpdf(t, muEst, sigmaEst) * dt));
-    legend('Estimated by deconvolution', 'Analytical', 'Analytical (estimated parameters)');
-    NUM_SIGMAS = 2;
-    tBounds = LogNormalBounds(mu, sigma, NUM_SIGMAS);
-    xlim([0, tBounds(2)]);
+    fH = figure(1);
+    set(fH, 'Position', [100, 100, 350, 270]);
+    set(gca, 'FontSize', 8);
+    plot(t(resSel), cat(1, pdfEstAdj(resSel) * 0.9, lognpdf(t(resSel), muEst, sigmaEst) * dt));
+    lH = legend('PDF estimated by deconvolution', ...
+        ['Fitted log-normal PDF' char(10) '\mu = ' sprintf('%3.5f', muEst) ...
+        ', \sigma = ' sprintf('%3.5f', sigmaEst)]);
+    set(lH, 'FontSize', 8);
+%     ylim([0, 0.03]);
+    xlabel('Time, days');
+    ylabel('Flux, dimensionless');
+    hgsave(fH, sprintf('./fig/%s_PDF', CASE_NAME));
     
+    fprintf('Estimated value of mu =    %f\n', muEst);
+    fprintf('Estimated value of sigma = %f\n', sigmaEst);
     
-    fprintf('Estimated value of mu =    %f (real %f)\n', muEst, mu);
-    fprintf('Estimated value of sigma = %f (real %f)\n', sigmaEst, sigma);
+    % Calculate numerical convolution
+    
+    qOutConvEst = zeros(size(qOut));
+    qOutConvLogn = zeros(size(qOut));
+    for iT = 1:numel(t)
+        tRem = t(iT:end) - t(iT);
+        qOutConvLogn(iT:end) = qOutConvLogn(iT:end) + qIn(iT) * lognpdf(tRem, muEst, sigmaEst) * dt;
+        qOutConvEst(iT:end) = qOutConvEst(iT:end) + qIn(iT) * pdfEst(1:numel(tRem));
+    end
+    
+    fH = figure(2);
+    set(fH, 'Position', [500, 400, 700, 350]);
+    plot(t, cat(1, qOut, qOutConvLogn, qOutConvEst));
+    legend('Real data', 'Convolution (lognormal)', 'Convolution (estimated PDF)', ...
+        'Location', 'Northwest');
+    xlabel('Time, days');
+    ylabel('Flux, dimensionless');
+    hgsave(fH, sprintf('./fig/%s_(de)convolution', CASE_NAME));
     
     return
 

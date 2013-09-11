@@ -22,18 +22,20 @@ function Main
     PrecipitationData = load('precipitation');
     % Precipitation in meters per time interval dt
     rainData = PrecipitationData.rainData;
-    
-rainData = cat(2, rainData, rainData);
-% rainData(:) = 0;
-
-    rainConcentrationData = 0 * ones(size(rainData));
+    % Structure containing time parameters
     TimeParams = PrecipitationData.TimeParams;
+    
+    % % Copy rain inputs for one more year
+    % rainData = cat(2, rainData, rainData);
+    % % rainData(:) = 0;
+    % Update time parameters for an extended interval
+    % TimeParams.numIntervals = numel(rainData);
+    % TimeParams.maxDays = TimeParams.numIntervals / TimeParams.intervalsPerDay;
+    % TimeParams.t = (1:TimeParams.numIntervals) * TimeParams.dt;
+    % TimeParams.daysElapsed = TimeParams.t / (TimeParams.dt * TimeParams.intervalsPerDay);
 
-TimeParams.numIntervals = numel(rainData);
-TimeParams.maxDays = TimeParams.numIntervals / TimeParams.intervalsPerDay;
-TimeParams.t = (1:TimeParams.numIntervals) * TimeParams.dt;
-TimeParams.daysElapsed = TimeParams.t / (TimeParams.dt * TimeParams.intervalsPerDay);
-
+    % Concentration of solutes in rainwater
+    rainConcentrationData = 0 * ones(size(rainData));
     
     % Initial concentration (immobile, mobile phases)
     cIni = [1; 1];
@@ -56,50 +58,68 @@ TimeParams.daysElapsed = TimeParams.t / (TimeParams.dt * TimeParams.intervalsPer
 
 %     TimeParams.maxDays = 30;
 
-    %% Some test cases
-%     % Case #1:
-%     %   initial concentrations = [0; 0]
-%     %   constant rain, injection of solute at initial time steps
-%     cIni = [0; 0];
-%     rainData = 1e-2 * ones(size(rainData));
-%     rainConcentrationData(1:5) = 1;
-%     % Case #2:
-%     %   initial concentrations = [1; 1]
-%     %   short clean rain at initial time steps
-%     rainData = 0 * rainData;
-%     rainData(1:5) = 1e-3;
-    %% End test cases
+    % %% Some test cases
+    % % Case #1:
+    % %   initial concentrations = [0; 0]
+    % %   constant rain, injection of solute at initial time steps
+    % cIni = [0; 0];
+    % rainData = 1e-2 * ones(size(rainData));
+    % rainConcentrationData(1:5) = 1;
+    % % Case #2:
+    % %   initial concentrations = [1; 1]
+    % %   short clean rain at initial time steps
+    % rainData = 0 * rainData;
+    % rainData(1:5) = 1e-3;
+    % %% End test cases
 
-    resultSource = Const.CALCULATE_RESULTS;
+%     resultSource = Const.CALCULATE_RESULTS;
     resultSource = Const.LOAD_SAVED_RESULTS;
 
     validateAction = Const.SAVE_RESULTS;
 %     validateAction = Const.COMPARE_RESULTS;
 %     validateAction = Const.NO_VALIDATION;
 
+    profilerOn = false;
+    
     if (resultSource == Const.CALCULATE_RESULTS)
-%         profile on
+        if profilerOn
+            profile on
+        end
+        
         tic
+        % Main computations are done here
         ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentrationData, ...
             ModelDim, ModelParams, cIni);
         toc
-%         profile off
-%         profile viewer
+        
+        if profilerOn
+            profile off
+            profile viewer
+        end
     elseif (resultSource == Const.LOAD_SAVED_RESULTS)
         ModelOutput = load(BASELINE_FILE_NAME);
         validateAction = Const.NO_VALIDATION;
     end
-    
-%     plotyy(t, qOutTotal(1:nT), t, mOutTotal(1:nT))
-%     return
-    
+
     % Validate
     COMP_VARS = {'cOutTotal', 'mOutTotal', 'mRemRes'};
     CheckResults(ModelOutput, validateAction, BASELINE_FILE_NAME, COMP_VARS);
 
+%     %% TODO: EC calculation
+%     %    [Ionic strength] = 0.5 * Sum(C_i * Charge_i^2);
+%     %    EC = 35.69 * [Ionic strength] + 5.45
+%     %  or
+%     %    Ec = Sum(C_i * [Specific conductivity])
+%     %  Main ions are: Ca2+, Na+, Cl-, NH4+, HCO3-, H+, OH-, SO_4_2-, VFA
+%     % Calculate electrical conductivity
+%     % Ion conductivity table (name, index of specie, conductivity value)
+%     ionCondTable = {...
+%         'Cl-', , 76.35
+%     }
+    
     %% Plotting
+    iSpecies = 10;
 %     tShow = (TimeParams.daysElapsed > 150) & (TimeParams.daysElapsed < 250);
-%     ShowPlots(qOutTotal, mOutTotal, emissionPotential, rainData, ModelParams.lambda, TimeParams, tShow);
-    ShowPlots(ModelOutput, rainData, ModelParams.lambda, TimeParams);
+    ShowPlots(ModelOutput, rainData, ModelParams.lambda, TimeParams, iSpecies);
     
 end
