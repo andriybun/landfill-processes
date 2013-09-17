@@ -8,7 +8,7 @@ function Main
     addpath('../../../Common/');
     addpath('../Data/');
     
-    BASELINE_FILE_NAME = '../Data/baseline_chem_all_species';
+    RESULTS_FILE_NAME_TEMPLATE = '../Data/baseline_chem_selected_species_%s.mat';
     
     Const = DefineConstants();
 
@@ -58,6 +58,17 @@ function Main
 
 %     TimeParams.maxDays = 30;
 
+    ParameterOfInterest = struct();
+    ParameterOfInterest.name = 'baseline';
+    
+    %% Sensitivity analysis of parameters (Name as in code (this name will be also in file name))
+%     ParameterOfInterest.name = 'beta';
+    ParameterOfInterest.name = 'kExch';
+%     ParameterOfInterest.name = 'kExchPart';
+
+    RESULTS_FILE_NAME = sprintf(RESULTS_FILE_NAME_TEMPLATE, ...
+        GenerateCharacteristicSuffix(ModelParams, ParameterOfInterest));
+
     % %% Some test cases
     % % Case #1:
     % %   initial concentrations = [0; 0]
@@ -72,8 +83,8 @@ function Main
     % rainData(1:5) = 1e-3;
     % %% End test cases
 
-%     resultSource = Const.CALCULATE_RESULTS;
-    resultSource = Const.LOAD_SAVED_RESULTS;
+    resultSource = Const.CALCULATE_RESULTS;
+%     resultSource = Const.LOAD_SAVED_RESULTS;
 
     validateAction = Const.SAVE_RESULTS;
 %     validateAction = Const.COMPARE_RESULTS;
@@ -97,13 +108,14 @@ function Main
             profile viewer
         end
     elseif (resultSource == Const.LOAD_SAVED_RESULTS)
-        ModelOutput = load(BASELINE_FILE_NAME);
+        ModelOutput = load(RESULTS_FILE_NAME);
+        ModelParams = ModelOutput.ModelParams;
         validateAction = Const.NO_VALIDATION;
     end
 
     % Validate
     COMP_VARS = {'cOutTotal', 'mOutTotal', 'mRemRes'};
-    CheckResults(ModelOutput, validateAction, BASELINE_FILE_NAME, COMP_VARS);
+    CheckResults(ModelOutput, ModelParams, validateAction, RESULTS_FILE_NAME, COMP_VARS);
 
 %     %% TODO: EC calculation
 %     %    [Ionic strength] = 0.5 * Sum(C_i * Charge_i^2);
@@ -118,8 +130,13 @@ function Main
 %     }
     
     %% Plotting
-    iSpecies = 10;
+    iSpecies = 22;
 %     tShow = (TimeParams.daysElapsed > 150) & (TimeParams.daysElapsed < 250);
-    ShowPlots(ModelOutput, rainData, ModelParams.lambda, TimeParams, iSpecies);
+    ShowPlots(ModelOutput, rainData, ModelParams, TimeParams, iSpecies);
     
+    close all
+    for iSpecies = [2:5, 8:9, 22]
+        AnalyzeOutConcentrations(ModelOutput, TimeParams, ModelParams, ...
+            ParameterOfInterest, iSpecies);
+    end
 end
