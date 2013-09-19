@@ -1,4 +1,4 @@
-function CheckResults(ModelOutput, action, FILE_NAME, COMP_VARS)
+function CheckResults(ModelOutput, ModelParams, action, FILE_NAME, COMP_VARS)
 
     Const = DefineConstants();
 
@@ -27,6 +27,7 @@ function CheckResults(ModelOutput, action, FILE_NAME, COMP_VARS)
             varName = var{:};
             eval(sprintf('%s = ModelOutput.%s;', varName, varName));
         end
+        varList = {varList{:}, 'ModelParams'};
         save(FILE_NAME, varList{:});
     elseif (action == Const.COMPARE_RESULTS)
         BaselineRes = load(FILE_NAME);

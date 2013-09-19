@@ -92,8 +92,19 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
             % Add (fresh) rainwater to the system. Change volume of liquid and revise mass and
             % concentration of solute in mobile phase
             pvMobUpd = pv(2) + rainData(iT);
-            mRemaining(2, iT, :) = mRemaining(2, iT, :) + ...
-                rainData(iT) * rainConcentrationData(iT);
+            
+            %% Recirculation
+            DO_RECIRCULATION = true;
+            if (DO_RECIRCULATION)
+                if ((iT > 1) && (~RealEq(qOutTotal(iT-1), 0, Const.EPSILON)))
+                    mRemaining(2, iT, iFlushSpecies) = mRemaining(2, iT, iFlushSpecies) + ...
+                        rainData(iT) * mOutTotal(1, iT-1, iFlushSpecies) / qOutTotal(iT-1);
+                end
+            else
+                mRemaining(2, iT, :) = mRemaining(2, iT, :) + ...
+                    rainData(iT) * rainConcentrationData(iT);
+            end
+                
             cRemaining(2, iT, :) = mRemaining(2, iT, :) / pvMobUpd;
             pv(2) = pvMobUpd;
             % Every input impulse of water will cause (log-normal) response at the outlet. All the

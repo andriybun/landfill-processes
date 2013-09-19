@@ -1,7 +1,8 @@
-function ShowPlots(ModelOutput, rainData, lambda, TimeParams, iSpecies, tShow)
+function ShowPlots(ModelOutput, rainData, ModelParams, TimeParams, iSpecies, tShow)
  
     % Unpack resulting arrays
     nT = ModelOutput.nT;
+    lambda = ModelParams.lambda;
     qOutTotal = ModelOutput.qOutTotal;
     mOutTotal = ModelOutput.mOutTotal;
     emissionPotential = sum(ModelOutput.mRemaining(:, 2:nT+1, iSpecies), 1);
@@ -46,6 +47,12 @@ function ShowPlots(ModelOutput, rainData, lambda, TimeParams, iSpecies, tShow)
     
     ImmobileConcentrationInfo = struct();
     ImmobileConcentrationInfo.data = ModelOutput.cRemaining(1, 2:nT+1, iSpecies);
+    
+    pv = [ModelParams.totalPv - ModelParams.totalPv / (1 + ModelParams.beta); ...
+        ModelParams.totalPv / (1 + ModelParams.beta)];
+    ImmobileConcentrationInfo.data = (pv(1) * ModelOutput.cRemaining(1, 2:nT+1, iSpecies) + ...
+        pv(2) * ModelOutput.cRemaining(2, 2:nT+1, iSpecies)) / ModelParams.totalPv;
+    
     ImmobileConcentrationInfo.name = 'Remaining concentration';
     ImmobileConcentrationInfo.axisLabel = 'concentration [kg/m^3]';
     ImmobileConcentrationInfo.color = [1, 0.15, 0.15];
