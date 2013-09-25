@@ -4,14 +4,15 @@ function FourierDeconvolution
     MAT_FILE_DIR = 'mat/';
 %     CASE_NAME = 'CaseStudy_Real_Rain_Data';
 %     CASE_NAME = 'CaseStudy_Random_Rain_Data';
-    CASE_NAME = 'CaseStudy_Real_Rain_Data_2D_Homogeneous';
+    CASE_NAME = 'CaseStudy_Step_Rain_Data';
+%     CASE_NAME = 'CaseStudy_Real_Rain_Data_2D_Homogeneous';
 %     CASE_NAME = 'CaseStudy_Real_Rain_Data_2D_Heterogeneous_Blocks';
 %     CASE_NAME = 'CaseStudy_Real_Rain_Data_2D_Heterogeneous_Unifrnd';
     
     RawData = load([MAT_FILE_DIR CASE_NAME]);
     
     % Get data for processing
-    inpSel = 1:numel(RawData.t);
+    inpSel = 1:numel(RawData.fluxOut);
     t = RawData.t(inpSel);
     dt = RawData.t(2) - RawData.t(1);
     qIn = RawData.fluxIn(inpSel);
@@ -28,7 +29,7 @@ function FourierDeconvolution
     % Inverse Fourier transform to get approximation of probability density function
     pdfEst = smooth(ifft(pdfF), 9)';
     
-    resSel = 1:400;
+    resSel = 1:180;
     pdfEstAdj = pdfEst / sum(pdfEst(resSel));
     [muEst, sigmaEst] = CalcLognormMuSigma(t(resSel), pdfEstAdj(resSel));
 %     % 1D:
@@ -36,8 +37,8 @@ function FourierDeconvolution
 %     sigmaEst = sigmaEst + 0.04; % real
 %     sigmaEst = sigmaEst + 0.1;  % random
     % 2D heterogeneous blocks: (when plotting PDF, mutliply pdfEstAdj by 0.9)
-    muEst = muEst + 0.1;
-    sigmaEst = sigmaEst + 0.25;
+%     muEst = muEst + 0.1;
+%     sigmaEst = sigmaEst + 0.25;
 %     % 2D heterogeneous unifrnd: (when plotting PDF, mutliply pdfEstAdj by 1.3)
 %     muEst = muEst - 0.45;
 %     sigmaEst = sigmaEst - 0.05;
@@ -46,7 +47,7 @@ function FourierDeconvolution
     fH = figure(1);
     set(fH, 'Position', [100, 100, 350, 270]);
     set(gca, 'FontSize', 8);
-    plot(t(resSel), cat(1, pdfEstAdj(resSel) * 0.9, lognpdf(t(resSel), muEst, sigmaEst) * dt));
+    plot(t(resSel), cat(1, pdfEstAdj(resSel), lognpdf(t(resSel), muEst, sigmaEst) * dt));
     lH = legend('PDF estimated by deconvolution', ...
         ['Fitted log-normal PDF' char(10) '\mu = ' sprintf('%3.5f', muEst) ...
         ', \sigma = ' sprintf('%3.5f', sigmaEst)]);

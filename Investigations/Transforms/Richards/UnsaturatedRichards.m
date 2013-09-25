@@ -26,10 +26,14 @@ TimeParams = PrecipitationData.TimeParams;
 % % Case #1:
 % rainData = PrecipitationData.rainData;
 % CASE_NAME = 'CaseStudy_Real_Rain_Data';
-% Case #2:
-load([MAT_FILE_DIR 'CaseStudy_Random_Rain_Data'], 'fluxIn');
-rainData = fluxIn;
-CASE_NAME = 'CaseStudy_Random_Rain_Data';
+% % Case #2:
+% load([MAT_FILE_DIR 'CaseStudy_Random_Rain_Data'], 'fluxIn');
+% rainData = fluxIn;
+% CASE_NAME = 'CaseStudy_Random_Rain_Data';
+% Case #3:
+CASE_NAME = 'CaseStudy_Step_Rain_Data';
+rainData = sin(TimeParams.t * 0.2);
+rainData(rainData < 0) = 0;
 
 global rainData  TimeParams;
 
@@ -163,8 +167,8 @@ InitialPar.hIni = hbot+zref-ZN;% initial pressure head in z and x nodes.
 % dt = 1/10;
 % TimeParams.t = 0:dt:20;
 dt = TimeParams.dt;
-% iTsel = TimeParams.t <= 20;
-iTsel = 1:numel(TimeParams.t);
+iTsel = TimeParams.t <= 60;
+% iTsel = 1:numel(TimeParams.t);
 tRange = TimeParams.t(iTsel);
 % Parameters controlling the Picard Iteration
 TimerPar.abstol = 1e-3;
