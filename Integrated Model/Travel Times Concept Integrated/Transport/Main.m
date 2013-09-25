@@ -24,6 +24,17 @@ function Main
     rainData = PrecipitationData.rainData;
     % Structure containing time parameters
     TimeParams = PrecipitationData.TimeParams;
+
+% %% For recirculation / irrigation
+% rainData = zeros(size(rainData));
+% totalRecirculation = 3;
+% recirculationIntervalsPerDay = 4;
+% nRecirculationIntervals = TimeParams.maxDays * recirculationIntervalsPerDay;
+% recirculationRate = totalRecirculation / nRecirculationIntervals;
+% iRecirculation = mod(1:TimeParams.numIntervals, 24) < recirculationIntervalsPerDay;
+% rainData(iRecirculation) = recirculationRate;
+% %%
+
     
     % % Copy rain inputs for one more year
     % rainData = cat(2, rainData, rainData);
@@ -62,9 +73,12 @@ function Main
     ParameterOfInterest.name = 'baseline';
     
     %% Sensitivity analysis of parameters (Name as in code (this name will be also in file name))
+%     ModelParams.mu = -1;
+%     ParameterOfInterest.name = 'mu=-1';
 %     ParameterOfInterest.name = 'beta';
-    ParameterOfInterest.name = 'kExch';
+%     ParameterOfInterest.name = 'kExch';
 %     ParameterOfInterest.name = 'kExchPart';
+    ParameterOfInterest.name = 'recirculation_clean_water';
 
     RESULTS_FILE_NAME = sprintf(RESULTS_FILE_NAME_TEMPLATE, ...
         GenerateCharacteristicSuffix(ModelParams, ParameterOfInterest));
@@ -83,8 +97,8 @@ function Main
     % rainData(1:5) = 1e-3;
     % %% End test cases
 
-    resultSource = Const.CALCULATE_RESULTS;
-%     resultSource = Const.LOAD_SAVED_RESULTS;
+%     resultSource = Const.CALCULATE_RESULTS;
+    resultSource = Const.LOAD_SAVED_RESULTS;
 
     validateAction = Const.SAVE_RESULTS;
 %     validateAction = Const.COMPARE_RESULTS;
@@ -130,7 +144,7 @@ function Main
 %     }
     
     %% Plotting
-    iSpecies = 22;
+    iSpecies = 8;
 %     tShow = (TimeParams.daysElapsed > 150) & (TimeParams.daysElapsed < 250);
     ShowPlots(ModelOutput, rainData, ModelParams, TimeParams, iSpecies);
     

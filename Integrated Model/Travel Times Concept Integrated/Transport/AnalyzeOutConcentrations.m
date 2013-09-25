@@ -38,8 +38,8 @@ function AnalyzeOutConcentrations(ModelOutput, TimeParams, ModelParams, ...
     xlabel('time [days]');
     ylabel('concentration [kg/m^3]');
     
-    fileName = sprintf('fig/Cout_vs._Crem_%s_sp_#%02d.fig', ...
-        GenerateCharacteristicSuffix(ModelParams, ParameterOfInterest), iSpecies);
+    fileName = sprintf('fig/Cout_vs._Crem_sp_#%02d_%s.fig', ...
+        iSpecies, GenerateCharacteristicSuffix(ModelParams, ParameterOfInterest));
     hgsave(fH, fileName);
     
     return

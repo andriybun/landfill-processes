@@ -97,9 +97,11 @@ function ShowPlots(ModelOutput, rainData, ModelParams, TimeParams, iSpecies, tSh
         if isfield(Var2, 'color')
             set(lH2, 'color', Var2.color);
         end
+        xlim(axH(1), [0, 200]);
+        xlim(axH(2), [0, 200]);
         % Save to file
         hgsave(figH, GenerateFileName(Var1, Var2, 'fig'));
-%         print(figH, '-dpng', '-r0', GenerateFileName(Var1, Var2, 'png'));
+        print(figH, '-dpng', '-r0', GenerateFileName(Var1, Var2, 'png'));
     end
 
     function PlotDoubleWrapper(X, Var1, Var2, legendLocation, figPos)
@@ -122,15 +124,16 @@ function ShowPlots(ModelOutput, rainData, ModelParams, TimeParams, iSpecies, tSh
         xlabel(X.axisLabel);
         ylabel(Var1.axisLabel)
         legend({Var1.name, Var2.name}, 'Location', legendLocation);
+        xlim([0, 200]);
         % Save to file
         fileName = GenerateFileName(Var1, Var2, 'fig');
         hgsave(figH, fileName);
-%         print(figH, '-dpng', '-r0', GenerateFileName(Var1, Var2, 'png'));
+        print(figH, '-dpng', '-r0', GenerateFileName(Var1, Var2, 'png'));
     end
 
     function fileName = GenerateFileName(Var1, Var2, ext)
-        fileName = sprintf('fig/%s_-_%s_%d_days_lambda_%4.3f.%s', ...
+        fileName = sprintf('fig/%s_-_%s_sp_#%02d_%d_days_lambda_%4.3f.%s', ...
             strrep(Var1.name, ' ', '_'), strrep(Var2.name, ' ', '_'), ...
-            TimeParams.maxDays, lambda, ext);
+            iSpecies, TimeParams.maxDays, lambda, ext);
     end
 end

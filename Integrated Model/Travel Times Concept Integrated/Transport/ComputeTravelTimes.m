@@ -94,7 +94,7 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
             pvMobUpd = pv(2) + rainData(iT);
             
             %% Recirculation
-            DO_RECIRCULATION = true;
+            DO_RECIRCULATION = false;
             if (DO_RECIRCULATION)
                 if ((iT > 1) && (~RealEq(qOutTotal(iT-1), 0, Const.EPSILON)))
                     mRemaining(2, iT, iFlushSpecies) = mRemaining(2, iT, iFlushSpecies) + ...
