@@ -249,14 +249,14 @@ status open
 \begin_layout Plain Layout
 \align center
 \begin_inset Graphics
-	filename /home/andriybun/Workspace/landfill-processes/Investigations/Transforms/fig/CaseStudy_Random_Rain_Data_PDF.jpg
+	filename fig/CaseStudy_Random_Rain_Data_PDF.jpg
 	scale 50
 
 \end_inset
 
 
 \begin_inset Graphics
-	filename /home/andriybun/Workspace/landfill-processes/Investigations/Transforms/fig/CaseStudy_Real_Rain_Data_PDF.jpg
+	filename fig/CaseStudy_Real_Rain_Data_PDF.jpg
 	scale 50
 	noUnzip
 
@@ -313,7 +313,7 @@ status open
 \begin_layout Plain Layout
 \align center
 \begin_inset Graphics
-	filename /home/andriybun/Workspace/landfill-processes/Investigations/Transforms/fig/CaseStudy_Real_Rain_Data_(de)convolution.jpg
+	filename fig/CaseStudy_Real_Rain_Data_(de)convolution.jpg
 	scale 60
 
 \end_inset
@@ -398,14 +398,14 @@ status open
 \begin_layout Plain Layout
 \align center
 \begin_inset Graphics
-	filename /home/andriybun/Workspace/landfill-processes/Investigations/Transforms/fig/CaseStudy_Real_Rain_Data_2D_Heterogeneous_Blocks_PDF.jpg
+	filename fig/CaseStudy_Real_Rain_Data_2D_Heterogeneous_Blocks_PDF.jpg
 	scale 50
 
 \end_inset
 
 
 \begin_inset Graphics
-	filename /home/andriybun/Workspace/landfill-processes/Investigations/Transforms/fig/CaseStudy_Real_Rain_Data_2D_Heterogeneous_Unifrnd_PDF.jpg
+	filename fig/CaseStudy_Real_Rain_Data_2D_Heterogeneous_Unifrnd_PDF.jpg
 	scale 50
 
 \end_inset
@@ -460,7 +460,7 @@ status open
 \begin_layout Plain Layout
 \align center
 \begin_inset Graphics
-	filename /home/andriybun/Workspace/landfill-processes/Investigations/Transforms/fig/CaseStudy_Real_Rain_Data_2D_Heterogeneous_Unifrnd_(de)convolution.jpg
+	filename fig/CaseStudy_Real_Rain_Data_2D_Heterogeneous_Unifrnd_(de)convolution.jpg
 	scale 60
 
 \end_inset
