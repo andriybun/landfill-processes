@@ -1,5 +1,5 @@
 function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentrationData, ...
-        ModelDim, ModelParams, cIni)
+        ModelDim, ModelParams)
 
 %% TODO: setting concentration of cloride Comp.consti = XX; Is already concentration
 %%       (unit = mol/l). Is very inert.
