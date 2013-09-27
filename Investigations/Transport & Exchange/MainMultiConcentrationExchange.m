@@ -12,13 +12,13 @@ function MainMultiConcentrationExchange
 
     dt = 0.01;
     tEnd = 10;
-    t = 0:dt:tEnd;
-    nT = numel(t);
+    tRange = 0:dt:tEnd;
+    nT = numel(tRange);
     
-    nEl = 500;
+    nEl = 30;
     pvAllEl = 4;
     
-    nSolutes = 5;
+    nSolutes = 2;
     
 %     rngSeed = 1;
 %     rand(rngSeed);
@@ -26,6 +26,8 @@ function MainMultiConcentrationExchange
     cIni = zeros(1, nEl+1, nSolutes);
     cIni(1, 1, :) = 1;
     cIni(1, 2:(nEl+1), :) = repmat(rand(1, nEl), [1, 1, nSolutes]);
+    
+    disp(squeeze(cIni));
     
     pv = zeros(1, nEl+1, 1);
     pv(1, 1) = 1;
@@ -38,7 +40,7 @@ function MainMultiConcentrationExchange
     mIni = squeeze(sum(cIni .* repmat(pv, [1, 1, nSolutes]), 2));
     
     tic
-    cPart = MultiConcentrationExchange(t, cIni, kExch, pv, Const);
+    cPart = MultiConcentrationExchangeOde(tRange, cIni, kExch, pv, Const);
     toc
     
     mEnd = squeeze(sum(cPart(nT, :, :) .* repmat(pv, [1, 1, nSolutes]), 2));
@@ -53,9 +55,9 @@ function MainMultiConcentrationExchange
     
     figH = figure(1);
     set(figH, 'Position', [1050, 200, 600, 450]);
-    plot(t, squeeze(squeeze(cPart(:, 2:end, 1))));
+    plot(tRange, squeeze(squeeze(cPart(:, 2:end, 1))));
     hold on
-    plot(t, squeeze(squeeze(cPart(:, 1, 1))), 'b', 'LineWidth', 2);
+    plot(tRange, squeeze(squeeze(cPart(:, 1, 1))), 'b', 'LineWidth', 2);
     hold off
     return
     
