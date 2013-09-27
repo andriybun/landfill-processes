@@ -1,4 +1,4 @@
-function ConcentrationExchangeAndReactions
+function MainConcentrationExchangeAndReactions
     % This is a script to test integration of exchange of concentrations with source/sink term
     % 
 
