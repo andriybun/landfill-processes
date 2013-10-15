@@ -1,6 +1,5 @@
 function Main
 %% TODO: water must flow even if no rain (two domain?)
-%% TODO: mass balance if lambda ~= 0
 %%
 
     close all
@@ -48,9 +47,6 @@ function Main
     % Concentration of solutes in rainwater
     rainConcentrationData = 0 * ones(size(rainData));
     
-    % Initial concentration (immobile, mobile phases)
-    cIni = [1; 1];
-    
     %% Model parameters
     ModelParams = struct();
     % Parameters of log-normally distributed flow response
@@ -78,7 +74,7 @@ function Main
 %     ParameterOfInterest.name = 'beta';
 %     ParameterOfInterest.name = 'kExch';
 %     ParameterOfInterest.name = 'kExchPart';
-    ParameterOfInterest.name = 'recirculation_clean_water';
+%     ParameterOfInterest.name = 'recirculation_clean_water';
 
     RESULTS_FILE_NAME = sprintf(RESULTS_FILE_NAME_TEMPLATE, ...
         GenerateCharacteristicSuffix(ModelParams, ParameterOfInterest));
@@ -97,11 +93,11 @@ function Main
     % rainData(1:5) = 1e-3;
     % %% End test cases
 
-%     resultSource = Const.CALCULATE_RESULTS;
-    resultSource = Const.LOAD_SAVED_RESULTS;
+    resultSource = Const.CALCULATE_RESULTS;
+%     resultSource = Const.LOAD_SAVED_RESULTS;
 
-    validateAction = Const.SAVE_RESULTS;
-%     validateAction = Const.COMPARE_RESULTS;
+%     validateAction = Const.SAVE_RESULTS;
+    validateAction = Const.COMPARE_RESULTS;
 %     validateAction = Const.NO_VALIDATION;
 
     profilerOn = false;
@@ -114,7 +110,7 @@ function Main
         tic
         % Main computations are done here
         ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentrationData, ...
-            ModelDim, ModelParams, cIni);
+            ModelDim, ModelParams);
         toc
         
         if profilerOn
