@@ -57,25 +57,23 @@ function ShowPlots(ModelOutput, rainData, ModelParams, TimeParams, iSpecies, tSh
     ImmobileConcentrationInfo.axisLabel = 'concentration [kg/m^3]';
     ImmobileConcentrationInfo.color = [1, 0.15, 0.15];
     
-%     %% Plot
-%     close all;
-%     PlotYyWrapper(TInfo, PrecipInfo, EmissionPotentialInfo, 'NorthEast');
-% 
-%     figPos = [100, 100, 500, 250];
-%     PlotDoubleWrapper(TInfo, PrecipInfo, LeachateFluxInfo, 'NorthEast', figPos);
+    %% Plot
+    close all;
+    PlotYyWrapper(TInfo, PrecipInfo, EmissionPotentialInfo, 'NorthEast');
+
+    figPos = [100, 100, 500, 250];
+    PlotDoubleWrapper(TInfo, PrecipInfo, LeachateFluxInfo, 'NorthEast', figPos);
     
     figPos = [200, 200, 500, 300];
     PlotYyWrapper(TInfo, LeachateFluxInfo, LeachateConcentrationInfo, 'NorthEast', figPos);
     
-%     figPos = [300, 300, 500, 300];
-%     PlotYyWrapper(TInfo, LeachateConcentrationInfo, EmissionPotentialInfo, ...
-%         'NorthEast', figPos);
+    figPos = [300, 300, 500, 300];
+    PlotYyWrapper(TInfo, LeachateConcentrationInfo, EmissionPotentialInfo, ...
+        'NorthEast', figPos);
 
     figPos = [400, 400, 500, 250];
     PlotDoubleWrapper(TInfo, LeachateConcentrationInfo, ImmobileConcentrationInfo, ...
         'NorthEast', figPos);
-%     PlotDoubleWrapper(TInfo, ImmobileConcentrationInfo, ImmobileConcentrationInfo, ...
-%         'NorthEast', figPos);
     
     return
     
@@ -85,8 +83,9 @@ function ShowPlots(ModelOutput, rainData, ModelParams, TimeParams, iSpecies, tSh
         if nargin > 4
             set(figH, 'Position', figPos);
         end
+        Var2.data = cat(1, Var2.data, ImmobileConcentrationInfo.data);
         [axH, lH1, lH2] = plotyy(X.data, Var1.data, X.data, Var2.data);
-        legend({Var1.name, Var2.name}, 'Location', legendLocation);
+        legend({Var1.name, Var2.name, 'Emission potential'}, 'Location', legendLocation);
         xlabel(X.axisLabel);
         set(axH, {'ycolor'}, {Var1.color; Var2.color});
         set(get(axH(1), 'ylabel'), 'string', Var1.axisLabel);
@@ -95,7 +94,8 @@ function ShowPlots(ModelOutput, rainData, ModelParams, TimeParams, iSpecies, tSh
             set(lH1, 'color', Var1.color);
         end
         if isfield(Var2, 'color')
-            set(lH2, 'color', Var2.color);
+            set(lH2(1), 'color', Var2.color);
+            set(lH2(2), 'color', EmissionPotentialInfo.color);
         end
         xlim(axH(1), [0, 200]);
         xlim(axH(2), [0, 200]);

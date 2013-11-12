@@ -15,7 +15,7 @@ function MainMultiConcentrationExchange
     tRange = 0:dt:tEnd;
     nT = numel(tRange);
     
-    nEl = 30;
+    nEl = 500;
     pvAllEl = 4;
     
     nSolutes = 2;
@@ -27,7 +27,7 @@ function MainMultiConcentrationExchange
     cIni(1, 1, :) = 1;
     cIni(1, 2:(nEl+1), :) = repmat(rand(1, nEl), [1, 1, nSolutes]);
     
-    disp(squeeze(cIni));
+%     disp(squeeze(cIni));
     
     pv = zeros(1, nEl+1, 1);
     pv(1, 1) = 1;

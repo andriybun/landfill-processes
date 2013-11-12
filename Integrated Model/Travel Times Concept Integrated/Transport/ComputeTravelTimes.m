@@ -120,7 +120,7 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
         tRange = [tAfter(1), tAfter(1) + dt];
 
        %% Andre's block
-        DO_BIOCHEMISTRY = true;
+        DO_BIOCHEMISTRY = false;
         if DO_BIOCHEMISTRY
             [~, mChem] = ode15s(@bioreactor, linspace(tRange(1), tRange(2), 3), ...
                 mRemaining(1, iT, iReactiveSpecies) / pvAdj(1), options, Comp, Pm, S, Rp, ORI, H);

@@ -19,7 +19,6 @@ function cPart = MultiConcentrationExchangeOde(tRange, cIni, kExch, v, Const)
     cIni = reshape(cIni, [], 1);
     [t, cResRaw] = ode45(@(tX, cX) dC(tX, cX, v', kExch, [1, nEl, nSolutes]), tRange, cIni);
     cPart = reshape(cResRaw, [nTX, nEl, nSolutes]);
-%     cRes = permute(reshape(cResRaw, [nTX, nElX, nSolutes]), [2, 1, 3]);
     
     return
     
@@ -27,27 +26,31 @@ function cPart = MultiConcentrationExchangeOde(tRange, cIni, kExch, v, Const)
     function dCdt = dC(tX, cX, vX, kExch, dimVec)
         nEl = dimVec(2);
         nSolutes = dimVec(3);
-        % Reshape concentration array for convenience
-        % TODO: maybe remove this for optimization after
-        cX = reshape(cX, [nEl, nSolutes]);
         % Resulting array
-        dCdt = zeros(nEl, nSolutes);
+        dCdt = zeros(nEl * nSolutes, 1);
         % Indices of mobile particles
         iPartMob = 2:nEl;
         % Loop over solutes (this is slightly faster than matrix operations
         for iSolute = 1:nSolutes
-            gradC = cX(iPartMob, iSolute) - cX(1, iSolute);
+            % Concentrations and their changes are stored in a 1D vector, where all solutes are
+            % located sequentially. Thus offset of indices for each solute is calculated
+            iSoluteOffset = (iSolute - 1) * nEl;
+            % Indices of concentrations of current solute in mobile particles
+            iPartMobSol = iPartMob + iSoluteOffset;
+            % Gradient of concentrations between immobile phase and mobile particles
+            gradC = cX(iPartMobSol) - cX(iSoluteOffset + 1);
+            % Sum of volumes of immobile phase and mobile particles
             sumVx = vX(1) + vX(iPartMob);
-            dCdt(1, iSolute) = sum(kExch * vX(iPartMob) ./ sumVx .* gradC - R(tX, cX(1, iSolute)));
-            dCdt(iPartMob, iSolute) = -kExch * vX(1) ./ sumVx .* gradC;
+            % The main relationships
+            dCdt(iSoluteOffset + 1) = sum(kExch * vX(iPartMob) ./ sumVx .* gradC - ...
+                R(tX, cX(iSoluteOffset + 1)));
+            dCdt(iPartMobSol) = -kExch * vX(1) ./ sumVx .* gradC;
         end
-        % Reshape back
-        dCdt = reshape(dCdt, [], 1);
     end
 
     % Stub. Reactions function
     function rX = R(tX, cX)
-        kX = 0 * 1e-1;
+        kX = 1e-3;
         rX = kX * (1 - cos(tX)) * cX;
     end
 end

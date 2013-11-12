@@ -7,7 +7,7 @@ function Main
     addpath('../../../Common/');
     addpath('../Data/');
     
-    RESULTS_FILE_NAME_TEMPLATE = '../Data/baseline_chem_selected_species_%s.mat';
+    RESULTS_FILE_NAME_TEMPLATE = '../Data/baseline_test_travel_times_%s.mat';
     
     Const = DefineConstants();
 
@@ -24,17 +24,16 @@ function Main
     % Structure containing time parameters
     TimeParams = PrecipitationData.TimeParams;
 
-% %% For recirculation / irrigation
-% rainData = zeros(size(rainData));
-% totalRecirculation = 3;
-% recirculationIntervalsPerDay = 4;
-% nRecirculationIntervals = TimeParams.maxDays * recirculationIntervalsPerDay;
-% recirculationRate = totalRecirculation / nRecirculationIntervals;
-% iRecirculation = mod(1:TimeParams.numIntervals, 24) < recirculationIntervalsPerDay;
-% rainData(iRecirculation) = recirculationRate;
-% %%
+    % %% For recirculation / irrigation
+    % rainData = zeros(size(rainData));
+    % totalRecirculation = 3;
+    % recirculationIntervalsPerDay = 4;
+    % nRecirculationIntervals = TimeParams.maxDays * recirculationIntervalsPerDay;
+    % recirculationRate = totalRecirculation / nRecirculationIntervals;
+    % iRecirculation = mod(1:TimeParams.numIntervals, 24) < recirculationIntervalsPerDay;
+    % rainData(iRecirculation) = recirculationRate;
+    % %%
 
-    
     % % Copy rain inputs for one more year
     % rainData = cat(2, rainData, rainData);
     % % rainData(:) = 0;
@@ -63,7 +62,7 @@ function Main
     % Exchange rate between mobile phase and particles flowing
     ModelParams.kExchPart = (log(1.5) / exp(ModelParams.mu - ModelParams.sigma ^ 2));
 
-%     TimeParams.maxDays = 30;
+    TimeParams.maxDays = 40;
 
     ParameterOfInterest = struct();
     ParameterOfInterest.name = 'baseline';
@@ -86,18 +85,19 @@ function Main
     % cIni = [0; 0];
     % rainData = 1e-2 * ones(size(rainData));
     % rainConcentrationData(1:5) = 1;
-    % % Case #2:
-    % %   initial concentrations = [1; 1]
-    % %   short clean rain at initial time steps
-    % rainData = 0 * rainData;
-    % rainData(1:5) = 1e-3;
+    % Case #2:
+    %   initial concentrations = [1; 1]
+    %   short clean rain at initial time steps
+    rainData = 0 * rainData;
+    rainData(1:5) = 1e-3;
+    rainData(361:365) = 1e-3;
     % %% End test cases
 
     resultSource = Const.CALCULATE_RESULTS;
 %     resultSource = Const.LOAD_SAVED_RESULTS;
 
-%     validateAction = Const.SAVE_RESULTS;
-    validateAction = Const.COMPARE_RESULTS;
+    validateAction = Const.SAVE_RESULTS;
+%     validateAction = Const.COMPARE_RESULTS;
 %     validateAction = Const.NO_VALIDATION;
 
     profilerOn = false;
@@ -140,8 +140,7 @@ function Main
 %     }
     
     %% Plotting
-    iSpecies = 8;
-%     tShow = (TimeParams.daysElapsed > 150) & (TimeParams.daysElapsed < 250);
+    iSpecies = 22;
     ShowPlots(ModelOutput, rainData, ModelParams, TimeParams, iSpecies);
     
     close all
