@@ -13,19 +13,22 @@ import OrchestraInterface.*;
         ioVariableList(i) = Comp.all(i);
     end
 
+    if x == 0
+        ORI = OrchestraModule([cd '/../Orchestra/Bioreactor/chemistry.inp'], variableList, ioVariableList);
+        activate_activity = ORI.Calculate(1:length(Comp.masteri), [Comp.masteri]);
+    end
+    
 % Initialize ORCHESTRA object
 % Initialize H2CO3.tot and H+.tot with initial pH2CO3 and pH
-    if x ~= 0
-        k1 = find(strcmp('H2CO3.logact',Comp.all));
-        k2 = find(strcmp('pH',Comp.all));
-        ORI = OrchestraModule([cd '/../Orchestra/Initialize/chemistry.inp'], variableList, ioVariableList);
-        ORI = ORI.Calculate([k1 k2], [Comp.alli([k1 k2])]);
-        clc
-% Initialize ORCHESTRA with total amounts of all master species
-    else
-        ORI = OrchestraModule([cd '/../Orchestra/Bioreactor/chemistry.inp'], variableList, ioVariableList);
+    if x == 1
         
-        activate_activity = ORI.Calculate(1:12, [Comp.masteri]);
-        clc
+        ORI = OrchestraModule([cd '/../Orchestra/Initialize/chemistry.inp'], variableList, ioVariableList);
+        ORI = ORI.Calculate(1:length(Comp.masteri), [Comp.masteri]);
+    end
+
+% Initialize ORCHESTRA with total amounts of all master species
+    if x == 2
+        ORI = OrchestraModule([cd '/../Orchestra/Bioreactor/chemistry.inp'], variableList, ioVariableList);
+        ORI = ORI.Calculate(1:length(Comp.masteri), [Comp.masteri]);
     end
 end
