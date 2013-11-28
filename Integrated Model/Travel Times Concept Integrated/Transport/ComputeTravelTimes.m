@@ -11,7 +11,7 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
     CHEM_MODEL_DIR = '../';
     addpath(genpath(CHEM_MODEL_DIR));
     modus = 0;
-    [mIni, Comp, Pm, S, Rp, H] = initialize_ODE(modus, modus);
+    [mIni, Comp, Pm, S, Rp] = initialize_ODE('../Pmatrix/Pmatrix.csv');
     ORI = initialize_ORI(Comp, 0);
     
     mInertIni = [1];
@@ -28,7 +28,11 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
     
     global Call V2 tt Rall
     Call = [];  V2 = []; tt = []; Rall = [];
-    options = odeset('OutputFcn','StoreC','Refine',1, 'AbsTol', 1e-8, 'RelTol', 1e-8);
+    options = odeset('OutputFcn', ...
+        'Store_Orchestra_Results', ...
+        'Refine', 1, ...
+        'AbsTol', 1e-8, ...
+        'RelTol', 1e-8);
     
     %% Extracting some inputs from input structures
 	% Time parameters
@@ -120,10 +124,10 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
         tRange = [tAfter(1), tAfter(1) + dt];
 
        %% Andre's block
-        DO_BIOCHEMISTRY = false;
+        DO_BIOCHEMISTRY = true;
         if DO_BIOCHEMISTRY
             [~, mChem] = ode15s(@bioreactor, linspace(tRange(1), tRange(2), 3), ...
-                mRemaining(1, iT, iReactiveSpecies) / pvAdj(1), options, Comp, Pm, S, Rp, ORI, H);
+                mRemaining(1, iT, iReactiveSpecies) / pvAdj(1), options, Comp, Pm, S, Rp, ORI);
             mChem = mChem * pvAdj(1);
         else
             mChem = squeeze(repmat(mRemaining(1, iT, iReactiveSpecies), [1, 2, 1]));
