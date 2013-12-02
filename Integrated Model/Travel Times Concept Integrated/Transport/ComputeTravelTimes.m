@@ -1,6 +1,9 @@
 function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentrationData, ...
         ModelDim, ModelParams)
 
+    DO_BIOCHEMISTRY = true;
+    DO_RECIRCULATION = false;
+    
 %% TODO: setting concentration of cloride Comp.consti = XX; Is already concentration
 %%       (unit = mol/l). Is very inert.
 %%
@@ -98,7 +101,6 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
             pvMobUpd = pv(2) + rainData(iT);
             
             %% Recirculation
-            DO_RECIRCULATION = false;
             if (DO_RECIRCULATION)
                 if ((iT > 1) && (~RealEq(qOutTotal(iT-1), 0, Const.EPSILON)))
                     mRemaining(2, iT, iFlushSpecies) = mRemaining(2, iT, iFlushSpecies) + ...
@@ -124,9 +126,8 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
         tRange = [tAfter(1), tAfter(1) + dt];
 
        %% Andre's block
-        DO_BIOCHEMISTRY = true;
         if DO_BIOCHEMISTRY
-            [~, mChem] = ode15s(@bioreactor, linspace(tRange(1), tRange(2), 3), ...
+            [~, mChem] = ode15s(@bioreactor, tRange(1:2), ...
                 mRemaining(1, iT, iReactiveSpecies) / pvAdj(1), options, Comp, Pm, S, Rp, ORI);
             mChem = mChem * pvAdj(1);
         else
@@ -140,12 +141,8 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
         
         % Solve exchange equation in order to obtain concentrations in both phases at the end of
         % current time step. Different volumes will have different effect on exchange here
-        cOutAfter = ConcentrationExchangePhases(tRange, cRemaining(:, iT, iFlushSpecies), kExch, ...
-            lambda, pv);
-        % Save the remaining mass of solute to output vector
-        mRemaining(:, iT + 1, iFlushSpecies) = cOutAfter(:, 2, :) .* ...
-            repmat(pv, [1, 1, nSpeciesDiffuse]);
-        cPartOutR = cat(2, cOutAfter(2, 2, :), PartInfo.GetConcentration(1, iT:iTend, iFlushSpecies));
+        cPartOutR = cat(2, cRemaining(2, iT, iFlushSpecies), ...
+            PartInfo.GetConcentration(1, iT:iTend, iFlushSpecies));
         pvPartOutR = cat(2, pv(2), PartInfo.GetVolume(1, iT:iTend));
         cPartR = MultiConcentrationExchangeOde(...
             [tAfter(1), tAfter(1) + dt], cPartOutR, kExchPart, pvPartOutR);
@@ -173,8 +170,6 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
         end
     end
     
-%     fprintf('100%% complete\n\n');
-    
     %% Storing outputs to structures
     % Pack outputs to a struct
     ModelOutput = struct();
@@ -195,67 +190,6 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
     
     return
     
-    %%
-    function cOut = ConcentrationExchangePhases(tau, cIniX, kExchX, lambda, pv)
-        if (tau(1) == tau(end))
-            cOut = cIniX;
-        else
-            cOutAn = Concentration(tau, cIniX, kExchX, lambda, pv);
-            cOut = cOutAn;
-        end
-        
-        return
-        
-        function cTrend = Concentration(tX, cIniX, kExchX, lambda, pvX)
-            % Input arrays may have following dimensions:
-            %   nPhases x nTimeSteps x nElements (cells, particles etc.)
-            [nPhases, ~, nElements] = size(cIniX);
-            ntX = numel(tX);
-                
-            if (kExchX == 0)
-                cTrend = repmat(cIniX, [1, ntX, 1]);
-            else
-                if (size(pvX, 3) == 1)
-                    pvX = repmat(pvX, [1, 1, nElements]);
-                end
-                
-                vRatioIm = pvX(2, :, :) ./ (pvX(1, :, :) + pvX(2, :, :));
-                vRatioM = pvX(1, :, :) ./ (pvX(1, :, :) + pvX(2, :, :));
-                
-                v01 = vRatioIm .* kExchX;
-                v02 = vRatioM .* kExchX;
-                v03 = v01 + v02 + lambda;
-                v04 = cIniX(2, :, :) .* (v01 - v02 + lambda);
-                
-                v6 = sqrt((v01 + v02) .^ 2 - lambda .* (2 .* (v01 + v02) + lambda));
-                v8 = repmat(-0.5 .* (v03 - v6), [1, ntX, 1]);
-                v9 = repmat(-0.5 .* (v03 + v6), [1, ntX, 1]);
-                v11 = exp(v8 .* repmat(tX, [1, 1, nElements]));
-                v12 = exp(v9 .* repmat(tX, [1, 1, nElements]));
-                
-                C1_ = 0.5 .* (...
-                    cIniX(2, :, :) .* v6 + ...
-                    2 .* cIniX(1, :, :) .* v02 + ...
-                    v04) ./ v6;
-                C2_ = 0.5 .* (...
-                    cIniX(2, :, :) .* v6 - ...
-                    2 .* cIniX(1, :, :) .* v02 - ...
-                    v04) ./ v6;
-                
-                C1_ = repmat(C1_, [1, ntX, 1]);
-                C2_ = repmat(C2_, [1, ntX, 1]);
-                
-                cTrend = nan(nPhases, ntX, nElements);
-                cTrend(2, :, :) = ...
-                    C1_ .* v11 + ...
-                    C2_ .* v12;
-                cTrend(1, :, :) = ...
-                    cTrend(2, :, :) + ...
-                    (C1_ .* v8 .* v11 + C2_ .* v9 .* v12) ./ repmat(v02, [1, ntX, 1]);
-            end
-        end
-    end
-
     %%
     function cPart = MultiConcentrationExchangeOde(tRange, cIni, kExch, v, Const)
         % Function to calculate exchange of solutes between main container and different particles
