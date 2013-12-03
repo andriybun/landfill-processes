@@ -1,5 +1,5 @@
 function AnalyzeOutConcentrations(ModelOutput, TimeParams, ModelParams, ...
-    ParameterOfInterest, iSpecies)
+    ParameterOfInterest, iSpecies, Const)
 
     nT = min(ModelOutput.nT, TimeParams.numIntervals);
     tShow = true(1, nT);
@@ -27,7 +27,10 @@ function AnalyzeOutConcentrations(ModelOutput, TimeParams, ModelParams, ...
     plot(TimeParams.t(tShow), emissionPotential, 'Color', [0, 0.7, 0], 'LineWidth', 2);
     hold off;
     xlim([0, 200]);
-    ylim([0, max(max(emissionPotential) * 1.2)]);
+    yTop = max(max(emissionPotential) * 1.2);
+    if ~RealEq(yTop, 0, Const.EPSILON)
+        ylim([0, yTop]);
+    end
     
     title(sprintf('Concentration dynamics (sp. #%02d, %s = %3.2f, %s = %4.3f)', ...
         iSpecies, ...

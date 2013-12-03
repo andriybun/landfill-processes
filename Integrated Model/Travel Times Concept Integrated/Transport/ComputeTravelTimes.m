@@ -1,13 +1,13 @@
 function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentrationData, ...
         ModelDim, ModelParams)
 
-    DO_BIOCHEMISTRY = true;
+    DO_BIOCHEMISTRY = false;
     DO_RECIRCULATION = false;
     
 %% TODO: setting concentration of cloride Comp.consti = XX; Is already concentration
 %%       (unit = mol/l). Is very inert.
 %%
-   
+    
     Const = DefineConstants();
     
     %% Initializing chemical module
@@ -25,7 +25,7 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
     iReactiveSpecies = 1:nReactiveSpecies;
     iInertSpecies = nReactiveSpecies:nSpecies;
     iFlushSpecies = [2:5, 8:9, 22];
-    nSpeciesDiffuse = numel(iFlushSpecies);
+    nFlushSpecies = numel(iFlushSpecies);
     
     nPhases = 2;
     
@@ -60,16 +60,17 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
     % Volume adjustment factor (Orchestra is calculated for 325 liters of volume), therefore we bring
     % results to volume given in cubic meters in this model.
     pv = zLength .* theta;
-    pvAdj = pv / 0.325; % [1, 1];
+    pv(2) = 0;
+    pvAdj = pv / 0.325;
     
     % Initial concentrations of solutes
     mIni = cat(1, permute(mIni, [3, 1, 2]) * pvAdj(1), ...
         permute(mIni, [3, 1, 2]) * pvAdj(2));
     cIni = mIni ./ repmat(pv, [1, 1, nSpecies]);
     
-    % Initialize object to keep information about volumes and concentrations
-    % dimensions of arrays (1 x leave time)
-    PartInfo = ConcentrationCl(zeros(1, nT), zeros(1, nT, nSpecies));
+    % Initialize object to keep information about volumes and concentrations dimensions of arrays 
+    % (1 x leave time) + extra particle for water staying after tEnd
+    PartInfo = ConcentrationCl(zeros(1, nT+1), zeros(1, nT+1, nSpecies));
 
     %% Initializing output arrays
     qOutTotal = zeros(1, nT);
@@ -99,8 +100,6 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
             % Add (fresh) rainwater to the system. Change volume of liquid and revise mass and
             % concentration of solute in mobile phase
             pvMobUpd = pv(2) + rainData(iT);
-            
-            %% Recirculation
             if (DO_RECIRCULATION)
                 if ((iT > 1) && (~RealEq(qOutTotal(iT-1), 0, Const.EPSILON)))
                     mRemaining(2, iT, iFlushSpecies) = mRemaining(2, iT, iFlushSpecies) + ...
@@ -121,13 +120,12 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
             qOutTotal(iT:iTend) = qOutTotal(iT:iTend) + qOutAfter;
             % Increase volume of water leaving the system at future times
             PartInfo = PartInfo.AddVolume(qOutAfter, :, iT:iTend);
+            PartInfo = PartInfo.AddVolume(rainData(iT) - sum(qOutAfter), :, nT+1);
         end
 
-        tRange = [tAfter(1), tAfter(1) + dt];
-
-       %% Andre's block
         if DO_BIOCHEMISTRY
-            [~, mChem] = ode15s(@bioreactor, tRange(1:2), ...
+            tRange = [tAfter(1), tAfter(1) + dt];
+            [~, mChem] = ode15s(@bioreactor, tRange, ...
                 mRemaining(1, iT, iReactiveSpecies) / pvAdj(1), options, Comp, Pm, S, Rp, ORI);
             mChem = mChem * pvAdj(1);
         else
@@ -137,19 +135,24 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
         mRemaining(1, iT + 1, iReactiveSpecies) = mChem(end, :);
         mRemaining(1, iT + 1, iInertSpecies) = mRemaining(1, iT, iInertSpecies);
         mRemaining(2, iT + 1, :) = mRemaining(2, iT, :);
-       %% END
         
+        % Prepare inputs for exchange equation 
+        cPartOutR = cat(2, cRemaining(1, iT, iFlushSpecies), ...
+            PartInfo.GetConcentration(1, iT:iTend+1, iFlushSpecies));
+        pvPartOutR = cat(2, pv(1), PartInfo.GetVolume(1, iT:iTend+1));
         % Solve exchange equation in order to obtain concentrations in both phases at the end of
         % current time step. Different volumes will have different effect on exchange here
-        cPartOutR = cat(2, cRemaining(2, iT, iFlushSpecies), ...
-            PartInfo.GetConcentration(1, iT:iTend, iFlushSpecies));
-        pvPartOutR = cat(2, pv(2), PartInfo.GetVolume(1, iT:iTend));
-        cPartR = MultiConcentrationExchangeOde(...
+        cPartR = MultiConcentrationExchange(...
             [tAfter(1), tAfter(1) + dt], cPartOutR, kExchPart, pvPartOutR);
-        PartInfo = PartInfo.SetConcentration(cPartR(end, 2:(nCalcT+1), :), ...
-            1, iT:iTend, iFlushSpecies);
+        % Update computed concentrations for particles
+        PartInfo = PartInfo.SetConcentration(cPartR(end, 2:nCalcT+2, :), ...
+            1, iT:iTend+1, iFlushSpecies);
+        % Update masses of solutes per particle
         mOutTotal(1, iT, iFlushSpecies) = PartInfo.GetMass(1, iT, iFlushSpecies);
-        
+        % Update total masses of solutes in phases
+        mRemaining(1, iT + 1, iFlushSpecies) = cPartR(end, 1, :) * pv(1);
+        mRemaining(2, iT + 1, iFlushSpecies) = sum(cPartR(end, 2:nCalcT+2, :) .* ...
+            repmat(pvPartOutR(2:nCalcT+2), [1, 1, nFlushSpecies]), 2);
         % Withdraw solute leaving together with leachate and compute remaining masses of solutes
         % in both phases
         mRemaining(2, iT + 1, :) = mRemaining(2, iT + 1, :) - mOutTotal(1, iT, :);
@@ -163,7 +166,6 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
                 Const.CONCENTRATION_EPSILON))
             error('iT = %d: Concentration is negative.', iT);
         end
-        
         % Output progress
         if mod(iT, nPercent) == 0
             fprintf('%5.3f%% complete\n', iT / nT * 100);
@@ -191,7 +193,7 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
     return
     
     %%
-    function cPart = MultiConcentrationExchangeOde(tRange, cIni, kExch, v, Const)
+    function cPart = MultiConcentrationExchange(tRange, cIni, kExch, v, Const)
         % Function to calculate exchange of solutes between main container and different particles
         % residing in it. The first element along elements' axis is the main container. This function
         % uses ODE solver.
@@ -206,14 +208,11 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
         
         % Get dimensions of a problem
         [~, nEl, nSolutes] = size(cIni);
-        nTX = numel(tRange);
-        nTfine = 3;
-        tRangeFine = linspace(tRange(1), tRange(2), nTfine);
-        
         cIni = permute(cIni, [2, 3, 1]);
         cIni = reshape(cIni, [], 1);
-        [~, cResRaw] = ode45(@(tX, cX) dC(tX, cX, v', kExch, [1, nEl, nSolutes]), tRangeFine, cIni);
-        cPart = reshape(cResRaw, [nTfine, nEl, nSolutes]);
+        [~, cResRaw] = ode45(@(tX, cX) dC(tX, cX, v', kExch, [1, nEl, nSolutes]), tRange, cIni);
+        cPart = reshape(cResRaw, [], nEl, nSolutes);
+        cPart(2:end-1, :, :) = [];
     end
     
     % System of ODE's
