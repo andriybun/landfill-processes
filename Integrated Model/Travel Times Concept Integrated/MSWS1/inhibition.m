@@ -6,7 +6,9 @@ f1 = ones(nreac,1); f2 = ones(nreac,1); f3 = ones(nreac,1); f4 = ones(nreac,1); 
 k1 = find(Rp.inhib(:,1) == 1);     
 Ks = Rp.inhib(k1,4); 
 Ci = CT(Rp.inhib(k1,3));
-f1(Rp.inhib(k1,2)) = Ci./(Ci + Ks); % total acid concentration
+for i = 1:length(k1)
+    f1(Rp.inhib(k1(i),2)) = f1(Rp.inhib(k1(i),2))*(Ci(i)./(Ci(i) + Ks(i))); % total acid concentration
+end
 
 % f2:
 k1 = find(Rp.inhib(:,1) == 2);     
