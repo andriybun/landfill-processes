@@ -164,14 +164,14 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
                 cPartOutR(:, iCalcLog, :), kExch, pvPartOutR(:, iCalcLog));
         end
         % Update computed concentrations for particles
-        PartInfo = PartInfo.SetConcentration(cPartR(end, iCalc(2:end), :), ...
-            1, iT+iCalc(2:end), iFlushSpecies);
+        PartInfo = PartInfo.SetConcentration(cPartR(end, 2:end, :), ...
+            1, iT-2+iCalc(2:end), iFlushSpecies);
         % Update masses of solutes per particle
         mOutTotal(1, iT, iFlushSpecies) = PartInfo.GetMass(1, iT, iFlushSpecies);
         % Update total masses of solutes in phases
         mRemaining(1, iT + 1, iFlushSpecies) = cPartR(end, 1, :) * pv(1);
-        mRemaining(2, iT + 1, iFlushSpecies) = sum(cPartR(end, iCalc(2:end), :) .* ...
-            repmat(pvPartOutR(iCalc(2:end)), [1, 1, nFlushSpecies]), 2);
+        mRemaining(2, iT + 1, iFlushSpecies) = sum(...
+            PartInfo.GetMass(1, iT:iTend+1, iFlushSpecies), 2);
         % Withdraw solute leaving together with leachate and compute remaining masses of solutes
         % in both phases
         mRemaining(2, iT + 1, :) = mRemaining(2, iT + 1, :) - mOutTotal(1, iT, :);
