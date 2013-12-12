@@ -108,18 +108,6 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
             % Add (fresh) rainwater to the system. Change volume of liquid and revise mass and
             % concentration of solute in mobile phase
             pvMobUpd = pv(2) + rainData(iT);
-            if (DO_RECIRCULATION)
-                if ((iT > 1) && (~RealEq(qOutTotal(iT-1), 0, Const.EPSILON)))
-                  %% TODO: check
-                    mRemaining(2, iT, iFlushSpecies) = mRemaining(2, iT, iFlushSpecies) + ...
-                        rainData(iT) * mOutTotal(1, iT-1, iFlushSpecies) / qOutTotal(iT-1);
-                end
-            else
-                mRemaining(2, iT, :) = mRemaining(2, iT, :) + ...
-                    rainData(iT) * rainConcentrationData(iT);
-            end
-                
-            cRemaining(2, iT, :) = mRemaining(2, iT, :) / pvMobUpd;
             pv(2) = pvMobUpd;
             % Every input impulse of water will cause (log-normal) response at the outlet. All the
             % outflow during a given time step is considered as a particle with unique travel time
@@ -128,9 +116,22 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
             % We integrate volumes of all the particles flowing out at the same time intervals to
             % obtain Leachate volume flux.
             qOutTotal(iT:iTend) = qOutTotal(iT:iTend) + qOutAfter;
-            % Increase volume of water leaving the system at future times
-            PartInfo = PartInfo.AddVolume(qOutAfter, :, iT:iTend);
-            PartInfo = PartInfo.AddVolume(rainData(iT) - sum(qOutAfter), :, nT+1);
+            if (DO_RECIRCULATION)
+                if ((iT > 1) && (~RealEq(qOutTotal(iT-1), 0, Const.EPSILON)))
+                    cOutPrevStep = mOutTotal(1, iT-1, iFlushSpecies) / qOutTotal(iT-1);
+                    mRemaining(2, iT, iFlushSpecies) = mRemaining(2, iT, iFlushSpecies) + ...
+                        rainData(iT) * cOutPrevStep;
+                    PartInfo = PartInfo.AddSolute([qOutAfter, rainData(iT) - sum(qOutAfter)], ...
+                        repmat(cOutPrevStep, [1, nCalcT+1, 1]), :, [iT:iTend, nT+1], iFlushSpecies);
+                end
+            else
+                % Increase volume of water leaving the system at future times
+                PartInfo = PartInfo.AddVolume(...
+                    [qOutAfter, rainData(iT) - sum(qOutAfter)], :, [iT:iTend, nT+1]);
+                mRemaining(2, iT, :) = mRemaining(2, iT, :) + ...
+                    rainData(iT) * rainConcentrationData(iT);
+            end
+            cRemaining(2, iT, :) = mRemaining(2, iT, :) / pvMobUpd;
         end
 
         if DO_BIOCHEMISTRY
@@ -179,6 +180,8 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
         pv(2) = pv(2) - qOutTotal(iT);
         % Calculate the remaining concentrations
         cRemaining(:, iT + 1, :) = mRemaining(:, iT + 1, :) ./ repmat(pv, [1, 1, nSpecies]);
+        isPvZero = (pv == 0);
+        cRemaining(isPvZero, iT + 1, :) = 0;
         
         % Some checks
         if any(RealLt(reshape(cRemaining(:, iT + 1, iFlushSpecies), 1, []), 0, ...
