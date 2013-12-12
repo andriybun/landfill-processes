@@ -55,10 +55,14 @@ classdef ConcentrationCl
             end
         end
         
-        function self = AddSolute(self, dv, dc)
-            self = self.AddVolume(dv);
+        function self = AddSolute(self, dv, dc, varargin)
+            self = self.AddVolume(dv, varargin{1:self.nDims-1});
             dm = self.op(dv, dc, @times);
-            self.m = self.m + dm;
+            if (nargin == 3)
+                self.m = self.m + dm;
+            elseif (nargin > 3)
+                self.m(varargin{:}) = self.m(varargin{:}) + dm;
+            end
         end
         
         function v = GetVolume(self, varargin)
