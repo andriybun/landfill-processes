@@ -3,6 +3,7 @@ function Const = DefineConstants()
     
     % Tolerance parameters
     Const.EPSILON = 1e-10;
+    Const.VOLUME_EPSILON = 1e-6;
     Const.CONCENTRATION_EPSILON = 1e-6;
     Const.NUM_SIGMAS = 6;
 
