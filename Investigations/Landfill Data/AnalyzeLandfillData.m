@@ -1,127 +1,191 @@
-function AnalyzeLandfillData
+function AnalyzeLandfillDataNew
     close all
 
+    locationName = 'Wieringermeer'; % 'Braambergen' 'Wieringermeer'
+    
     % Read data
-    LeachData = load('data/WieringermeerProcessed');
-    LevelData = load('data/WieringermeerLevelProcessed');
-    RainData = load('data/RaindataProcessed');
+    Leach = TimeSeriesCl(sprintf('data/%sProcessed', locationName));
+    Level = TimeSeriesCl(sprintf('data/%sLevelProcessed', locationName));
+    Rain  = TimeSeriesCl(sprintf('data/%sMeteoDailyProcessed', locationName));
+    
+    % Calculate infiltration
+    Rain = UpdateNetInfiltration(Rain);
+    % Remove non-cumulative data
+    Rain = Rain.DeleteCols(2:4);
 
+    % Calculate time aggregated datasets
+    timeAggregate = 7;
+    LeachDaily = Leach.InterpTime(timeAggregate);
+    LevelDaily = Level.InterpTime(LeachDaily.GetTime());
+    RainDaily = Rain.InterpTime(LeachDaily.GetTime());
+    
     % Get initial time value. For convenience we count days from zero. Thus we need to know
     % initial time
-    tBaseLeach = LeachData.data(1, 1);
+    tBaseLeach = LeachDaily.GetTime(1);
+    LeachDaily = LeachDaily.ResetTime();
+    LevelDaily = LevelDaily.ResetTime(tBaseLeach);
+    RainDaily = RainDaily.ResetTime(tBaseLeach);
     
-    % Calculate daily values
-    LeachDaily = DailyValues(LeachData, 'last');
-    LevelDaily = DailyValues(LevelData, 'last');
-
+    % Join datasets
     tic
-    CombinedDaily = JoinArrays(LeachDaily, 1, LevelDaily, 1);
-    CombinedDaily = JoinArrays(CombinedDaily, 1, RainData, 1);
+    CombinedDaily = LeachDaily.Join(LevelDaily);
+    CombinedDaily = CombinedDaily.Join(RainDaily);
     toc
-
-    % Shift time and normalize some other data so that cumulative datasets start with zero
-    for i = 1:6
+    
+%     % Usage
+%     CombinedDaily.PrintHeaders();
+%     figure();
+%     CombinedDaily.Plot(6, 'date');
+%     figure();
+%     CombinedDaily.Plot(5);
+    
+    CombinedDaily = CombinedDaily.ChangeStartDate(datenum('15-May-2012'));
+    CombinedDaily.PrintHeaders();
+    
+    % Reset first elements of cumulative arrays to zero
+    iResetFirstElement = [2, 5, 6, 9:11];
+    for i = iResetFirstElement
         CombinedDaily.data(:, i) = CombinedDaily.data(:, i) - CombinedDaily.data(1, i);
     end
+    
+    CombinedDaily.Plot([5, 6], 'date');
+    
+    % PrintHeaders(CombinedDaily);
+    
+%     figure(1);
+%     plotyy(CombinedDaily.data(:, 1), CombinedDaily.data(:, [2, 14]), ...
+%         CombinedDaily.data(:, 1), CombinedDaily.data(:, 5));
+%     figure(2);
+%     plot(CombinedDaily.data(:, 1), CombinedDaily.data(:, 7));
+    
+    %% Trying to estimate area and/or evaporation efficiency
+%     % (CombinedDaily.data(:, 2) / 1000) - precipitation in m
+%     % CombinedDaily.data(:, 5)          - leachate pumped out
+%     areaSampleLow = CombinedDaily.data(20:end, 5) ./ (CombinedDaily.data(20:end, 2) / 1e+3);
+%     figure(3)
+%     % hist(areaSampleLow, 20);
+%     plot(areaSampleLow);
+%     areaSampleHi = CombinedDaily.data(20:end, 5) ./ (CombinedDaily.data(20:end, 14) / 1e+3);
+%     figure(4)
+%     % hist(areaSampleHi, 20);
+%     plot(areaSampleHi);
+    
+    iCell = 2;
 
-    CombinedDaily.data(:, 2) = [0; diff(CombinedDaily.data(:, 2))];
+    areaEst = 2.3 * 1e+4;   % m^2
+    figure();
+    plot(CombinedDaily.data(:, 1), CombinedDaily.data(:, 11), 'b');
+    hold on;
+    plot(CombinedDaily.data(:, 1), CombinedDaily.data(:, 9), 'g');
+    plot(CombinedDaily.data(:, 1), CombinedDaily.data(:, 4 + iCell) / (areaEst / 1e+3), 'r');
+    % => ~60 days delay
+    hold off;
+
+    t = CombinedDaily.data(1:end-1, 1);
+    rf = diff(CombinedDaily.data(:, 12));
+    evap = diff(CombinedDaily.data(:, 13));
+    outflow = diff(CombinedDaily.data(:, 5)); % / (areaEst / 1e+3);
     
-    plot(CombinedDaily.data(:, 1), 13 * cumsum(CombinedDaily.data(:, 2)), 'g');
-    hold on
-    plot(CombinedDaily.data(:, 1), cumsum(CombinedDaily.data(:, 9)), 'b');
-    plot(CombinedDaily.data(:, 1), cumsum(CombinedDaily.data(:, 11)), 'r');
-    legend('on site rain', 'meteo rain', 'meteo rain - evap', 'location', 'SouthEast');
-    hold off
-    
-    iCell = 1;
     iRain = 11;
     
-    close all
-    figure(1);
-    plotyy(CombinedDaily.data(:, 1), cumsum(CombinedDaily.data(:, iRain)), ...
-        CombinedDaily.data(:, 1), CombinedDaily.data(:, 6 + iCell));
-    legend('rain', 'level');
-    figure(2);
-    plotyy(CombinedDaily.data(:, 1), [cumsum(CombinedDaily.data(:, iRain)), CombinedDaily.data(:, 4 + iCell) * 0.1], ...
-        CombinedDaily.data(:, 1), CombinedDaily.data(:, 6 + iCell));
-    legend('rain', 'leachate pump', 'location', 'SouthEast');
-    % Interval with constant level
-    if iCell == 1
-        iSel = 386:514;
-    elseif iCell == 2
-        iSel = 379:514;
-    end
-    figure(3);
-    plotyy(CombinedDaily.data(iSel, 1), CombinedDaily.data(iSel, iRain), ...
-        CombinedDaily.data(iSel, 1), [0; diff(CombinedDaily.data(iSel, 4 + iCell))]);
-    title('Rainfall vs. leachate volume (constant level)');
-    legend('rain', 'leachate');
-    figure(4);
-    plotyy(CombinedDaily.data(iSel, 1), cumsum(CombinedDaily.data(iSel, iRain)), ...
-        CombinedDaily.data(iSel, 1), CombinedDaily.data(iSel, 4 + iCell));
-    title('Rainfall vs. leachate volume (cumulative, constant level)');
-    legend('rain', 'leachate');
-    % Pump switched off
-    if iCell == 1
-        iSel = 165:325;
-    elseif iCell == 2
-        return
-    end
-    figure(5)
-    plotyy(CombinedDaily.data(iSel, 1), CombinedDaily.data(iSel, iRain), ...
-        CombinedDaily.data(iSel, 1), CombinedDaily.data(iSel, 6 + iCell));
-    title('Rainfall vs. leachate level (pump off)');
-    legend('rain', 'level');
+    %% Analyzing impulse-response (NN)
+    iSel = 1:ceil(400 / timeAggregate); % 1:50; % ':';
     
+    % Solve an Input-Output Fitting problem with a Neural Network
+    % Script generated by NFTOOL
+    t = CombinedDaily.data(:, 1);
+    inputSeries = num2cell(cat(2, CombinedDaily.data(:, [2, 13]))', 1);
+    targetSeries = num2cell(CombinedDaily.data(:, 4 + iCell)');
+%     inputSeries = num2cell(cat(2, [0; diff(CombinedDaily.data(:, 2))], ...
+%         CombinedDaily.data(:, 10))', 1);
+%     targetSeries = num2cell([0; diff(CombinedDaily.data(:, 4 + iCell))]');
+
+    inputDelays = 1:10;
+    feedbackDelays = 1:10;
+    hiddenLayerSize = [10, 30];
+    net = narxnet(inputDelays, feedbackDelays, hiddenLayerSize);
+
+    % Prepare the Data for Training and Simulation
+    % The function PREPARETS prepares time series data 
+    % for a particular network, shifting time by the minimum 
+    % amount to fill input states and layer states.
+    % Using PREPARETS allows you to keep your original 
+    % time series data unchanged, while easily customizing it 
+    % for networks with differing numbers of delays, with
+    % open loop or closed loop feedback modes.
+    [inputs, inputStates, layerStates, targets] = ... 
+        preparets(net, inputSeries, {}, targetSeries);
+
+    % Set up Division of Data for Training, Validation, Testing
+    net.divideParam.trainRatio = 90/100;
+    net.divideParam.valRatio = 5/100;
+    net.divideParam.testRatio = 5/100;
+
+    % Train the Network
+    [net, ~] = train(net, inputs(:, iSel), targets(iSel), inputStates, layerStates);
+
+    % Test the Network
+    outputs = net(inputs, inputStates, layerStates);
+
+    nntraintool('close');
+    
+    figure();
+    plot(t, cell2mat(targetSeries)', 'g');
+    hold on
+    plot(t(end-numel(outputs)+1:end), cell2mat(outputs)', 'r');
+    hold off
+    %% END NN
+
     return
     
-    % Some checking commands
-    % Check percentage of NaN's (has to be as close to zero as possible): 
-    %       sum(isnan(CombinedDaily.data(:, iRain))) / size(CombinedDaily.data(:, iRain), 1)
-    % Display headers: 
-    %       cat(2, num2cell(1:numel(CombinedDaily.headers))', CombinedDaily.headers)
-    tDaily = CombinedDaily.data(:, 1);
+    iSel = ':';
+    netInf = CombinedDaily.data(:, iRain);
+    netInfTrunc = CombinedDaily.data(iSel, iRain);
+    leach = [0; diff(CombinedDaily.data(iSel, 4 + iCell))];
     
-    % Get required columns
-    iDebit = [8];
-    iLevel = iDebit + 4;
-    qPumped = sum(diff(cat(1, CombinedDaily.data(:, iDebit), CombinedDaily.data(end, iDebit))), 2);
-    lWell = smooth(CombinedDaily.data(:, iLevel), 1);
-    dlWell = sum(diff(cat(1, lWell, lWell(end))), 2);
+%     net = newff([-2 30], [5 1], {'tansig' 'purelin'});
+%     leach = sim(net, netInfTrunc);
+%     plot(netInfTrunc, netInf, netInfTrunc, leach, 'o')
+%     net.trainParam.epochs = 50;
+%     net = train(net, netInfTrunc, netInf);
+%     leach = sim(net, netInf);
+%     plot(netInf, netInfTrunc, netInf, leach, 'o')
     
-    % Translate level and pumped volume data into pumped volume
-    % Coefficient to translate change in level of leachate to actual volume. This takes into account
-    % total pore volume occupied by leachate inside the landfill based on its area and porosity.
-    kVol = 0.04 * 500;
-    qTot = kVol * dlWell + qPumped;
+%     figure();
+%     plotyy(CombinedDaily.data(:, 1), cumsum(CombinedDaily.data(:, iRain)), ...
+%         CombinedDaily.data(:, 1), CombinedDaily.data(:, 6 + iCell));
+%     legend('rain', 'level');
+%     figure();
+%     plotyy(CombinedDaily.data(:, 1), [CombinedDaily.data(:, iRain + 3), ...
+%         CombinedDaily.data(:, 4 + iCell)], CombinedDaily.data(:, 1), CombinedDaily.data(:, 6 + iCell));
+%     legend('net infiltration', 'leachate pump', 'leachate level', 'location', 'SouthEast');
+    % Interval with constant level
+    figure();
+    iSel = ':';
+    plotyy(CombinedDaily.data(iSel, 1), ...
+        NetInfiltration(CombinedDaily.data(iSel, iRain), CombinedDaily.data(iSel, 10), 0.6), ...
+        CombinedDaily.data(iSel, 1), [[0; diff(CombinedDaily.data(iSel, 4 + iCell))], ...
+        1000 * CombinedDaily.data(:, 6 + iCell)] + 4000);
+    title('Rainfall vs. leachate volume (constant level)');
+    legend('rain', 'leachate', 'level');
+%     figure();
+%     plotyy(CombinedDaily.data(iSel, 1), cumsum(CombinedDaily.data(iSel, iRain)), ...
+%         CombinedDaily.data(iSel, 1), CombinedDaily.data(iSel, 4 + iCell));
+%     title('Rainfall vs. leachate volume (cumulative, constant level)');
+%     legend('rain', 'leachate');
+%     iSel = 1:size(CombinedDaily.data, 1);
+%     figure()
+%     plotyy(CombinedDaily.data(iSel, 1), CombinedDaily.data(iSel, iRain), ...
+%         CombinedDaily.data(iSel, 1), CombinedDaily.data(iSel, 6 + iCell));
+%     title('Rainfall vs. leachate level (pump off)');
+%     legend('rain', 'level');
     
-    
-    % Plot volume fluxes vs. level data
-    figure(1);
-    plotyy(tDaily, [qPumped, qTot], tDaily, lWell);
-    legend('Pumped', 'Total', 'Level');
+    return
 
-%     % Plot net infiltration vs. leachate discharge
-%     CombinedDailyAll = JoinArrays(CombinedDaily, 1, RainData, 1);
-%     netInfiltration = CombinedDailyAll.data(:, 23);
-%     figure(2); 
-%     plotyy(tDaily, netInfiltration, tDaily, qTot);
-
-%     % Plot rainfall and evapotranspiration data
-%     figure(3);
-%     plot(RainData.data(:, 1), RainData.data(:, 2:end));
-%     legend(RainData.headers{2:end});
-% 
-%     % Plot Cumulative 
-%     figure(4);
-%     plot(RainData.data(:, 1), cumsum(RainData.data(:, 2:end), 1));
-%     legend(RainData.headers{2:end});
-    
-%     % Deconvolution travel time PDF
-%     sel = 1:100;
-%     tPdf = ifft(fft(qTot(sel)) ./ fft(netInfiltration(sel)));
-%     figure(5);
-%     plot(tDaily(sel), tPdf);
-    
-
+    function RainData = UpdateNetInfiltration(RainData)
+        alpha = 0.6;
+        RainData.data(:, 4) = NetInfiltration(RainData.data(:, 2), ...
+            RainData.data(:, 3), alpha);
+        RainData.data(:, 7) = cumsum(RainData.data(:, 4));
+    end
 end
