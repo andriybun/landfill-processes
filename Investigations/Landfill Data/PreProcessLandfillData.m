@@ -47,17 +47,4 @@ function PreProcessLandfillData
     save('data/RaindataProcessed', '-struct', 'RainData');
     
     %%
-    return
-    
-    function netInf = NetInfiltration(rf, ev)
-        % Function to calclulate net infiltration from rainfall and evapotranspiration
-        netInf = rf - ev;
-        netInf(1) = max(0, netInf(1));
-        isNegative = (netInf < 0);
-        isNegativeShift = cat(1, isNegative(2:end), false);
-        netInf(isNegativeShift) = netInf(isNegativeShift) + netInf(isNegative);
-        netInf(isNegative) = 0;
-        netInf(isNegativeShift) = max(0, netInf(isNegativeShift));
-    end
-    
 end
