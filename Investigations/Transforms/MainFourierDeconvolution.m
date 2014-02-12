@@ -22,7 +22,7 @@ function FourierDeconvolution
     delay = 400;
     mu = 6;
     sigma = 4.5e-1;
-    qOutAprx = FourierConvolution(t, qIn, ...
+    qOutAprx = NumericalConvolution(t, qIn, ...
         @(t, mu, sigma) lognpdfX(t-delay, mu, sigma, dt), mu, sigma);
     close all;
     figure();
