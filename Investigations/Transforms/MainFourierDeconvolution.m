@@ -1,36 +1,36 @@
-function FourierDeconvolution
-    addpath('../../Common');
+function MainFourierDeconvolution
 
+    close all
+
+    addpath('../../Common');
+    
     MAT_FILE_DIR = 'mat/';
-%     CASE_NAME = 'CaseStudy_Real_Rain_Data';
-%     CASE_NAME = 'CaseStudy_Random_Rain_Data';
-%     CASE_NAME = 'CaseStudy_Step_Rain_Data';
-%     CASE_NAME = 'CaseStudy_Real_Rain_Data_2D_Homogeneous';
-%     CASE_NAME = 'CaseStudy_Real_Rain_Data_2D_Heterogeneous_Blocks';
-%     CASE_NAME = 'CaseStudy_Real_Rain_Data_2D_Heterogeneous_Unifrnd';
-    CASE_NAME = 'ShirishExperiment';
+%     CASE_NAME = 'ShirishExperiment';
+    CASE_NAME = 'Richards_Output_Pulse_Very_Slow_Response'; % Square_Wave, Sin, Pulse
+    
     
     RawData = load([MAT_FILE_DIR CASE_NAME]);
     
     % Get data for processing
-    inpSel = ':'; % 1:140; % ':';
+    inpSel = ':';
     t = RawData.t(inpSel);
     dt = RawData.t(2) - RawData.t(1);
-    qIn = RawData.fluxIn(inpSel);
-    qOut = RawData.fluxOut(inpSel); % RawData.fluxOut(inpSel) / dt;
+    qIn = -sum(RawData.qIn(inpSel, :), 2);
+    qOut = -sum(RawData.qOut(inpSel, :), 2);
     
-    delay = 400;
-    mu = 6;
-    sigma = 4.5e-1;
-    qOutAprx = NumericalConvolution(t, qIn, ...
-        @(t, mu, sigma) lognpdfX(t-delay, mu, sigma, dt), mu, sigma);
-    close all;
+    qInCum = [0; cumsum(qIn)];
+    qOutCum = [0; cumsum(qOut)];
+    nEl = numel(qInCum);
+    step = 2;
+    iSel = 1:step:nEl;
+    t = t(iSel(1:end-1));
+    dt = (t(2 * step) - t(step));
+    qIn = diff(qInCum(iSel));
+    qOut = diff(qOutCum(iSel));
+    
     figure();
-    plot(t, [qIn, qOut, qOutAprx]);
-    xlim([700, 3700]);
-    legend('input', 'output (experiment)', 'output (approximated)');
-    figure();
-    plot(t, lognpdf(t-delay, mu, sigma) * dt);
+    plot(t, [qIn, qOut]);
+    legend('input', 'output');
     
     % Fourier transforms of inputs
     qInF = fft(qIn);
@@ -40,59 +40,57 @@ function FourierDeconvolution
     pdfF = qOutF ./ qInF;
     
     % Inverse Fourier transform to get approximation of probability density function
-    pdfEst = smooth(ifft(pdfF), 9)';
+    pdfEst = smooth(ifft(pdfF), 9);
     
     plot(pdfEst);
     
-    resSel = 1:180;
+    resSel = ':';
     pdfEstAdj = pdfEst / sum(pdfEst(resSel));
     [muEst, sigmaEst] = CalcLognormMuSigma(t(resSel), pdfEstAdj(resSel));
-%     % 1D:
-%     muEst = muEst - 0.04;
-%     sigmaEst = sigmaEst + 0.04; % real
-%     sigmaEst = sigmaEst + 0.1;  % random
-    % 2D heterogeneous blocks: (when plotting PDF, mutliply pdfEstAdj by 0.9)
-%     muEst = muEst + 0.1;
-%     sigmaEst = sigmaEst + 0.25;
-%     % 2D heterogeneous unifrnd: (when plotting PDF, mutliply pdfEstAdj by 1.3)
-%     muEst = muEst - 0.45;
-%     sigmaEst = sigmaEst - 0.05;
+    muEst = 9.6543;
+    sigmaEst = 0.6;
+%     muEst = 9.3;
+%     sigmaEst = 0.5;
     
     % Analytical PDF
     fH = figure(1);
-    set(fH, 'Position', [100, 100, 350, 270]);
-    set(gca, 'FontSize', 8);
-    plot(t(resSel), cat(1, pdfEstAdj(resSel), lognpdf(t(resSel), muEst, sigmaEst) * dt));
+%     subplot(1, 2, 1); 
+%     set(fH, 'Position', [100, 100, 350, 270]);
+%     set(gca, 'FontSize', 8);
+    plot(t(resSel), cat(2, pdfEstAdj(resSel), lognpdf(t(resSel), muEst, sigmaEst) * dt / step));
     lH = legend('PDF estimated by deconvolution', ...
         ['Fitted log-normal PDF' char(10) '\mu = ' sprintf('%3.5f', muEst) ...
         ', \sigma = ' sprintf('%3.5f', sigmaEst)]);
     set(lH, 'FontSize', 8);
 %     ylim([0, 0.03]);
-    xlabel('Time, days');
+    xlabel('Time, minutes');
     ylabel('Flux, dimensionless');
     hgsave(fH, sprintf('./fig/%s_PDF', CASE_NAME));
     
     fprintf('Estimated value of mu =    %f\n', muEst);
     fprintf('Estimated value of sigma = %f\n', sigmaEst);
     
-    % Calculate numerical convolution
-    
-    qOutConvEst = zeros(size(qOut));
-    qOutConvLogn = zeros(size(qOut));
-    for iT = 1:numel(t)
-        tRem = t(iT:end) - t(iT);
-        qOutConvLogn(iT:end) = qOutConvLogn(iT:end) + qIn(iT) * lognpdf(tRem, muEst, sigmaEst) * dt;
-        qOutConvEst(iT:end) = qOutConvEst(iT:end) + qIn(iT) * pdfEst(1:numel(tRem));
-    end
+    % Calculate numerical convolutions
+    qOutConvLogn = NumericalConvolution(t, qIn, ...
+        @(t, mu, sigma) lognpdfX(t, mu, sigma, dt), muEst, sigmaEst);
+    qOutConvEst = NumericalConvolution(t, qIn, pdfEst(resSel));
     
     fH = figure(2);
+%     subplot(1, 2, 2); 
     set(fH, 'Position', [500, 400, 700, 350]);
-    plot(t, cat(1, qOut, qOutConvLogn, qOutConvEst));
-    legend('Real data', 'Convolution (lognormal)', 'Convolution (estimated PDF)', ...
-        'Location', 'Northwest');
-    xlabel('Time, days');
+    plotyy(t, cat(2, qOut, qOutConvLogn, qOutConvEst), t, qIn);
+    legend('Real data', 'Convolution (lognormal)', 'Convolution (estimated PDF)', 'Influx', ...
+        'Location', 'Northeast');
+    xlabel('Time, minutes');
     ylabel('Flux, dimensionless');
     hgsave(fH, sprintf('./fig/%s_(de)convolution', CASE_NAME));
+    
+    fH = figure(3);
+    plot(t, cat(2, cumsum(qOut), cumsum(qOutConvLogn), cumsum(qOutConvEst)));
+    legend('Real data', 'Convolution (lognormal)', 'Convolution (estimated PDF)', ...
+        'Location', 'Southeast');
+    ylim([0, max(max([cumsum(qOut), cumsum(qOutConvLogn), cumsum(qOutConvEst)]))]);
+    hgsave(fH, sprintf('./fig/%s_cumsum', CASE_NAME));
     
     return
 

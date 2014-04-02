@@ -1,4 +1,4 @@
-function FourierConvolution
+function MainFourierConvolution
     addpath('../../Common/');
     addpath('../../Integrated Model/Data/');
     
