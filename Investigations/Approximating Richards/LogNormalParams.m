@@ -1,4 +1,4 @@
-function LogNormalParams
+function out = LogNormalParams(theta)
     % 
 
     header = {'zref', 'theta', 'mu', 'sigma'};
@@ -19,9 +19,7 @@ function LogNormalParams
         -0.05,0.394715, 7.085491, 0.795346
         ];
     
-    figure(1)
-    plot(data(:, 2), data(:, 3));
-    
-    figure(2)
-    plot(data(:, 2), data(:, 4));
+    mu = interp1(data(:, 2), data(:, 3), theta);
+    sigma = interp1(data(:, 2), data(:, 4), theta);
+    out = {mu, sigma};
 end
