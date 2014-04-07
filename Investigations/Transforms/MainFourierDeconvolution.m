@@ -6,14 +6,14 @@ function MainFourierDeconvolution
     
     MAT_FILE_DIR = 'mat/';
 %     CASE_NAME = 'ShirishExperiment';
-    CASE_NAME = 'Richards_Output_Pulse_Very_Slow_Response'; % Square_Wave, Sin, Pulse
+    CASE_NAME = 'Richards_Output_Pulse_Very_Slow_Response_zref_-1.0.mat'; % Square_Wave, Sin, Pulse
     
     
     RawData = load([MAT_FILE_DIR CASE_NAME]);
     
     % Get data for processing
-    inpSel = ':';
-    t = RawData.t(inpSel);
+    inpSel =  ':';
+    t = reshape(RawData.t(inpSel), [], 1);
     dt = RawData.t(2) - RawData.t(1);
     qIn = -sum(RawData.qIn(inpSel, :), 2);
     qOut = -sum(RawData.qOut(inpSel, :), 2);
@@ -47,8 +47,11 @@ function MainFourierDeconvolution
     resSel = ':';
     pdfEstAdj = pdfEst / sum(pdfEst(resSel));
     [muEst, sigmaEst] = CalcLognormMuSigma(t(resSel), pdfEstAdj(resSel));
-    muEst = 9.6543;
-    sigmaEst = 0.6;
+    muEst = muEst + 0.;
+    sigmaEst = sigmaEst + 0.;
+    fprintf('%f\t%f\n', muEst, sigmaEst);
+%     muEst = 9.6543;
+%     sigmaEst = 0.6;
 %     muEst = 9.3;
 %     sigmaEst = 0.5;
     
@@ -57,15 +60,18 @@ function MainFourierDeconvolution
 %     subplot(1, 2, 1); 
 %     set(fH, 'Position', [100, 100, 350, 270]);
 %     set(gca, 'FontSize', 8);
-    plot(t(resSel), cat(2, pdfEstAdj(resSel), lognpdf(t(resSel), muEst, sigmaEst) * dt / step));
-    lH = legend('PDF estimated by deconvolution', ...
+    lineH = plot(t(resSel), ...
+        cat(2, pdfEstAdj(resSel) / dt, lognpdf(t(resSel), muEst, sigmaEst) / step));
+    set(lineH(1), 'LineWidth', 2, 'Color', [0, 0, 0]);
+    set(lineH(2), 'LineWidth', 2, 'Color', [0.6, 0.6, 0.6], 'LineStyle', '--');
+    legH = legend('PDF estimated by deconvolution', ...
         ['Fitted log-normal PDF' char(10) '\mu = ' sprintf('%3.5f', muEst) ...
         ', \sigma = ' sprintf('%3.5f', sigmaEst)]);
-    set(lH, 'FontSize', 8);
+    set(legH, 'FontSize', 8);
 %     ylim([0, 0.03]);
     xlabel('Time, minutes');
-    ylabel('Flux, dimensionless');
-    hgsave(fH, sprintf('./fig/%s_PDF', CASE_NAME));
+    ylabel('Flux, m/min');
+    hgsave(fH, sprintf('./fig/%s_PDF.fig', CASE_NAME));
     
     fprintf('Estimated value of mu =    %f\n', muEst);
     fprintf('Estimated value of sigma = %f\n', sigmaEst);
@@ -83,14 +89,14 @@ function MainFourierDeconvolution
         'Location', 'Northeast');
     xlabel('Time, minutes');
     ylabel('Flux, dimensionless');
-    hgsave(fH, sprintf('./fig/%s_(de)convolution', CASE_NAME));
+    hgsave(fH, sprintf('./fig/%s_(de)convolution.fig', CASE_NAME));
     
     fH = figure(3);
     plot(t, cat(2, cumsum(qOut), cumsum(qOutConvLogn), cumsum(qOutConvEst)));
     legend('Real data', 'Convolution (lognormal)', 'Convolution (estimated PDF)', ...
         'Location', 'Southeast');
     ylim([0, max(max([cumsum(qOut), cumsum(qOutConvLogn), cumsum(qOutConvEst)]))]);
-    hgsave(fH, sprintf('./fig/%s_cumsum', CASE_NAME));
+    hgsave(fH, sprintf('./fig/%s_cumsum.fig', CASE_NAME));
     
     return
 
