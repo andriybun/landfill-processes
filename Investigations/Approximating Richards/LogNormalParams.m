@@ -22,4 +22,31 @@ function out = LogNormalParams(theta)
     mu = interp1(data(:, 2), data(:, 3), theta);
     sigma = interp1(data(:, 2), data(:, 4), theta);
     out = {mu, sigma};
+    
+%     figure(1);
+% %     title('Parameters of log-normal distribution as function of initial moisture content', ...
+% %         'HorizontalAlignment', 'center');
+%     h = subplot(1, 2, 1);
+% %     set(h, 'position', [0, 0, 0.5, 0.8]);
+%     plot(data(:, 2), data(:, 3));
+%     xlabel('Initial moisture content, %');
+%     ylabel('mu');
+%     xlim([0.1, 0.4]);
+%     h = title('a)');
+%     set(h, 'VerticalAlignment', 'bottom');
+%     h = subplot(1, 2, 2);
+% %     set(h, 'position', [0.5, 0, 0.5, 0.8]);
+%     plot(data(:, 2), data(:, 4));
+%     xlabel('Initial moisture content, %');
+%     ylabel('sigma');
+%     xlim([0.1, 0.4]);
+%     h = title('b)');
+% %     set(h, 'VerticalAlignment', 'bottom');
+% %     set(gcf, 'NextPlot', 'add');
+% %     axes;
+% %     strTitle = 'Parameters of log-normal distribution as function of initial moisture content';
+% %     h = title(strTitle);
+% %     set(gca, 'Visible', 'off');
+% %     set(h, 'Visible', 'on');
+
 end

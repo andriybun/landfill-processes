@@ -6,7 +6,7 @@ function MainFourierDeconvolution
     
     MAT_FILE_DIR = '../Transforms/mat/';
 %     CASE_NAME = 'Richards_Output_Pulse_Very_Slow_Response_zref_-1.0.mat';
-    CASE_NAME = 'Richards_Output_Square_Wave_Very_Slow_Response.mat'; % Sin, Square_Wave
+    CASE_NAME = 'Richards_Output_Very_Slow_Response.mat'; % Sin, Square_Wave
     
     RawData = load([MAT_FILE_DIR CASE_NAME]);
     
@@ -20,7 +20,7 @@ function MainFourierDeconvolution
     qInCum = [0; cumsum(qIn)];
     qOutCum = [0; cumsum(qOut)];
     nEl = numel(qInCum);
-    step = 2;
+    step = 1;
     iSel = 1:step:nEl;
     t = t(iSel(1:end-1));
     dt = (t(2 * step) - t(step));
@@ -48,22 +48,36 @@ function MainFourierDeconvolution
     sigmaEst = sigmaEst + 0.;
     
     % Calculate numerical convolutions
-    qOutConvLogn = NumericalConvolutionVar(t, qIn, ...
+    qOutConvLogn = NumericalConvolution(t, qIn, ...
         @(t, mu, sigma) lognpdfX(t, mu, sigma, dt), muEst, sigmaEst);
     thetaIni = 0.157630;
-    vPore = 0.45 / 3; % 1.0125e+02 / 15;
-    qOutConvLognVar = NumericalConvolutionVar(t, qIn, ...
+    vPore = 0.45 / 3;
+    [qOutConvLognVar, dTheta, dMu, dSigma] = NumericalConvolution(t, qIn, ...
         @(t, mu, sigma) lognpdfX(t, mu, sigma, dt), @LogNormalParams, thetaIni, vPore);
+    % plot(t, dTheta);
 
-    % 
+    % Plot
     fH = figure(2);
     set(fH, 'Position', [500, 400, 700, 350]);
-    plotyy(t, cat(2, qOut, qOutConvLogn, qOutConvLognVar), t, qIn);
-    legend('Real data', 'Convolution (lognormal)', 'Convolution (lognormal, variable)', ...
-        'Influx', 'Location', 'Northwest');
+    plotyy(t, qIn, t, cat(2, qOut, qOutConvLogn, qOutConvLognVar));
+    legend('Influx', 'Real data', 'Convolution (lognormal)', ...
+        'Convolution (lognormal, variable)', 'Location', 'Northwest');
     xlabel('Time, minutes');
-    ylabel('Flux, dimensionless');
-    hgsave(fH, sprintf('./fig/%s_(de)convolution', CASE_NAME));
+    ylabel('In flux');
+    % Get handles of lines and change their styles
+    axH = get(fH, 'children');
+    lH = get(axH, 'children');
+    qInColor = [0.9, 0.9, 0.9];
+    set(lH{3}, 'Color', qInColor);
+    set(axH(3), {'ycolor'}, {qInColor / 2});
+    set(get(axH(2), 'ylabel'), 'string', 'Out flux');
+    set(axH(2), 'ylim', [0, max(cat(1, qOut, qOutConvLogn, qOutConvLognVar)) * 1.05]);
+    set(axH(2), 'xlim', [t(1), t(end)]);
+    set(axH(3), 'xlim', [t(1), t(end)]);
+    set(lH{2}(1), 'Color', [0.3, 0.3, 0.3], 'LineStyle', '--');
+    set(lH{2}(2), 'Color', [0.6, 0.6, 0.6]);
+    set(lH{2}(3), 'Color', [0., 0., 0.], 'LineWidth', 2);
+    hgsave(fH, sprintf('./fig/%s_(de)convolution.fig', CASE_NAME));
     
     return
 
