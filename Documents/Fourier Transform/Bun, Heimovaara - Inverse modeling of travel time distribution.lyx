@@ -220,6 +220,13 @@ reference "eq:inv_conv_fourier_domain"
 
 \begin_layout Section
 Variable moisture content
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Variable-moisture-content"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -563,13 +570,106 @@ reference "fig:example-deconvolution-pdf"
  by convolution becomes less accurate.
 \end_layout
 
-\begin_layout Standard
-The aim of next experiment was to analyze the effect of variable moisture
- content on convolution results.
+\begin_layout Subsection
+Numerical convolution with variable PDF
 \end_layout
 
 \begin_layout Standard
+The aim of next experiment was to analyze the effect of variable moisture
+ content on convolution results.
+ Here we assume that the initial moisture content as well as pore volume
+ is known.
+ We also know relationships presented in figures
+\begin_inset space \thinspace{}
+\end_inset
 
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:log-normal-mu-sigma-of-theta"
+
+\end_inset
+
+.
+ Hence knowing the amounts of water entering and leaving the system one
+ can calculate average moisture content of the system for every time step.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename fig/Richards_Output_Very_Slow_Response.mat_(de)convolution_varpar.png
+	scale 80
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Effect of applying log-normal distribution with parameters variable to moisture
+ content
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:convolution-variable-pdf"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Figure
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:convolution-variable-pdf"
+
+\end_inset
+
+ shows the improvement of outflow approximation achieved by adjusting parameters
+ of log-normal distribution to moisture content (dashed grey line) compared
+ to the convolution result using constant properties of distribution (grey
+ line) and the output obtained by applying Richards equation.
+ As can be seen from the figure, adjusting PDF to moisture content in the
+ system may significantly improve quality of outflow simulation.
+\end_layout
+
+\begin_layout Section
+Discussion
+\end_layout
+
+\begin_layout Standard
+Relationship between moisture content and properties of output signal must
+ be known in advance.
+\end_layout
+
+\begin_layout Standard
+Average moisture content is some kind of aggregated value that doesn't necessari
+ly represent the real picture as moisture content profile may differ for
+ the same value.
 \end_layout
 
 \end_body
