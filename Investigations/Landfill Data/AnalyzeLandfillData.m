@@ -1,4 +1,4 @@
-function AnalyzeLandfillDataNew
+function AnalyzeLandfillData
     close all
 
     locationName = 'Wieringermeer'; % 'Braambergen' 'Wieringermeer'
