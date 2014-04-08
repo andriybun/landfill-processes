@@ -1,4 +1,9 @@
 function ConvertFig(srcDir, targetFormat)
+    % Function for converting all figures in a given folder from *.fig format to a target format.
+    % Parameters:
+    %   Source directory - directory containing all *.fig files to be converted
+    %   Target format - format to which figures will be converted (default - png)
+
     if nargin < 2
         targetFormat = '.png';
     end
