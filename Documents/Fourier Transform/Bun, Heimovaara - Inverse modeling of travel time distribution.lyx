@@ -219,89 +219,199 @@ reference "eq:inv_conv_fourier_domain"
 \end_layout
 
 \begin_layout Section
+Variable moisture content
+\end_layout
+
+\begin_layout Standard
+Hydraulic properties of porous medium depend among others on it's moisture
+ content.
+ In case of non-steady systems where moisture content is varying to high
+ extent, we will observe variable travel time PDF's.
+\end_layout
+
+\begin_layout Standard
+In order to quantify effect of initial moisture content on travel time distribut
+ion, we first approximate it with a log-normal PDF.
+ The simplest possible case is single injection of water at initial time
+ 
+\begin_inset Formula $t=0$
+\end_inset
+
+ .
+ Figure
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:travel-time-fitted-ln-pdf"
+
+\end_inset
+
+ shows an example of fitting possible response to such a pulse with a log-normal
+ PDF.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename fig/Richards_Output_Pulse_Very_Slow_Response_zref_-1.0.mat_PDF.png
+	scale 60
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Travel time PDF observed from Richards equation fitted with log-normal.
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:travel-time-fitted-ln-pdf"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+This fitting was done for a range of initial moisture contents assuming
+ that a system was in equilibrium at initial time.
+ Figure
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:log-normal-mu-sigma-of-theta"
+
+\end_inset
+
+ shows how values of location and scale parameters 
+\begin_inset Formula $\mu$
+\end_inset
+
+ and 
+\begin_inset Formula $\sigma$
+\end_inset
+
+ respectively change with initial moisture content for a specific set of
+ soil properties.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename fig/Log-normal_Params_of_Initial_Moisture.png
+	scale 80
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Parameters of log-normal distribution as function of initial moisture content.
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:log-normal-mu-sigma-of-theta"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Adjusting parameters of log-normal (or any other) distribution according
+ to moisture content inside soil may improve quality of outflux approximation
+ with convolution.
+ This issue is described in the following section.
+\end_layout
+
+\begin_layout Section
 Numerical experiments
 \end_layout
 
 \begin_layout Standard
-A number of numerical experiments have been conducted in order to verify
- the described approach.
+A number of numerical experiments have been conducted in order to analyze
+ the feasibility of described approaches.
  In all cases input datasets have been generated using numerical solutions
- to Richards equation on arbitrary one- or two-dimensional domains with
- arbitrary influx data.
+ to Richards equation on arbitrary two-dimensional domains.
+\end_layout
+
+\begin_layout Subsection
+Numerical deconvolution
 \end_layout
 
 \begin_layout Standard
-The first experiment was conducted for one-dimensional homogeneous column.
- Two different input flux datasets have been applied with the same total
- amount of water.
- In the first case water was applied at the inlet at uniformly distributed
- random periods of random duration.
- The second case used real rainfall data that featured long dry periods
- as well as periods with frequent and intense rains.
-\end_layout
-
-\begin_layout Standard
-\begin_inset Float figure
-wide false
-sideways false
-status open
-
-\begin_layout Plain Layout
-\align center
-\begin_inset Graphics
-	filename fig/CaseStudy_Random_Rain_Data_PDF.jpg
-	scale 50
-
+In order to test approach we used Richards equation to analyze water flux
+ for a random input simulating rainfalls over a long period.
+ An example of outflux (solid black line) for a given inputs (light grey
+ columns) is presented on figure
+\begin_inset space \thinspace{}
 \end_inset
 
 
-\begin_inset Graphics
-	filename fig/CaseStudy_Real_Rain_Data_PDF.jpg
-	scale 50
-	noUnzip
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-\begin_inset Caption
-
-\begin_layout Plain Layout
-PDF's estimated by deconvolution vs.
- fitted log-normal PDF's for different sequences of input flux.
-\begin_inset CommandInset label
-LatexCommand label
-name "fig:1d_PDF_comparison"
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-As can be seen from figures 
 \begin_inset CommandInset ref
 LatexCommand ref
-reference "fig:1d_PDF_comparison"
+reference "fig:convolution-const-pdf"
 
 \end_inset
 
- the estimated distributions are very similar as well as parameters of fitted
- log-normal PDF's.
- However some variations exist in the second case which may be explained
- by longer dry periods that affect distribution obtained by deconvolution.
+.
+ Figure
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:example-deconvolution-pdf"
+
+\end_inset
+
+ presents results of estimated by deconvolution PDF of response times for
+ system of interest compared to log-normally distributed approximation.
 \end_layout
 
 \begin_layout Standard
@@ -313,7 +423,7 @@ status open
 \begin_layout Plain Layout
 \align center
 \begin_inset Graphics
-	filename fig/CaseStudy_Real_Rain_Data_(de)convolution.jpg
+	filename fig/Richards_Output_Very_Slow_Response.mat_PDF.png
 	scale 60
 
 \end_inset
@@ -325,12 +435,11 @@ status open
 \begin_inset Caption
 
 \begin_layout Plain Layout
-Comparison of outflux calculated by convolution using estimated PDF and
- fitted log-normal PDF vs.
- real outflux.
+Example of applying deconvolution technique to determine response times
+ PDF.
 \begin_inset CommandInset label
 LatexCommand label
-name "fig:1d_outflux_comparison"
+name "fig:example-deconvolution-pdf"
 
 \end_inset
 
@@ -348,45 +457,33 @@ name "fig:1d_outflux_comparison"
 \end_layout
 
 \begin_layout Standard
-Figure 
+As can be seen from figure
+\begin_inset space \thinspace{}
+\end_inset
+
+
 \begin_inset CommandInset ref
 LatexCommand ref
-reference "fig:1d_outflux_comparison"
+reference "fig:example-deconvolution-pdf"
 
 \end_inset
 
- shows that outflux can be quite accurately simulated by convolution.
- However using estimated travel time PDF leads to somewhat erratic behavior
- of flux during low discharge periods.
- This is because in these periods the flux is almost completely composed
- of the tailing flux (see fig.
- 
+ the observed distribution is ill-shaped.
+ This is probably to the superposition effect, when responses to near signals
+ are merged.
+ Figure
+\begin_inset space \thinspace{}
+\end_inset
+
+
 \begin_inset CommandInset ref
 LatexCommand ref
-reference "fig:1d_PDF_comparison"
+reference "fig:convolution-const-pdf"
 
 \end_inset
 
-, b).
-\end_layout
-
-\begin_layout Standard
-Another test cases investigated were two-dimensional soils with different
- types of heterogeneity introduced.
- In the first case two low permeability blocks have been placed within investiga
-ted system.
- These blocks slowed down or diverted stream from the shortest route.
- In the second case entire system is represented by a grid with random hydraulic
- conductivities.
- Figure 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "fig:2d_PDF_comparison"
-
-\end_inset
-
- shows comparison of estimated travel time PDF's with fitted log-normal
- curves.
+ displays additionally results of forward convolution operation with estimated
+ PDF (solid grey line) and its log-normal approximation (grey line).
 \end_layout
 
 \begin_layout Standard
@@ -398,15 +495,8 @@ status open
 \begin_layout Plain Layout
 \align center
 \begin_inset Graphics
-	filename fig/CaseStudy_Real_Rain_Data_2D_Heterogeneous_Blocks_PDF.jpg
-	scale 50
-
-\end_inset
-
-
-\begin_inset Graphics
-	filename fig/CaseStudy_Real_Rain_Data_2D_Heterogeneous_Unifrnd_PDF.jpg
-	scale 50
+	filename fig/Richards_Output_Very_Slow_Response.mat_(de)convolution.png
+	scale 80
 
 \end_inset
 
@@ -417,16 +507,16 @@ status open
 \begin_inset Caption
 
 \begin_layout Plain Layout
-PDF's estimated by deconvolution vs.
- fitted log-normal PDF's for different types of soil heterogeneity.
-\begin_inset CommandInset label
-LatexCommand label
-name "fig:2d_PDF_comparison"
+Comparison of applying different types of response time PDF versus inputs
+ and Richards solution.
+\end_layout
 
 \end_inset
 
 
-\end_layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:convolution-const-pdf"
 
 \end_inset
 
@@ -439,58 +529,46 @@ name "fig:2d_PDF_comparison"
 \end_layout
 
 \begin_layout Standard
-Despite log-normal curves don't fit corresponding distributions, application
- of log-normal distribution gives much better approximation of outflux (figure
- 
+One can see from figure
+\begin_inset space \thinspace{}
+\end_inset
+
+
 \begin_inset CommandInset ref
 LatexCommand ref
-reference "fig:2d_outflux_comparison"
+reference "fig:convolution-const-pdf"
 
 \end_inset
 
-).
+ that output signal can be approximated to a certain extent of accuracy
+ by applying both types of response presented in figure
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:example-deconvolution-pdf"
+
+\end_inset
+
+.
+ Experiments show that in general log-normal distribution provides better
+ results most likely because of irregular tale of estimated PDF.
+ It is however visible that after 
+\begin_inset Formula $3.5\cdot10^{5}$
+\end_inset
+
+ minutes, when rainfall events become more often and intense, approximation
+ by convolution becomes less accurate.
 \end_layout
 
 \begin_layout Standard
-\begin_inset Float figure
-wide false
-sideways false
-status open
-
-\begin_layout Plain Layout
-\align center
-\begin_inset Graphics
-	filename fig/CaseStudy_Real_Rain_Data_2D_Heterogeneous_Unifrnd_(de)convolution.jpg
-	scale 60
-
-\end_inset
-
-
+The aim of next experiment was to analyze the effect of variable moisture
+ content on convolution results.
 \end_layout
 
-\begin_layout Plain Layout
-\begin_inset Caption
-
-\begin_layout Plain Layout
-Comparison of outflux calculated by convolution using estimated PDF and
- fitted log-normal PDF vs.
- real outflux.
-\begin_inset CommandInset label
-LatexCommand label
-name "fig:2d_outflux_comparison"
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-
+\begin_layout Standard
 
 \end_layout
 
