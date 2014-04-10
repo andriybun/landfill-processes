@@ -337,7 +337,7 @@ status open
 \align center
 \begin_inset Graphics
 	filename fig/Log-normal_Params_of_Initial_Moisture.png
-	scale 80
+	width 80text%
 
 \end_inset
 
@@ -503,7 +503,7 @@ status open
 \align center
 \begin_inset Graphics
 	filename fig/Richards_Output_Very_Slow_Response.mat_(de)convolution.png
-	scale 80
+	width 90text%
 
 \end_inset
 
@@ -605,7 +605,7 @@ status open
 \align center
 \begin_inset Graphics
 	filename fig/Richards_Output_Very_Slow_Response.mat_(de)convolution_varpar.png
-	scale 80
+	width 90text%
 
 \end_inset
 
@@ -658,7 +658,7 @@ reference "fig:convolution-variable-pdf"
 \end_layout
 
 \begin_layout Section
-Discussion
+Discussion and conclusions
 \end_layout
 
 \begin_layout Standard
