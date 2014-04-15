@@ -72,14 +72,6 @@ Introduction
 \end_layout
 
 \begin_layout Standard
-Text
-\end_layout
-
-\begin_layout Section
-Methodology
-\end_layout
-
-\begin_layout Standard
 It is virtually impossible to observe processes within full scale landfills
  in high detail because of difficulties in accessing the waste body.
  Easily obtainable information is the amount of water from rainfall, irrigation
@@ -100,6 +92,10 @@ It is virtually impossible to observe processes within full scale landfills
  The challenge we face is to use this information to obtain a quantitative
  estimate of the concentrations of compounds of interest within the waste
  body.
+\end_layout
+
+\begin_layout Section
+Methodology
 \end_layout
 
 \begin_layout Standard
@@ -270,7 +266,7 @@ status open
 \align center
 \begin_inset Graphics
 	filename fig/Richards_Output_Pulse_Very_Slow_Response_zref_-1.0.mat_PDF.png
-	scale 60
+	width 40text%
 
 \end_inset
 
@@ -431,7 +427,7 @@ status open
 \align center
 \begin_inset Graphics
 	filename fig/Richards_Output_Very_Slow_Response.mat_PDF.png
-	scale 60
+	width 40text%
 
 \end_inset
 
@@ -662,14 +658,130 @@ Discussion and conclusions
 \end_layout
 
 \begin_layout Standard
-Relationship between moisture content and properties of output signal must
- be known in advance.
-\end_layout
-
-\begin_layout Standard
 Average moisture content is some kind of aggregated value that doesn't necessari
 ly represent the real picture as moisture content profile may differ for
  the same value.
+\end_layout
+
+\begin_layout Standard
+Relationship between moisture content and properties of output signal must
+ be known in advance.
+ However it can be partly estimated from inverse problem.
+ One possibility is to split the dataset into intervals with similar rain
+ patterns.
+ In this case moisture content will remain within a more narrow range and
+ hence the response function will be more smooth to accurately define its
+ properties.
+\end_layout
+
+\begin_layout Standard
+In some particular cases it may be possible to analyze several such intervals.
+ This will allow to estimate a range of properties of PDF's.
+ Figure
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:example-deconvolution-pdf-low-moisture"
+
+\end_inset
+
+shows an example of response PDF estimated by deconvolution of dataset on
+ an interval 
+\begin_inset Formula $\left[1.3\cdot10^{-5},\,3\cdot10^{-5}\right]$
+\end_inset
+
+
+\begin_inset space \thinspace{}
+\end_inset
+
+minutes.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename fig/Richards_Output_Very_Slow_Response.mat_PDF_low_moist.png
+	width 40text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Response function estimate from deconvolution for an interval with similar
+ input pattern
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:example-deconvolution-pdf-low-moisture"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+It is clear from figure
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:example-deconvolution-pdf-low-moisture"
+
+\end_inset
+
+ that the shape of response function is much more regular than the one presented
+ on figure
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:example-deconvolution-pdf"
+
+\end_inset
+
+.
+ Values of parameters of log-normal distribution correspond to initial moisture
+ content of around 0.185 (figure
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:log-normal-mu-sigma-of-theta"
+
+\end_inset
+
+).
+ This value is slightly above the moisture content at the beginning of simulatio
+n which makes sense.
 \end_layout
 
 \end_body
