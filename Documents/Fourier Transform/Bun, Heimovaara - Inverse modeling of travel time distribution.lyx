@@ -72,10 +72,24 @@ Introduction
 \end_layout
 
 \begin_layout Standard
-It is virtually impossible to observe processes within full scale landfills
- in high detail because of difficulties in accessing the waste body.
- Easily obtainable information is the amount of water from rainfall, irrigation
- and recirculation infiltrating in to the waste body, 
+Richards equation is a typical model of water flow in unsaturated porous
+ media.
+ It can provide all the necessary information about properties of the flow.
+ In some cases however this information may be excessive considering computation
+al resources required.
+ This may happen when only in-/out-flux information is needed and Richards
+ equation has to be solved many times (e.g.
+ Monte-Carlo simulations).
+\end_layout
+
+\begin_layout Standard
+Richards equation is also often applied when modelling landfill processes.
+ Landfill researchers typically have lack of information about their hydraulic
+ properties which makes Richards equation difficult or even impossible to
+ use.
+ At the same time easily obtainable information is the amount of water from
+ rainfall, irrigation and recirculation infiltrating in to the waste body,
+ 
 \begin_inset Formula $q_{in}\left(t\right)$
 \end_inset
 
@@ -89,9 +103,14 @@ It is virtually impossible to observe processes within full scale landfills
 \end_inset
 
  respectively.
- The challenge we face is to use this information to obtain a quantitative
- estimate of the concentrations of compounds of interest within the waste
- body.
+\end_layout
+
+\begin_layout Standard
+The challenge we face is to use this information to obtain a quantitative
+ estimate hydraulic properties of waste.
+ Results of such analysis can then be used for integrated modelling.
+ The purpose of current study is to investigate feasibility of simulating
+ water flow using impulse-response approach.
 \end_layout
 
 \begin_layout Section
