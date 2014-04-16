@@ -107,7 +107,7 @@ Richards equation is also often applied when modelling landfill processes.
 
 \begin_layout Standard
 The challenge we face is to use this information to obtain a quantitative
- estimate hydraulic properties of waste.
+ estimate of hydraulic properties of waste.
  Results of such analysis can then be used for integrated modelling.
  The purpose of current study is to investigate feasibility of simulating
  water flow using impulse-response approach.
@@ -140,8 +140,7 @@ where
 \begin_inset Formula $f\left(\tau\right)$
 \end_inset
 
- is a probability density function (PDF) specifying distribution of travel
- times.
+ is a probability density function (PDF) specifying distribution of response.
  In this equation, the leachate volume flux 
 \begin_inset Formula $q_{out}\left(t\right)$
 \end_inset
@@ -248,7 +247,7 @@ name "sec:Variable-moisture-content"
 Hydraulic properties of porous medium depend among others on it's moisture
  content.
  In case of non-steady systems where moisture content is varying to high
- extent, we will observe variable travel time PDF's.
+ extent, we will observe variable response PDF's.
 \end_layout
 
 \begin_layout Standard
@@ -386,8 +385,7 @@ name "fig:log-normal-mu-sigma-of-theta"
 \begin_layout Standard
 Adjusting parameters of log-normal (or any other) distribution according
  to moisture content inside soil may improve quality of outflux approximation
- with convolution.
- This issue is described in the following section.
+ with convolution (forward problem).
 \end_layout
 
 \begin_layout Section
