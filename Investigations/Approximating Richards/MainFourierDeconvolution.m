@@ -11,8 +11,9 @@ function MainFourierDeconvolution
     RawData = load([MAT_FILE_DIR CASE_NAME]);
     
     % Get data for processing
-    inpSel =  ':';
+    inpSel =  ':'; % ':'; % 2125:5000 6500:8760
     t = reshape(RawData.t(inpSel), [], 1);
+    t = t - t(1);
     dt = RawData.t(2) - RawData.t(1);
     qIn = -sum(RawData.qIn(inpSel, :), 2) / 15;
     qOut = -sum(RawData.qOut(inpSel, :), 2) / 15;
@@ -20,32 +21,34 @@ function MainFourierDeconvolution
     qInCum = [0; cumsum(qIn)];
     qOutCum = [0; cumsum(qOut)];
     nEl = numel(qInCum);
-    step = 1;
+    step = 25;
     iSel = 1:step:nEl;
     t = t(iSel(1:end-1));
-    dt = (t(2 * step) - t(step));
+    dt = (t(2) - t(1));
     qIn = diff(qInCum(iSel));
     qOut = diff(qOutCum(iSel));
     
-%     % Fourier transforms of inputs
-%     qInF = fft(qIn);
-%     qOutF = fft(qOut);
-%     
-%     % Deconvolution
-%     pdfF = qOutF ./ qInF;
-%     
-%     % Inverse Fourier transform to get approximation of probability density function
-%     pdfEst = smooth(ifft(pdfF), 9);
-
-    muEst = 9.6543;
-    sigmaEst = 0.6;
-    pdfEst = lognpdfX(t, muEst, sigmaEst, dt);
+    % Fourier transforms of inputs
+    qInF = fft(qIn);
+    qOutF = fft(qOut);
     
-    resSel = ':';
+    % Deconvolution
+    pdfF = qOutF ./ qInF;
+    
+    % Inverse Fourier transform to get approximation of probability density function
+    pdfEst = smooth(ifft(pdfF), 1);
+
+%     muEst = 9.6543;
+%     sigmaEst = 0.6;
+%     pdfEst = lognpdfX(t, muEst, sigmaEst, dt);
+    
+    resSel = 1:40; % ':';
+%     plot(pdfEst(resSel));
     pdfEstAdj = pdfEst / sum(pdfEst(resSel));
     [muEst, sigmaEst] = CalcLognormMuSigma(t(resSel), pdfEstAdj(resSel));
-    muEst = muEst + 0.;
+    muEst = muEst - 0.;
     sigmaEst = sigmaEst + 0.;
+    fprintf('%f\t%f\n', muEst, sigmaEst);
     
     % Calculate numerical convolutions
     qOutConvLogn = NumericalConvolution(t, qIn, ...
@@ -54,7 +57,26 @@ function MainFourierDeconvolution
     vPore = 0.45 / 3;
     [qOutConvLognVar, dTheta, dMu, dSigma] = NumericalConvolution(t, qIn, ...
         @(t, mu, sigma) lognpdfX(t, mu, sigma, dt), @LogNormalParams, thetaIni, vPore);
-    % plot(t, dTheta);
+%     plot(t, dTheta);
+
+%%
+    fH = figure(1);
+%     subplot(1, 2, 1); 
+    set(fH, 'Position', [100, 100, 390, 300]);
+    set(gca, 'FontSize', 8);
+    lineH = plot(t(resSel), ...
+        cat(2, pdfEstAdj(resSel) / dt, lognpdf(t(resSel), muEst, sigmaEst)) / step);
+    set(lineH(1), 'LineWidth', 2, 'Color', [0, 0, 0]);
+    set(lineH(2), 'LineWidth', 2, 'Color', [0.6, 0.6, 0.6], 'LineStyle', '--');
+    legH = legend('PDF estimated by deconvolution', ...
+        ['Fitted log-normal PDF' char(10) '\mu = ' sprintf('%3.5f', muEst) ...
+        ', \sigma = ' sprintf('%3.5f', sigmaEst)], 'Location', 'Northeast');
+    set(legH, 'FontSize', 8);
+%     ylim([0, 0.03]);
+    xlabel('Time, minutes');
+    ylabel('Flux, m/min');
+    hgsave(fH, sprintf('./fig/%s_PDF.fig', CASE_NAME));
+%%
 
     % Plot
     fH = figure(2);

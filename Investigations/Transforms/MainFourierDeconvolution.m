@@ -11,8 +11,9 @@ function MainFourierDeconvolution
     RawData = load([MAT_FILE_DIR CASE_NAME]);
     
     % Get data for processing
-    inpSel =  ':';
+    inpSel =  1:numel(RawData.t); % ':';
     t = reshape(RawData.t(inpSel), [], 1);
+    t = t - t(1);
     dt = RawData.t(2) - RawData.t(1);
     qIn = -sum(RawData.qIn(inpSel, :), 2);
     qOut = -sum(RawData.qOut(inpSel, :), 2);
