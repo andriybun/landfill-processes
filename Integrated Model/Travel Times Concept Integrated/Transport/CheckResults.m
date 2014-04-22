@@ -21,7 +21,7 @@ function CheckResults(ModelOutput, ModelParams, action, FILE_NAME, COMP_VARS)
 
     % Validate against previous runs
     if (action == Const.SAVE_RESULTS)
-        varList = {'t', 'nT', 'mIni', 'cOutTotal', 'mOutTotal', 'qOutTotal', 'mRemRes', ...
+        varList = {'t', 'nT', 'mIni', 'qIn', 'cOutTotal', 'mOutTotal', 'qOutTotal', 'mRemRes', ...
             'mRemaining', 'cRemaining', 'cAll'};
         for var = varList
             varName = var{:};
