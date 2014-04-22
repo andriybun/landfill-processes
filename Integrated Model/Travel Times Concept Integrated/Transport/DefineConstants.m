@@ -2,9 +2,9 @@ function Const = DefineConstants()
     Const = struct();
     
     % Tolerance parameters
-    Const.EPSILON = 1e-10;
-    Const.VOLUME_EPSILON = 1e-6;
-    Const.CONCENTRATION_EPSILON = 1e-6;
+    Const.EPSILON = 1e-10;                  % Used for general comparison of floats
+    Const.VOLUME_EPSILON = 1e-9;            % Used for comparison of particle volumes
+    Const.CONCENTRATION_EPSILON = 1e-6;     % Used for comparison of solute concentrations
     Const.NUM_SIGMAS = 6;
 
     % Calculate for results or analyze stored results
