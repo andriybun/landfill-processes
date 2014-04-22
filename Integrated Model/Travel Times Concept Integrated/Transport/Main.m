@@ -1,5 +1,6 @@
 function Main
 %% TODO: water must flow even if no rain (two domain?)
+%% TODO: beta? not taken into account?
 %%
 
     close all
@@ -34,37 +35,43 @@ function Main
     % rainData(iRecirculation) = recirculationRate;
     % %%
 
-    % % Copy rain inputs for one more year
-    % rainData = cat(2, rainData, rainData);
-    % % rainData(:) = 0;
+    % Copy rain inputs for one more year
+    rainData = cat(2, rainData, rainData);
     % Update time parameters for an extended interval
-    % TimeParams.numIntervals = numel(rainData);
-    % TimeParams.maxDays = TimeParams.numIntervals / TimeParams.intervalsPerDay;
-    % TimeParams.t = (1:TimeParams.numIntervals) * TimeParams.dt;
-    % TimeParams.daysElapsed = TimeParams.t / (TimeParams.dt * TimeParams.intervalsPerDay);
+    TimeParams.numIntervals = numel(rainData);
+    TimeParams.maxDays = TimeParams.numIntervals / TimeParams.intervalsPerDay;
+    TimeParams.t = (1:TimeParams.numIntervals) * TimeParams.dt;
+    TimeParams.daysElapsed = TimeParams.t / (TimeParams.dt * TimeParams.intervalsPerDay);
 
     % Concentration of solutes in rainwater
     rainConcentrationData = 0 * ones(size(rainData));
     
     %% Model parameters
     ModelParams = struct();
+    ModelParams.DO_BIOCHEMISTRY = true;
+    ModelParams.DO_RECIRCULATION = false;
+    
     % Parameters of log-normally distributed flow response
     ModelParams.mu = 0;
     ModelParams.sigma = 1;
+    delay = 0;
+    LogNorm = LogNormalCl(mu, sigma, delay, Const);
+    ModelParams.LogNorm = LogNorm;
     % Pore volume
-    ModelParams.totalPv = 0.44;
+    ModelParams.totalPv = 5;
     % Immobile-mobile volume ratio
-    ModelParams.beta = 10;
+    ModelParams.beta = Inf;
     % Source/sink rate
     ModelParams.lambda = 0 * 1e-4;
     % Exchange rate between mobile-immobile phases
-    ModelParams.kExch = 1e-1;
-    % Exchange rate between mobile phase and particles flowing
-    ModelParams.kExchPart = (log(1.5) / exp(ModelParams.mu - ModelParams.sigma ^ 2));
+    ModelParams.kExch = 5e-1;
+    % Initial concentration of intert specie(s)
+    ModelParams.mInertIni = 1;
 
-    TimeParams.maxDays = 40;
+%     TimeParams.maxDays = 40;
 
     ParameterOfInterest = struct();
+    % 'baseline'; 'no_rain'; 'no_chem'; 'short'; 'constant_rain'; 'recirculation'
     ParameterOfInterest.name = 'baseline';
     
     %% Sensitivity analysis of parameters (Name as in code (this name will be also in file name))
@@ -88,9 +95,10 @@ function Main
     % Case #2:
     %   initial concentrations = [1; 1]
     %   short clean rain at initial time steps
-    rainData = 0 * rainData;
-    rainData(1:5) = 1e-3;
-    rainData(361:365) = 1e-3;
+    % rainData(:) = 1e-3;
+    % rainData(:) = 0;
+    % rainData(1:5) = 1e-3;
+    % rainData(361:365) = 1e-3;
     % %% End test cases
 
     resultSource = Const.CALCULATE_RESULTS;
@@ -141,11 +149,11 @@ function Main
     
     %% Plotting
     iSpecies = 22;
-    ShowPlots(ModelOutput, rainData, ModelParams, TimeParams, iSpecies);
+    ShowPlots(ModelOutput, ModelParams, TimeParams, iSpecies);
     
     close all
-    for iSpecies = [2:5, 8:9, 22]
-        AnalyzeOutConcentrations(ModelOutput, TimeParams, ModelParams, ...
-            ParameterOfInterest, iSpecies);
-    end
+    iSpecies = 22; % [1:12, 17:20]; % [2:5, 8:9, 22] % [2, 4]
+    PLOT_SEPARATELY = true;
+    AnalyzeOutConcentrations(ModelOutput, TimeParams, ModelParams, ...
+        ParameterOfInterest, iSpecies, Const, PLOT_SEPARATELY, TimeParams.maxDays);
 end

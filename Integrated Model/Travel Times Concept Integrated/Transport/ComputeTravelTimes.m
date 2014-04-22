@@ -1,8 +1,8 @@
 function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentrationData, ...
         ModelDim, ModelParams)
 
-    DO_BIOCHEMISTRY = true;
-    DO_RECIRCULATION = false;
+    DO_BIOCHEMISTRY = ModelParams.DO_BIOCHEMISTRY;
+    DO_RECIRCULATION = ModelParams.DO_RECIRCULATION;
     
 %% TODO: setting concentration of cloride Comp.consti = XX; Is already concentration
 %%       (unit = mol/l). Is very inert.
@@ -17,14 +17,14 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
     [mIni, Comp, Pm, S, Rp] = initialize_ODE('../Pmatrix/Pmatrix.csv');
     ORI = initialize_ORI(Comp, 0);
     
-    mInertIni = [1];
+    mInertIni = ModelParams.mInertIni;
     nInertSpecies = numel(mInertIni);
     nReactiveSpecies = numel(mIni);
     mIni = cat(2, mIni, mInertIni);
     nSpecies = numel(mIni);
     iReactiveSpecies = 1:nReactiveSpecies;
     iInertSpecies = nReactiveSpecies:nSpecies;
-    iFlushSpecies = [2:5, 8:9, 22];
+    iFlushSpecies = [2:4, 8:9, 25];
     nFlushSpecies = numel(iFlushSpecies);
     
     nPhases = 2;
@@ -37,7 +37,7 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
     tEnd = TimeParams.t(end);
     dt = TimeParams.dt;
     t = TimeParams.t;
-    nT = TimeParams.maxDays * TimeParams.intervalsPerDay;
+    nT = TimeParams.numIntervals;
     t = t(1:nT);
     
     REL_TOL = 1e-5;
@@ -52,8 +52,7 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
         'RelTol', REL_TOL);
     
     % Model params
-    mu = ModelParams.mu;
-    sigma = ModelParams.sigma;
+    LogNorm = ModelParams.LogNorm;
     totalPv = ModelParams.totalPv;
     beta = ModelParams.beta;
     lambda = ModelParams.lambda;
@@ -73,15 +72,16 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
     
     % Initial concentrations of solutes
     mIni = cat(1, permute(mIni, [3, 1, 2]) * pvAdj(1), ...
-        permute(mIni, [3, 1, 2]) * pvAdj(2));
+        permute(0 * mIni, [3, 1, 2]) * pvAdj(2));
     cIni = mIni ./ repmat(pv, [1, 1, nSpecies]);
     
     % Initialize object to keep information about volumes and concentrations dimensions of arrays 
-    % (1 x leave time) + extra particle for water staying after tEnd
-    PartInfo = ConcentrationCl(zeros(1, nT+1), zeros(1, nT+1, nSpecies));
+    % (1 x leave time) + 2 extra particles for water that is staying after tEnd and was originally 
+    % in mobile phase
+    PartInfo = ConcentrationCl(zeros(1, nT+2), zeros(1, nT+2, nSpecies));
+    PartInfo = PartInfo.AddSolute(pv(2), cIni(1, 1, :), 1, nT+2, :);
 
     %% Initializing output arrays
-    qOutTotal = zeros(1, nT);
     mOutTotal = zeros(1, nT, nSpecies);
     cRemaining = nan(nPhases, nT + 1, nSpecies);
     cRemaining(:, 1, :) = cIni;
@@ -97,7 +97,7 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
         % Calculate boundaries of log-normally distributed travel times (to save computational
         % resources we calculate only for those times, when something comes out of the drainage
         % system but not until the end of the period).
-        tBounds = LogNormalBounds(mu, sigma, Const.NUM_SIGMAS);
+        tBounds = LogNorm.bounds;
         % Select only those time steps that are affected by current injection
         iCalcT = (tAfter <= tBounds(2));
         nCalcT = sum(iCalcT);
@@ -111,14 +111,16 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
             pv(2) = pvMobUpd;
             % Every input impulse of water will cause (log-normal) response at the outlet. All the
             % outflow during a given time step is considered as a particle with unique travel time
-            lnPdf = diff(logncdf([tAfter, tAfter(end)+dt], mu, sigma));
+            if iT == nT
+                lnPdf = LogNorm.PdfDelayed([tAfter, tAfter+dt]);
+                lnPdf = lnPdf(1);
+            else
+                lnPdf = LogNorm.PdfDelayed(tAfter);
+            end
             qOutAfter = rainData(iT) * lnPdf;
-            % We integrate volumes of all the particles flowing out at the same time intervals to
-            % obtain Leachate volume flux.
-            qOutTotal(iT:iTend) = qOutTotal(iT:iTend) + qOutAfter;
             if (DO_RECIRCULATION)
-                if ((iT > 1) && (~RealEq(qOutTotal(iT-1), 0, Const.EPSILON)))
-                    cOutPrevStep = mOutTotal(1, iT-1, iFlushSpecies) / qOutTotal(iT-1);
+                if ((iT > 1) && (~RealEq(PartInfo.GetVolume(1, iT-1), 0, Const.EPSILON)))
+                    cOutPrevStep = mOutTotal(1, iT-1, iFlushSpecies) / PartInfo.GetVolume(1, iT-1);
                     mRemaining(2, iT, iFlushSpecies) = mRemaining(2, iT, iFlushSpecies) + ...
                         rainData(iT) * cOutPrevStep;
                     PartInfo = PartInfo.AddSolute([qOutAfter, rainData(iT) - sum(qOutAfter)], ...
@@ -126,14 +128,14 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
                 end
             else
                 % Increase volume of water leaving the system at future times
-                PartInfo = PartInfo.AddVolume(...
-                    [qOutAfter, rainData(iT) - sum(qOutAfter)], :, [iT:iTend, nT+1]);
+                PartInfo = PartInfo.AddSolute([qOutAfter, rainData(iT) - sum(qOutAfter)], ...
+                    repmat(rainConcentrationData(iT), [1, nCalcT+1, nFlushSpecies]), ...
+                    :, [iT:iTend, nT+1], iFlushSpecies);
                 mRemaining(2, iT, :) = mRemaining(2, iT, :) + ...
                     rainData(iT) * rainConcentrationData(iT);
             end
             cRemaining(2, iT, :) = mRemaining(2, iT, :) / pvMobUpd;
         end
-
         if DO_BIOCHEMISTRY
             tRange = [tAfter(1), tAfter(1) + dt];
             [~, mChem] = ode15s(@bioreactor, tRange, ...
@@ -146,11 +148,11 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
         mRemaining(1, iT + 1, iReactiveSpecies) = mChem(end, :);
         mRemaining(1, iT + 1, iInertSpecies) = mRemaining(1, iT, iInertSpecies);
         mRemaining(2, iT + 1, :) = mRemaining(2, iT, :);
-        
         % Prepare inputs for exchange equation
+        iActivePart = [iT:iTend, nT+1, nT+2];
         cPartOutR = cat(2, cRemaining(1, iT, iFlushSpecies), ...
-            PartInfo.GetConcentration(1, iT:iTend+1, iFlushSpecies));
-        pvPartOutR = cat(2, pv(1), PartInfo.GetVolume(1, iT:iTend+1));
+            PartInfo.GetConcentration(1, iActivePart, iFlushSpecies));
+        pvPartOutR = cat(2, pv(1), PartInfo.GetVolume(1, iActivePart));
         % Don't calculate for particles vith (almost) zero volume
         iCalcLog = (pvPartOutR > Const.VOLUME_EPSILON);
         % ... but make sure immobile phase is calculated
@@ -171,18 +173,14 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
         mOutTotal(1, iT, iFlushSpecies) = PartInfo.GetMass(1, iT, iFlushSpecies);
         % Update total masses of solutes in phases
         mRemaining(1, iT + 1, iFlushSpecies) = cPartR(end, 1, :) * pv(1);
-        mRemaining(2, iT + 1, iFlushSpecies) = sum(...
-            PartInfo.GetMass(1, iT:iTend+1, iFlushSpecies), 2);
-        % Withdraw solute leaving together with leachate and compute remaining masses of solutes
-        % in both phases
-        mRemaining(2, iT + 1, :) = mRemaining(2, iT + 1, :) - mOutTotal(1, iT, :);
+        mRemaining(2, iT + 1, iFlushSpecies) = ...
+            sum(PartInfo.GetMass(1, iActivePart(2:end), iFlushSpecies), 2);
         % Remove volume of drained leachate from the volume of liquid in the system.
-        pv(2) = pv(2) - qOutTotal(iT);
+        pv(2) = pv(2) - PartInfo.GetVolume(1, iT);
         % Calculate the remaining concentrations
         cRemaining(:, iT + 1, :) = mRemaining(:, iT + 1, :) ./ repmat(pv, [1, 1, nSpecies]);
         isPvZero = (pv == 0);
         cRemaining(isPvZero, iT + 1, :) = 0;
-        
         % Some checks
         if any(RealLt(reshape(cRemaining(:, iT + 1, iFlushSpecies), 1, []), 0, ...
                 Const.CONCENTRATION_EPSILON))
@@ -201,16 +199,19 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
     ModelOutput.nT = nT;
     ModelOutput.mIni = mIni;
     ModelOutput.qIn = rainData;
-    ModelOutput.qOutTotal = qOutTotal;
+    ModelOutput.qOutTotal = PartInfo.GetVolume(1, 1:nT);
     ModelOutput.mOutTotal = mOutTotal;
     ModelOutput.cRemaining = cRemaining;
     ModelOutput.mRemaining = mRemaining;
     ModelOutput.cAll = Call(2:2:end, :);
     
     % Add also concentration at the outlet
-    qOutTotalRep = repmat(qOutTotal, [1, 1, nSpecies]);
+    qOutTotalRep = repmat(ModelOutput.qOutTotal, [1, 1, nSpecies]);
     ModelOutput.cOutTotal = mOutTotal ./ qOutTotalRep;
-    ModelOutput.cOutTotal(qOutTotalRep == 0) = 0;
+    isFluxZero = RealEq(ModelOutput.qOutTotal, 0, Const.VOLUME_EPSILON);
+    ModelOutput.cOutTotal(:, isFluxZero, :) = ...
+        (pv(1) * ModelOutput.cRemaining(1, isFluxZero, :) + ...
+        pv(2) * ModelOutput.cRemaining(2, isFluxZero, :)) ./ (pv(1) + pv(2));
     
     return
     
@@ -257,7 +258,7 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
             gradC = cX(iPartMobSol) - cX(iSoluteOffset + 1);
             % Sum of volumes of immobile phase and mobile particles
             sumVx = vX(1) + vX(iPartMob);
-            % The main relationships
+            % Main relationships
             dCdt(iSoluteOffset + 1) = sum(kExch * vX(iPartMob) ./ sumVx .* gradC);
             dCdt(iPartMobSol) = -kExch * vX(1) ./ sumVx .* gradC;
         end

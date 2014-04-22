@@ -1,7 +1,4 @@
 function MainLabColumn
-%% TODO: water must flow even if no rain (two domain?)
-%% TODO: beta? not taken into account?
-%%
 
     close all
 
@@ -25,8 +22,8 @@ function MainLabColumn
     RawData = load(DATA_FILE_NAME);
     % Precipitation in meters per time interval dt
     rainData = 1e+2 * RawData.fluxIn;
-    rainData(1:5) = 1e-2;
-    rainData(6:end) = 0;
+%     rainData(1:5) = 1e-2;
+%     rainData(6:end) = 0;
     % Structure containing time parameters
     TimeParams.t = RawData.t;
     TimeParams.dt = diff(TimeParams.t(1:2));
@@ -55,13 +52,14 @@ function MainLabColumn
     LogNorm = LogNormalCl(mu, sigma, delay, Const);
     ModelParams.LogNorm = LogNorm;
     % Pore volume
-    ModelParams.totalPv = 3;
+    ModelParams.totalPv = 1;
     % Immobile-mobile volume ratio
     ModelParams.beta = Inf;
     % Source/sink rate
-    ModelParams.lambda = 0 * 1e-4;
+    ModelParams.lambda = 0 * 1e-2;
     % Exchange rate between mobile-immobile phases
-    ModelParams.kExch = 1e-2;
+    ModelParams.kExch = 1e-3;
+    ModelParams.mInertIni = [1.23 / 3.076923076923125];
 
 %     TimeParams.maxDays = 40;
 
