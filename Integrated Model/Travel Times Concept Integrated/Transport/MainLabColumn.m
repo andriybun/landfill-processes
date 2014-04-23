@@ -52,14 +52,15 @@ function MainLabColumn
     LogNorm = LogNormalCl(mu, sigma, delay, Const);
     ModelParams.LogNorm = LogNorm;
     % Pore volume
-    ModelParams.totalPv = 1;
+    ModelParams.totalPv = 1.3;
     % Immobile-mobile volume ratio
     ModelParams.beta = Inf;
     % Source/sink rate
     ModelParams.lambda = 0 * 1e-2;
     % Exchange rate between mobile-immobile phases
-    ModelParams.kExch = 1e-3;
-    ModelParams.mInertIni = [1.23 / 3.076923076923125];
+    ModelParams.kExch = 1.3e-3;
+    % Initial concentration of intert specie(s)
+    ModelParams.mInertIni = 2.3 * [1.23 / 3.076923076923125];
 
 %     TimeParams.maxDays = 40;
 
