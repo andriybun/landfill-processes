@@ -1,14 +1,17 @@
 function ShowPlots(ModelOutput, ModelParams, TimeParams, iSpecies, tShow)
  
+    Const = DefineConstants();
+
     % Unpack resulting arrays
     nT = ModelOutput.nT;
     lambda = ModelParams.lambda;
     qOutTotal = ModelOutput.qOutTotal;
     mOutTotal = ModelOutput.mOutTotal;
-    emissionPotential = sum(ModelOutput.mRemaining(:, 2:nT+1, iSpecies), 1);
+    cOutTotal = ModelOutput.cOutTotal;
+%     emissionPotential = sum(ModelOutput.mRemaining(:, 2:nT+1, iSpecies), 1);
 
     if nargin < 6
-        nT = TimeParams.maxDays * TimeParams.intervalsPerDay;
+        nT = TimeParams.numIntervals;
         tShow = true(1, nT);
         t = TimeParams.t(1:nT);
     else
@@ -48,8 +51,7 @@ function ShowPlots(ModelOutput, ModelParams, TimeParams, iSpecies, tShow)
     ImmobileConcentrationInfo.color = [0.4, 0.4, 0.4];
     
     LeachateConcentrationInfo = struct();
-    LeachateConcentrationInfo.data = mOutTotal(:, tShow, iSpecies) ./ qOutTotal(1, tShow);
-    LeachateConcentrationInfo.data(qOutTotal(1, tShow) == 0) = 0;
+    LeachateConcentrationInfo.data = cOutTotal(:, tShow, iSpecies);
     LeachateConcentrationInfo.data = cat(1, LeachateConcentrationInfo.data, ...
         ImmobileConcentrationInfo.data);
     LeachateConcentrationInfo.name = {'Leachate concentration', 'Emission potential'};
