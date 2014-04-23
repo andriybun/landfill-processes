@@ -52,8 +52,8 @@ function Main
     ModelParams.DO_RECIRCULATION = false;
     
     % Parameters of log-normally distributed flow response
-    ModelParams.mu = 0;
-    ModelParams.sigma = 1;
+    mu = 0;
+    sigma = 1;
     delay = 0;
     LogNorm = LogNormalCl(mu, sigma, delay, Const);
     ModelParams.LogNorm = LogNorm;
