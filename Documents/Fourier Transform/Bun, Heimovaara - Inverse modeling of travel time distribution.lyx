@@ -22,9 +22,10 @@
 \graphics default
 \default_output_format default
 \output_sync 0
-\bibtex_command default
+\bibtex_command bibtex8
 \index_command default
 \paperfontsize default
+\spacing single
 \use_hyperref false
 \papersize default
 \use_geometry false
@@ -32,7 +33,7 @@
 \use_esint 1
 \use_mhchem 1
 \use_mathdots 1
-\cite_engine basic
+\cite_engine natbib_authoryear
 \use_bibtopic false
 \use_indices false
 \paperorientation portrait
@@ -117,9 +118,13 @@ The challenge we face is to use this information to obtain a quantitative
 Methodology
 \end_layout
 
+\begin_layout Subsection
+Forward modelling
+\end_layout
+
 \begin_layout Standard
 We assume that every single injection at the inlet of the landfill will
- cause response at the outlet of certain shape.
+ cause response at the outlet of certain distribution (shape).
  Final outflux can be calculated by integrating all the responses to injections
  that happened in the past:
 \end_layout
@@ -159,107 +164,11 @@ where
 \end_inset
 
  of water in the landfill having a travel time.
- The operation described by 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "eq:Q_out"
-
-\end_inset
-
- is called convolution and can be written in a form:
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{equation}
-q_{out}\left(t\right)=(q_{in}\text{∗}\, f)(t),
-\end{equation}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-where ∗ denotes convolution operation.
- It also corresponds to product of functions in Fourier frequency domain:
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{equation}
-\hat{q}_{out}\left(\xi\right)=\hat{q}_{in}\left(\xi\right)\cdot\hat{f}\left(\xi\right).\label{eq:conv_fourier_domain}
-\end{equation}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-However travel time distribution is unknown in real life, while outflux
- is easily obtainable.
- Therefore from 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "eq:conv_fourier_domain"
-
-\end_inset
-
- one can see that travel time PDF in frequency domain can be computed by
- division of outflux by influx:
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{equation}
-\hat{f}\left(\xi\right)=\frac{\hat{q}_{out}\left(\xi\right)}{\hat{q}_{in}\left(\xi\right)}.\label{eq:inv_conv_fourier_domain}
-\end{equation}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Then by applying inverse Fourier transform to quotient 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "eq:inv_conv_fourier_domain"
-
-\end_inset
-
- travel time PDF is derived.
-\end_layout
-
-\begin_layout Section
-Variable moisture content
-\begin_inset CommandInset label
-LatexCommand label
-name "sec:Variable-moisture-content"
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Hydraulic properties of porous medium depend among others on it's moisture
- content.
- In case of non-steady systems where moisture content is varying to high
- extent, we will observe variable response PDF's.
-\end_layout
-
-\begin_layout Standard
-In order to quantify effect of initial moisture content on travel time distribut
-ion, we first approximate it with a log-normal PDF.
- The simplest possible case is single injection of water at initial time
  
-\begin_inset Formula $t=0$
-\end_inset
+\end_layout
 
- .
- Figure
+\begin_layout Standard
+Figure
 \begin_inset space \thinspace{}
 \end_inset
 
@@ -270,8 +179,12 @@ reference "fig:travel-time-fitted-ln-pdf"
 
 \end_inset
 
- shows an example of fitting possible response to such a pulse with a log-normal
- PDF.
+ shows an example of fitting response to a single injection of water at
+ initial time 
+\begin_inset Formula $t=0$
+\end_inset
+
+ with a log-normal PDF.
 \end_layout
 
 \begin_layout Standard
@@ -316,8 +229,82 @@ name "fig:travel-time-fitted-ln-pdf"
 \end_layout
 
 \begin_layout Standard
-This fitting was done for a range of initial moisture contents assuming
- that a system was in equilibrium at initial time.
+The operation described by 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:Q_out"
+
+\end_inset
+
+ is called convolution and can be written in a form:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+q_{out}\left(t\right)=(q_{in}\text{∗}\, f)(t),
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+where ∗ denotes convolution operation.
+ It corresponds to product of functions in Fourier frequency domain:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+\hat{q}_{out}\left(\xi\right)=\hat{q}_{in}\left(\xi\right)\cdot\hat{f}\left(\xi\right).\label{eq:conv_fourier_domain}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+After applying inverse Fourier transform to 
+\begin_inset Formula $\hat{q}_{out}\left(\xi\right)$
+\end_inset
+
+ we will obtain an approximation of outflux in an efficient way.
+\end_layout
+
+\begin_layout Subsection
+Variable moisture content
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Variable-moisture-content"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Hydraulic properties of porous medium, however, depend among others on its
+ remaining storage capacity.
+ We define remaining storage capacity as relative pore volume not filled
+ with water (
+\begin_inset Formula $1-V_{water}/V_{pore}$
+\end_inset
+
+).
+ In case of non-steady systems where moisture content is varying to high
+ extent, we will observe variable response PDF's.
+ Higher moisture content and hence lower storage capacity will result in
+ faster response and vice versa.
+\end_layout
+
+\begin_layout Standard
+In order to quantify effect of varying storage capacity on response times
+ distribution, we first approximate these distribution with log-normal PDF's.
+ The fitting was done for a range of storage capacity values assuming that
+ a system was in equilibrium at initial time.
  Figure
 \begin_inset space \thinspace{}
 \end_inset
@@ -337,8 +324,8 @@ reference "fig:log-normal-mu-sigma-of-theta"
 \begin_inset Formula $\sigma$
 \end_inset
 
- respectively change with initial moisture content for a specific set of
- soil properties.
+ respectively change with remaining storage available for a specific set
+ of soil properties.
 \end_layout
 
 \begin_layout Standard
@@ -362,7 +349,7 @@ status open
 \begin_inset Caption
 
 \begin_layout Plain Layout
-Parameters of log-normal distribution as function of initial moisture content.
+Parameters of log-normal distribution as function of remaining storage capacity.
 \end_layout
 
 \end_inset
@@ -388,37 +375,44 @@ Adjusting parameters of log-normal (or any other) distribution according
  with convolution (forward problem).
 \end_layout
 
-\begin_layout Section
-Numerical experiments
-\end_layout
-
-\begin_layout Standard
-A number of numerical experiments have been conducted in order to analyze
- the feasibility of described approaches.
- In all cases input datasets have been generated using numerical solutions
- to Richards equation on arbitrary two-dimensional domains.
-\end_layout
-
 \begin_layout Subsection
-Numerical deconvolution
+Inverse modelling
 \end_layout
 
 \begin_layout Standard
-In order to test approach we used Richards equation to analyze water flux
- for a random input simulating rainfalls over a long period.
- An example of outflux (solid black line) for a given inputs (light grey
- columns) is presented on figure
-\begin_inset space \thinspace{}
-\end_inset
-
-
+In real life situations travel time distribution is unknown, while outflux
+ can be easily obtained.
+ Therefore from 
 \begin_inset CommandInset ref
 LatexCommand ref
-reference "fig:convolution-const-pdf"
+reference "eq:conv_fourier_domain"
 
 \end_inset
 
-.
+ one can see that travel time PDF in frequency domain can be computed by
+ division of outflux by influx:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+\hat{f}\left(\xi\right)=\frac{\hat{q}_{out}\left(\xi\right)}{\hat{q}_{in}\left(\xi\right)}.\label{eq:inv_conv_fourier_domain}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Then by applying inverse Fourier transform to quotient 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:inv_conv_fourier_domain"
+
+\end_inset
+
+ we get an estimate of response times PDF.
  Figure
 \begin_inset space \thinspace{}
 \end_inset
@@ -430,8 +424,8 @@ reference "fig:example-deconvolution-pdf"
 
 \end_inset
 
- presents results of estimated by deconvolution PDF of response times for
- system of interest compared to log-normally distributed approximation.
+ presents such PDF estimated by deconvolution for system of interest compared
+ to log-normally distributed approximation.
 \end_layout
 
 \begin_layout Standard
@@ -474,6 +468,319 @@ name "fig:example-deconvolution-pdf"
 \end_inset
 
 
+\end_layout
+
+\begin_layout Standard
+PDF estimate presented in figure
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:example-deconvolution-pdf"
+
+\end_inset
+
+ is obtained by applying random influx.
+ Solid black represents an 
+\begin_inset Quotes eld
+\end_inset
+
+averaged
+\begin_inset Quotes erd
+\end_inset
+
+ density function for the entire dataset.
+ For this reason the shape of the estimated PDF is irregular.
+ By comparing figures
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:example-deconvolution-pdf-low-moisture"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:travel-time-fitted-ln-pdf"
+
+\end_inset
+
+ one can observe that PDF of response times is less spread in the first
+ case.
+ This can be explained by constantly varying storage capacity, which is
+ most of the time less than initial value.
+ Thus response times will be faster on average.
+\end_layout
+
+\begin_layout Standard
+Assuming that the dataset is long enough, we can apply the above deconvolution
+ technique to a shorter time intervals.
+ By moving this interval and keeping track of the changes in storage capacity
+ and properties of PDF we can get a quantitative estimate of relationship
+ between them.
+ This will improve the quality of further outflux simulation.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename fig/Deconvolution_Moving_Window_Concept.png
+	width 50text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Illustration of moving deconvolution interval concept.
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:moving-window-concept"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We apply aforementioned concept of moving interval according to the following
+ algorithm:
+\end_layout
+
+\begin_layout Enumerate
+On 
+\begin_inset Formula $i$
+\end_inset
+
+-th step apply deconvolution to a dataset within an interval 
+\begin_inset Formula $[t_{i,begin},\, t_{i,end}]$
+\end_inset
+
+.
+ In order to correctly detect PDF, the interval must be long enough.
+ The beginning of interval 
+\begin_inset Formula $t_{i,begin}$
+\end_inset
+
+ from figure
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:moving-window-concept"
+
+\end_inset
+
+ corresponds to vertical dash-dot line.
+\end_layout
+
+\begin_layout Enumerate
+If the obtained PDF is ill-shaped, we extend the interval until a well shaped
+ response function is observed.
+\end_layout
+
+\begin_layout Enumerate
+Obtained from steps 1-2 PDF is fitted with log-normal PDF.
+ At the same time log-normal parameters 
+\begin_inset Formula $\mu$
+\end_inset
+
+ and 
+\begin_inset Formula $\sigma$
+\end_inset
+
+ are stored.
+ We also keep track of cumulative influx and outflux difference of which
+ gives us quantitative estimate of available storage capacity.
+\end_layout
+
+\begin_layout Enumerate
+Apply equation 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:Q_out"
+
+\end_inset
+
+ to all input signals prior to 
+\begin_inset Formula $t_{2,begin}$
+\end_inset
+
+, where 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula $f\left(\tau\right)$
+\end_inset
+
+ is a log-normall PDF fitted on step 3.
+ This is shown as solid grey line 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+in figure
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:moving-window-concept"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+Result of such integration is deducted from the original outflux.
+ The result (dashed black line
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+ in figure
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:moving-window-concept"
+
+\end_inset
+
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+) is used on the next step as an outflux.
+\end_layout
+
+\begin_layout Standard
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+This algorithm allows us to withdraw responses to all input events that
+ happened before current time step.
+ Thus minimizing their impact on the results of deconvolution.
+ While moving the interval provides us with information about influence
+ of storage capacity on response times.
+ Such information can be used for future simulations of outflux.
+\end_layout
+
+\begin_layout Section
+Numerical experiments
+\end_layout
+
+\begin_layout Standard
+A number of numerical experiments have been conducted in order to analyze
+ the feasibility of described approaches.
+ In all cases input datasets have been generated using numerical solutions
+ to Richards equation on arbitrary two-dimensional domains.
+\end_layout
+
+\begin_layout Subsection
+Numerical deconvolution
+\end_layout
+
+\begin_layout Standard
+In order to test approach we used Richards equation to analyze water flux
+ for a random input simulating rainfalls over a long period.
+ An example of outflux (solid black line) for a given inputs (light grey
+ columns) is presented on figure
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:convolution-const-pdf"
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
@@ -799,6 +1106,17 @@ reference "fig:log-normal-mu-sigma-of-theta"
 ).
  This value is slightly above the moisture content at the beginning of simulatio
 n which makes sense.
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset bibtex
+LatexCommand bibtex
+bibfiles "references"
+options "plain"
+
+\end_inset
+
+
 \end_layout
 
 \end_body
