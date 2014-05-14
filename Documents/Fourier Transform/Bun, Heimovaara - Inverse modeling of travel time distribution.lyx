@@ -145,7 +145,9 @@ where
 \begin_inset Formula $f\left(\tau\right)$
 \end_inset
 
- is a probability density function (PDF) specifying distribution of response.
+ is a system response function.
+ We describe it as probability density function (PDF) specifying distribution
+ of responses.
  In this equation, the leachate volume flux 
 \begin_inset Formula $q_{out}\left(t\right)$
 \end_inset
@@ -377,6 +379,13 @@ Adjusting parameters of log-normal (or any other) distribution according
 
 \begin_layout Subsection
 Inverse modelling
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Inverse-modelling"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -413,6 +422,339 @@ reference "eq:inv_conv_fourier_domain"
 \end_inset
 
  we get an estimate of response times PDF.
+\end_layout
+
+\begin_layout Standard
+Assuming that the dataset is long enough, we can apply deconvolution technique
+ to a shorter time intervals.
+ By moving this interval and keeping track of the changes in storage capacity
+ and properties of PDF we can get a quantitative estimate of relationship
+ between them.
+ This will improve the quality of further outflux simulation.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename fig/Deconvolution_Moving_Window_Concept.png
+	width 50text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Illustration of moving deconvolution interval concept.
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:moving-window-concept"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We apply aforementioned concept of moving interval according to the following
+ algorithm (figure
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:moving-window-concept"
+
+\end_inset
+
+):
+\end_layout
+
+\begin_layout Enumerate
+The time domain is discretized into 
+\begin_inset Formula $n$
+\end_inset
+
+ steps 
+\begin_inset Formula $[t_{1,begin},t_{2,begin},\ldots,t_{n,begin}]$
+\end_inset
+
+.
+ Deconvolution is done for time interval (window) of 
+\begin_inset Formula $\Delta t$
+\end_inset
+
+ which must be big enough to contain bulk response to input signals, in
+ order to correctly detect PDF.
+\end_layout
+
+\begin_layout Enumerate
+On 
+\begin_inset Formula $i$
+\end_inset
+
+-th step apply deconvolution to a dataset.
+ Here we use input signal corresponds to influx (grey line), output signal
+ is presented by dashed line.
+ Initially it is equal to original outflux 
+\begin_inset Formula $q_{out}$
+\end_inset
+
+, however is adjusted on every time step as described below.
+ We consider the dataset on an interval 
+\begin_inset Formula $[t_{i,begin},\, t_{i,end}]$
+\end_inset
+
+ where 
+\begin_inset Formula $t_{i,end}=t_{i,begin}+\Delta t$
+\end_inset
+
+.
+ The beginning of interval 
+\begin_inset Formula $t_{i,begin}$
+\end_inset
+
+ corresponds to vertical dash-dot line.
+\begin_inset CommandInset label
+LatexCommand label
+name "enu:alg-deconvolution"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+If the obtained PDF is ill-shaped, we extend the interval until a well shaped
+ response function is observed.
+\begin_inset CommandInset label
+LatexCommand label
+name "enu:alg-extend-window"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+Obtained from steps 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "enu:alg-deconvolution"
+
+\end_inset
+
+-
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "enu:alg-extend-window"
+
+\end_inset
+
+ PDF is fitted with log-normal PDF.
+ At the same time log-normal parameters 
+\begin_inset Formula $\mu$
+\end_inset
+
+ and 
+\begin_inset Formula $\sigma$
+\end_inset
+
+ are stored.
+ We also keep track of cumulative influx and outflux difference of which
+ gives us quantitative estimate of available storage capacity.
+\begin_inset CommandInset label
+LatexCommand label
+name "enu:alg-fit-pdf"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+Apply equation 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:Q_out"
+
+\end_inset
+
+ to all input signals prior to 
+\begin_inset Formula $t_{2,begin}$
+\end_inset
+
+, where 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula $f\left(\tau\right)$
+\end_inset
+
+ is a log-normall PDF fitted on step 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "enu:alg-fit-pdf"
+
+\end_inset
+
+.
+ This is shown as solid grey line 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+in figure
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:moving-window-concept"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+Already integrated outflux is deducted from the original one.
+ The result (dashed black line) is used during following steps as a response
+ to inputs after 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+
+\begin_inset Formula $t_{i,begin}$
+\end_inset
+
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+.
+\end_layout
+
+\begin_layout Standard
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+This algorithm allows us to eliminate responses to all input events that
+ happened before current time step on the outflux.
+ This minimizes their impact on the results of deconvolution.
+ While moving the interval provides us with information about influence
+ of storage capacity on response times.
+ Such information can be used for future simulations of outflux.
+\end_layout
+
+\begin_layout Section
+Numerical experiments
+\end_layout
+
+\begin_layout Standard
+A number of numerical experiments have been conducted in order to analyze
+ the feasibility of described approaches.
+ In all cases input datasets have been generated using numerical solutions
+ to Richards equation on arbitrary two-dimensional domains.
+ Here the idea is that very little information is available about the hydraulic
+ properties of the medium.
+ Therefore we ignore this data, unless needed for validation purposes.
+ All the numerical experiments, however were carried using the same set
+ of properties in order to allow comparison between different cases.
+\end_layout
+
+\begin_layout Subsection
+Numerical deconvolution
+\end_layout
+
+\begin_layout Standard
+In order to test approach we used Richards equation to analyze water flux
+ for a random input simulating rainfalls over a long period (figure
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:convolution-const-pdf"
+
+\end_inset
+
+).
  Figure
 \begin_inset space \thinspace{}
 \end_inset
@@ -471,7 +813,7 @@ name "fig:example-deconvolution-pdf"
 \end_layout
 
 \begin_layout Standard
-PDF estimate presented in figure
+Solid black line in figure
 \begin_inset space \thinspace{}
 \end_inset
 
@@ -482,8 +824,7 @@ reference "fig:example-deconvolution-pdf"
 
 \end_inset
 
- is obtained by applying random influx.
- Solid black represents an 
+ represents an 
 \begin_inset Quotes eld
 \end_inset
 
@@ -492,8 +833,8 @@ averaged
 \end_inset
 
  density function for the entire dataset.
- For this reason the shape of the estimated PDF is irregular.
- By comparing figures
+ For this reason the shape of the estimated PDF is rather irregular.
+ Also by comparing figures
 \begin_inset space \thinspace{}
 \end_inset
 
@@ -515,272 +856,7 @@ reference "fig:travel-time-fitted-ln-pdf"
  case.
  This can be explained by constantly varying storage capacity, which is
  most of the time less than initial value.
- Thus response times will be faster on average.
-\end_layout
-
-\begin_layout Standard
-Assuming that the dataset is long enough, we can apply the above deconvolution
- technique to a shorter time intervals.
- By moving this interval and keeping track of the changes in storage capacity
- and properties of PDF we can get a quantitative estimate of relationship
- between them.
- This will improve the quality of further outflux simulation.
-\end_layout
-
-\begin_layout Standard
-\begin_inset Float figure
-wide false
-sideways false
-status open
-
-\begin_layout Plain Layout
-\align center
-\begin_inset Graphics
-	filename fig/Deconvolution_Moving_Window_Concept.png
-	width 50text%
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-\begin_inset Caption
-
-\begin_layout Plain Layout
-Illustration of moving deconvolution interval concept.
-\begin_inset CommandInset label
-LatexCommand label
-name "fig:moving-window-concept"
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-We apply aforementioned concept of moving interval according to the following
- algorithm:
-\end_layout
-
-\begin_layout Enumerate
-On 
-\begin_inset Formula $i$
-\end_inset
-
--th step apply deconvolution to a dataset within an interval 
-\begin_inset Formula $[t_{i,begin},\, t_{i,end}]$
-\end_inset
-
-.
- In order to correctly detect PDF, the interval must be long enough.
- The beginning of interval 
-\begin_inset Formula $t_{i,begin}$
-\end_inset
-
- from figure
-\begin_inset space \thinspace{}
-\end_inset
-
-
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "fig:moving-window-concept"
-
-\end_inset
-
- corresponds to vertical dash-dot line.
-\end_layout
-
-\begin_layout Enumerate
-If the obtained PDF is ill-shaped, we extend the interval until a well shaped
- response function is observed.
-\end_layout
-
-\begin_layout Enumerate
-Obtained from steps 1-2 PDF is fitted with log-normal PDF.
- At the same time log-normal parameters 
-\begin_inset Formula $\mu$
-\end_inset
-
- and 
-\begin_inset Formula $\sigma$
-\end_inset
-
- are stored.
- We also keep track of cumulative influx and outflux difference of which
- gives us quantitative estimate of available storage capacity.
-\end_layout
-
-\begin_layout Enumerate
-Apply equation 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "eq:Q_out"
-
-\end_inset
-
- to all input signals prior to 
-\begin_inset Formula $t_{2,begin}$
-\end_inset
-
-, where 
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\bar no
-\strikeout off
-\uuline off
-\uwave off
-\noun off
-\color none
-
-\begin_inset Formula $f\left(\tau\right)$
-\end_inset
-
- is a log-normall PDF fitted on step 3.
- This is shown as solid grey line 
-\family default
-\series default
-\shape default
-\size default
-\emph default
-\bar default
-\strikeout default
-\uuline default
-\uwave default
-\noun default
-\color inherit
-in figure
-\begin_inset space \thinspace{}
-\end_inset
-
-
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "fig:moving-window-concept"
-
-\end_inset
-
-.
-\end_layout
-
-\begin_layout Enumerate
-
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\bar no
-\strikeout off
-\uuline off
-\uwave off
-\noun off
-\color none
-Result of such integration is deducted from the original outflux.
- The result (dashed black line
-\family default
-\series default
-\shape default
-\size default
-\emph default
-\bar default
-\strikeout default
-\uuline default
-\uwave default
-\noun default
-\color inherit
- in figure
-\begin_inset space \thinspace{}
-\end_inset
-
-
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "fig:moving-window-concept"
-
-\end_inset
-
-
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\bar no
-\strikeout off
-\uuline off
-\uwave off
-\noun off
-\color none
-) is used on the next step as an outflux.
-\end_layout
-
-\begin_layout Standard
-
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\bar no
-\strikeout off
-\uuline off
-\uwave off
-\noun off
-\color none
-This algorithm allows us to withdraw responses to all input events that
- happened before current time step.
- Thus minimizing their impact on the results of deconvolution.
- While moving the interval provides us with information about influence
- of storage capacity on response times.
- Such information can be used for future simulations of outflux.
-\end_layout
-
-\begin_layout Section
-Numerical experiments
-\end_layout
-
-\begin_layout Standard
-A number of numerical experiments have been conducted in order to analyze
- the feasibility of described approaches.
- In all cases input datasets have been generated using numerical solutions
- to Richards equation on arbitrary two-dimensional domains.
-\end_layout
-
-\begin_layout Subsection
-Numerical deconvolution
-\end_layout
-
-\begin_layout Standard
-In order to test approach we used Richards equation to analyze water flux
- for a random input simulating rainfalls over a long period.
- An example of outflux (solid black line) for a given inputs (light grey
- columns) is presented on figure
-\begin_inset space \thinspace{}
-\end_inset
-
-
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "fig:convolution-const-pdf"
-
-\end_inset
-
-.
+ Consequently, response times will be faster on average.
 \end_layout
 
 \begin_layout Standard
@@ -811,6 +887,25 @@ reference "fig:convolution-const-pdf"
 
  displays additionally results of forward convolution operation with estimated
  PDF (solid grey line) and its log-normal approximation (grey line).
+\end_layout
+
+\begin_layout Standard
+An example of outflux (solid black line) for a given inputs (light grey
+ columns) is presented on figure
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:convolution-const-pdf"
+
+\end_inset
+
+.
+ The figure also contains results of forward simulation of outflux (convolution).
+ Here we used two different types of response PDF: obtained from deconvolution
+ (dashed grey line) and its log-normal approximation (solid grey line).
 \end_layout
 
 \begin_layout Standard
@@ -868,7 +963,7 @@ reference "fig:convolution-const-pdf"
 \end_inset
 
  that output signal can be approximated to a certain extent of accuracy
- by applying both types of response presented in figure
+ by applying both types of responses presented in figure
 \begin_inset space \thinspace{}
 \end_inset
 
@@ -882,12 +977,12 @@ reference "fig:example-deconvolution-pdf"
 .
  Experiments show that in general log-normal distribution provides better
  results most likely because of irregular tale of estimated PDF.
- It is however visible that after 
+ It is, however visible that after 
 \begin_inset Formula $3.5\cdot10^{5}$
 \end_inset
 
  minutes, when rainfall events become more often and intense, approximation
- by convolution becomes less accurate.
+ by convolution also becomes less accurate.
 \end_layout
 
 \begin_layout Subsection
@@ -895,11 +990,12 @@ Numerical convolution with variable PDF
 \end_layout
 
 \begin_layout Standard
-The aim of next experiment was to analyze the effect of variable moisture
- content on convolution results.
+The aim of next experiment was to analyze the effect of variable storage
+ available on convolution results.
  Here we assume that the initial moisture content as well as pore volume
  is known.
- We also know relationships presented in figures
+ We also know relationships between storage capacity and parameters of log-norma
+l distribution (figures
 \begin_inset space \thinspace{}
 \end_inset
 
@@ -910,9 +1006,27 @@ reference "fig:log-normal-mu-sigma-of-theta"
 
 \end_inset
 
+).
+ Hence knowing the amounts of water entering and leaving the system we can
+ calculate average moisture content of the system for every time step.
+ The results for this experiment are presented in figure
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:convolution-variable-pdf"
+
+\end_inset
+
 .
- Hence knowing the amounts of water entering and leaving the system one
- can calculate average moisture content of the system for every time step.
+ Here we skip the dataset for time intervals before 
+\begin_inset Formula $3\cdot10^{5}$
+\end_inset
+
+ minutes because the storage capacity doesn't change significantly on this
+ interval and hence the difference between curves is minimal.
 \end_layout
 
 \begin_layout Standard
@@ -936,8 +1050,8 @@ status open
 \begin_inset Caption
 
 \begin_layout Plain Layout
-Effect of applying log-normal distribution with parameters variable to moisture
- content
+Effect of applying log-normal distribution with parameters variable to storage
+ capacity
 \end_layout
 
 \end_inset
@@ -970,11 +1084,207 @@ reference "fig:convolution-variable-pdf"
 \end_inset
 
  shows the improvement of outflow approximation achieved by adjusting parameters
- of log-normal distribution to moisture content (dashed grey line) compared
- to the convolution result using constant properties of distribution (grey
- line) and the output obtained by applying Richards equation.
+ of log-normal distribution to variable storage capacity (dashed grey line)
+ compared to the convolution result using constant properties of distribution
+ (solid grey line) and the output obtained from Richards equation.
  As can be seen from the figure, adjusting PDF to moisture content in the
  system may significantly improve quality of outflow simulation.
+\end_layout
+
+\begin_layout Subsection
+Deconvolution on moving intervals
+\end_layout
+
+\begin_layout Standard
+Relationships from figures
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:log-normal-mu-sigma-of-theta"
+
+\end_inset
+
+ are not known in real life problems.
+ For that reason the goal of our next experiment was to obtain the approximation
+ of these relationships.
+ As a result of applying algorithm described in Section
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Inverse-modelling"
+
+\end_inset
+
+ we observe relations shown in figures
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:log-normal-mu-sigma-estimated"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename fig/Estimated_Deconvolution_Mu.png
+	width 40text%
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename fig/Estimated_Deconvolution_Sigma.png
+	width 40text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Estimated relations between available storage content and parameters of
+ log-normal PDF.
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:log-normal-mu-sigma-estimated"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Asterisks in figures
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:log-normal-mu-sigma-estimated"
+
+\end_inset
+
+ represent data obtained from experiment.
+ Solid lines show curves fitted to these data points.
+ Here x-axis corresponds to decrease in available storage content which
+ is inverse of water added into the system.
+ Y-axis represents values of parameters estimated for a given storage content.
+\end_layout
+
+\begin_layout Standard
+We used relationships from figures
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:log-normal-mu-sigma-estimated"
+
+\end_inset
+
+ to calculate outflux.
+ Comparison of outflux based on variable parameters of PDF (dashed line)
+ versus outflux based on constant parameters (solid grey line) and real
+ data (black line) is presented in figure
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:convolution-estimated-relationship"
+
+\end_inset
+
+.
+ The figure shows significant improvement in quality of simulating outflux
+ when applying relationships from figure
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:log-normal-mu-sigma-estimated"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename fig/Richards_Output_Very_Slow_Response_(de)convolution_mu_sigma_calculated.png
+	width 90text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Comparison of applying PDF with estimated variable parameters versus inputs
+ and Richards solution.
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:convolution-estimated-relationship"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Section
@@ -982,9 +1292,18 @@ Discussion and conclusions
 \end_layout
 
 \begin_layout Standard
-Average moisture content is some kind of aggregated value that doesn't necessari
-ly represent the real picture as moisture content profile may differ for
- the same value.
+Remaining storage capacity is a kind of aggregated value that doesn't necessaril
+y represent the real picture as moisture content profile, and hence storage
+ capacity, may differ for the same value.
+\end_layout
+
+\begin_layout Standard
+The paper suggests two possible approaches to simulating water flux through
+ porous medium:
+\end_layout
+
+\begin_layout Itemize
+Finding 
 \end_layout
 
 \begin_layout Standard
