@@ -110,6 +110,28 @@ function MainLabColumn
     figure(4);
     hold on;
     plot(RawData.t, RawData.c-3.05, 'r');
+    lH = findobj(gcf, 'Type', 'axes', 'Tag', 'legend');
+    legendEntries = get(lH, 'String');
+    legend({legendEntries{:}, 'Experimental result'});
+    hold off;
+    
+    fH = figure(1);
+    colorOrder = [ ...
+        0.6, 0.6, 0.6; ...
+        0.0, 0.7, 0.0; ...
+        0.3, 0.0, 0.0];
+    set(gca, 'ColorOrder', colorOrder, 'NextPlot', 'replacechildren');
+    plotyy(RawData.t, [RawData.fluxIn; RawData.fluxOut], RawData.t, RawData.c);
+    axH = get(fH, 'children');
+    lH = get(axH, 'children');
+    ylim([-1e-5, 5e-4]);
+    ylabel('Water flux');
+    set(get(axH(1), 'ylabel'), 'string', 'Out concentration');
+    xlabel('time');
+    legend('In flux', 'Out flux', 'Out concentration');
+    set(axH(1), 'xlim', [0, 9000]);
+    set(axH(2), 'xlim', [0, 9000]);
+    
     
     return
     
