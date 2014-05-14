@@ -37,7 +37,11 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
     tEnd = TimeParams.t(end);
     dt = TimeParams.dt;
     t = TimeParams.t;
-    nT = TimeParams.numIntervals;
+    if isfield(TimeParams, 'intervalsPerDay')
+        nT = TimeParams.maxDays * TimeParams.intervalsPerDay;
+    else
+        nT = numel(t);
+    end
     t = t(1:nT);
     
     REL_TOL = 1e-5;
