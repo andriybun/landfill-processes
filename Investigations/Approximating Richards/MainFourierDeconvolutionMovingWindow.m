@@ -1,25 +1,34 @@
 function MainFourierDeconvolutionMovingWindow
-    % Describe function
+    % This script is designed for analysis of impulse-response systems where the shape of response
+    % varies depending on system properties. In particular we investigate influx-outflux system,
+    % where the shape of outflux depends on the water storage available insdide the system. This
+    % parameter depends on system's history.
+    % Inputs:
+    %   Parameters that are set within script are described in a section below
+    %   SAVE_FILE - *.mat file containing struct with fields: t - time vector, qIn - influx, qOut -
+    %               outflux;
+    
 
     %% PARAMETERS
     % Desired tolerance (adjust empirically)
-    ERR_EPSILON = 1.5e-4;
+    ERR_EPSILON = 2e-4;
     
     % Time stepping parameters
     COARSE_SCALE = 5;               % Coarsen time stepping by a scale of ...
     STEP = 50;                      % Time step for considering windows
-    INITIAL_WINDOW_WIDTH = 4000;    % Number of time steps/intervals per window
+    INITIAL_WINDOW_WIDTH = 16000;   % Number of time steps/intervals per window
+    INITIAL_PDF_WIDTH = 8000;
     
     % Ranges of log-normal parameters
-    RANGE_MU = [2, 5];
-    RANGE_SIGMA = [0.5, 1.2];
-    DELTA_MU = 2e-2;
-    DELTA_SIGMA = 5e-3;
+    RANGE_MU = [8.5, 10.5]; % [1.0, 2.0];             % Range of possible values for log-normal parameter mu
+    RANGE_SIGMA = [0.4, 0.7]; % [0.8, 1.1];          % Range of possible values for sigma
+    DELTA_MU = 2e-2;                        % Step for values of mu within a range
+    DELTA_SIGMA = 5e-3;                     % Step for values of sigma within a range
     
     % Do calculations or load saved results
     DO_CALCULATIONS = 1;
     LOAD_RESULTS = 2;
-    ACTION = LOAD_RESULTS;
+    ACTION = DO_CALCULATIONS;
 
     %% END PARAMETERS
 
@@ -27,13 +36,16 @@ function MainFourierDeconvolutionMovingWindow
 
     addpath('../../Common');
     
+    % Choose for the case to consider
     MAT_FILE_DIR = '../Transforms/mat/';
-    % CASE_NAME = 'Richards_Output_Pulse_Very_Slow_Response_zref_-1.0.mat';
-    caseNameVector = {'Extreme', 'Middle_Extreme', 'Netherlands', 'Uniform'};
-    caseIdx = 3;
-    CASE_NAME = sprintf('Richards_Output_rainfall_%s.mat', caseNameVector{caseIdx});
-    % Name of savefile
-    SAVE_FILE = sprintf('DeconvoluteMuSigma_%s', caseNameVector{caseIdx});
+    CASE_NAME = 'Richards_Output_Very_Slow_Response.mat';
+    SAVE_FILE = 'DeconvoluteMuSigma_Very_Slow_Response.mat';
+%     caseNameVector = {'Extreme', 'Middle_Extreme', 'Netherlands', 'Uniform', ...
+%         'Repeat_Medium'};
+%     caseIdx = 4;
+%     CASE_NAME = sprintf('Richards_Output_rainfall_%s.mat', caseNameVector{caseIdx});
+%     % Name of savefile
+%     SAVE_FILE = sprintf('DeconvoluteMuSigma_%s', caseNameVector{caseIdx});
     
     RawData = load([MAT_FILE_DIR CASE_NAME]);
     
@@ -57,11 +69,22 @@ function MainFourierDeconvolutionMovingWindow
     qIn = diff(qInCum);
     qOut = diff(qOutCum);
 
+    windowWidth = ceil(INITIAL_WINDOW_WIDTH / STEP);
+    pdfWidth = ceil(INITIAL_PDF_WIDTH / STEP);
+
+    %% Determine initial estimate of constant parameters of log-normal distribution
+    pdfEst = Deconvolution(qIn, qOut);
+	[muEst, sigmaEst, ~] = CalcLognormMuSigma(t(1:pdfWidth), pdfEst(1:pdfWidth));
+    fprintf('Initial estimate:\n');
+    fprintf('mu = %f\nsigma = %f\n', muEst, sigmaEst);
+    confBounds = LogNormalBounds(muEst, sigmaEst, 2);
+    fprintf('Recommended PDF width is %d\n', ceil(confBounds(2) / dt) * STEP);
+    ComparePdf(t(1:pdfWidth), pdfEst(1:pdfWidth), muEst, sigmaEst, dt)
+    %% Proceed
+    
     switch ACTION
         case DO_CALCULATIONS
             nEl = numel(qOut);
-            windowWidth = ceil(INITIAL_WINDOW_WIDTH / STEP);
-            pdfWidth = ceil(windowWidth / 1);
             nSteps = ceil((nEl - windowWidth) / STEP);
             muAll = nan(1, nSteps);
             sigmaAll = nan(1, nSteps);
@@ -99,24 +122,23 @@ function MainFourierDeconvolutionMovingWindow
                         error('Not able to estimate response PDF');
                     else
                         warning('Step %d: didn''t converge', iAll);
-                        optMu = nan; muAll(iAll-1);
-                        optSigma = nan; sigmaAll(iAll-1);
-                        figure(1);
-                        plot(t(pdfSel), pdfEst(pdfSel));
-                        hold on;
-                        plot(t(pdfSel), lognpdfX(t(pdfSel), muAll(iAll), sigmaAll(iAll), dt), 'r');
-                        hold off;
-                        title(sprintf('mu = %f, sigma = %f, err = %e',  muAll(iAll), sigmaAll(iAll), minErr));
+                        muAll(iAll) = muAll(iLastNum);
+                        sigmaAll(iAll) = sigmaAll(iLastNum);
+                        optMu = nan;
+                        optSigma = nan;
+                        ComparePdf(t(pdfSel), pdfEst(pdfSel), muAll(iAll), sigmaAll(iAll), dt);
                     end
+                else
+                    iLastNum = iAll;
                 end
                 iEnd = nEl;
                 for j = i:(i+STEP-1)
                     qOutConv(j:iEnd) = qOutConv(j:iEnd) + ...
-                        qIn(j) * lognpdfX(t(j:iEnd)-t(j), optMu, optSigma, dt);
+                        qIn(j) * lognpdfX(t(j:iEnd)-t(j), muAll(iAll), sigmaAll(iAll), dt);
                 end
                 muAll(iAll) = optMu;
                 sigmaAll(iAll) = optSigma;
-                errAll(iAll) = err; % SumSquares(qOut(i:(i+step-1)), qOutConv(i:(i+step-1)));
+                errAll(iAll) = err;
                 
                 % figure(2);
                 % hold on;
@@ -146,28 +168,16 @@ function MainFourierDeconvolutionMovingWindow
             load(SAVE_FILE);
     end
     
+    %% Plotting
+    iSel = ':';
+    mcBalanceAll = -mcBalanceAll;
+    [mcBalanceAll, iSort] = sort(mcBalanceAll(iSel)');
+
     close all;
-%     iSel = 1:(nSteps * step);
-    iSel = ':'; % (errAll <  ERR_EPSILON); % abs(qOut(iSel) - qOutConv(iSel)) < 0.05 * max(qOut(iSel));
-%     iSel = sum(reshape(iSel, step, []), 1) > 1;
     fWidth = 390;
     fHeight = 300;
     fH = figure(3);
     set(fH, 'Position', [100, 200, fWidth, fHeight]);
-% muAll(mcBalanceAll == max(mcBalanceAll)) = 9.05;
-% sigmaAll(mcBalanceAll == max(mcBalanceAll)) = 0.61;
-mcBalanceAll = -mcBalanceAll;
-i = 2;
-while (i <= numel(muAll))
-    if ((muAll(i) == muAll(i-1)) && (sigmaAll(i) == sigmaAll(i-1)))
-        mcBalanceAll(i) = [];
-        muAll(i) = [];
-        sigmaAll(i) = [];
-        i = i - 1;
-    end
-    i = i + 1;
-end
-    [mcBalanceAll, iSort] = sort(mcBalanceAll(iSel)');
     plot(mcBalanceAll, muAll(iSort), '*');
     hold on;
     [muFit, eqStr, muCoeff] = RegressionAnalysis(mcBalanceAll, muAll(iSort), 2);
@@ -198,11 +208,12 @@ end
 %     % Functions of log-normal parameters of moisture content
 %     fMu = @(x) -1820.71579 * x.^2 + 7.42552 * x + 9.51092;
 %     fSigma = @(x) -156.37151 * x.^2 + 5.66496 * x + 0.52888;
-    % Experiment 2:
-    muEst = 3.32;
-    sigmaEst = 0.815;
-    fMu = @(x) muCoeff(1) * x.^2 + muCoeff(2) * -x + muCoeff(3);
-    fSigma = @(x) sigmaCoeff(1) * x.^2 + sigmaCoeff(2) * -x + sigmaCoeff(3);
+    
+    % Minimum storage capacity change
+    fMu = @(x) muCoeff(1) * max(-x, mcBalanceAll(1)).^2 + ...
+        muCoeff(2) * max(-x, mcBalanceAll(1)) + muCoeff(3);
+    fSigma = @(x) sigmaCoeff(1) * max(-x, mcBalanceAll(1)).^2 + ...
+        sigmaCoeff(2) * max(-x, mcBalanceAll(1)) + sigmaCoeff(3);
     
     LogNormalParams = @(x) {fMu(x), fSigma(x)};
     qOutConvLogn = NumericalConvolution(t, qIn, ...
@@ -251,9 +262,13 @@ end
     end
     
     function [optMu, optSigma, optErr] = CalcLognormMuSigma(x, pdf)
-        f = @(x) 1; % (1 - erf((x - 4.e+4) / 1.e+4)) / 2;
-        pdf = pdf .* f(x);
-        pdf = max(0, pdf); %  / sum(pdf);
+       if any(isnan(pdf))
+            optMu = nan;
+            optSigma = nan;
+            optErr = nan;
+            return
+        end
+        pdf = max(0, pdf);
         optErr = Inf;
         optMu = nan;
         optSigma = nan;
@@ -276,9 +291,13 @@ end
 
     function err_ = SumSquares(v1, v2, k)
         if nargin < 3
-            k = ones(size(v1));
+            v2Cum = cumsum(v2);
+            pos = find(v2Cum > 0.9, 1, 'first');
+            [nRows, nCols] = size(v2);
+            k = ones(nRows, nCols);
+            k(pos:nRows) = 1 - v2Cum(1:(nRows-pos+1));
         end
-        err_ = sum((k .* (v1 - v2)) .^ 2);
+        err_ = sum((k .* v1 - v2) .^ 2);
     end
 
     function [yFit, eqStr, p_] = RegressionAnalysis(x, y, n)
@@ -300,4 +319,15 @@ end
 %         eqStr(end-1:end) = [];
     end
 
+    function ComparePdf(t_, pdfEst_, mu_, sigma_, dt_)
+        figure(1);
+        plot(t_, pdfEst_);
+        hold on;
+        pdfAnalytic = lognpdfX(t_, mu_, sigma_, dt_);
+        plot(t_, pdfAnalytic, 'r');
+        hold off;
+        err_ = SumSquares(max(0, pdfEst_), pdfAnalytic);
+        title(sprintf('mu = %f, sigma = %f, err = %e',  mu_, sigma_, err_));
+    end
+    
 end
