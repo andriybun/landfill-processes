@@ -111,8 +111,20 @@ Richards equation is also often applied when modelling landfill processes.
 The challenge we face is to use this information to obtain a quantitative
  estimate of hydraulic properties of waste.
  Results of such analysis can then be used for integrated modelling.
- The purpose of current study is to investigate feasibility of simulating
- water flow using impulse-response approach.
+\end_layout
+
+\begin_layout Standard
+Here we use an impulse-response approach.
+ We assume that every injection of liquid into the system will cause a response
+ of certain shape.
+ Assuming that the properties of the system don't change significantly over
+ time, the shape of response will not change significantly either.
+ Therefore we believe that in some cases it will be possible to determine
+ the distribution of response and it's variability due to changes in the
+ system.
+ The purpose of current study is to investigate feasibility of using impulse-res
+ponse approach for such analysis and to analyze what information can be
+ extracted from it.
 \end_layout
 
 \begin_layout Section
@@ -171,7 +183,7 @@ where
 \end_layout
 
 \begin_layout Standard
-Figure
+Figures
 \begin_inset space \thinspace{}
 \end_inset
 
@@ -182,12 +194,44 @@ reference "fig:travel-time-fitted-ln-pdf"
 
 \end_inset
 
- shows an example of fitting response to a single injection of water at
+ show two examples of fitting response to a single injection of water at
  initial time 
 \begin_inset Formula $t=0$
 \end_inset
 
  with a log-normal PDF.
+ Figures show very good fitting.
+ Log-normally distributed break through curves (BTC's) have been successfully
+ applied by e.g.
+ 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "Jury1982a"
+
+\end_inset
+
+, 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "Jury1986"
+
+\end_inset
+
+, 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "White1986"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "Fellner2009"
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
@@ -198,9 +242,62 @@ status open
 
 \begin_layout Plain Layout
 \align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="2" columns="2">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<row>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
 \begin_inset Graphics
-	filename fig/Richards_Output_Pulse_Very_Slow_Response_zref_-1.0.mat_PDF.png
-	width 40text%
+	filename fig/Richards_Output_rainfall_pulse_zref=-0.50.mat_PDF_est.png
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename fig/Richards_Output_rainfall_pulse_zref=-1.00.mat_PDF_est.png
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+a)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+b)
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
 
 \end_inset
 
@@ -239,7 +336,7 @@ reference "eq:Q_out"
 
 \end_inset
 
- is called convolution and can be written in a form:
+ is a convolution and can be written as:
 \end_layout
 
 \begin_layout Standard
@@ -255,7 +352,8 @@ q_{out}\left(t\right)=(q_{in}\text{∗}\, f)(t),
 
 \begin_layout Standard
 where ∗ denotes convolution operation.
- It corresponds to product of functions in Fourier frequency domain:
+ Fourier transform theory shows that it corresponds to product of functions
+ in Fourier frequency domain:
 \end_layout
 
 \begin_layout Standard
@@ -270,11 +368,19 @@ where ∗ denotes convolution operation.
 \end_layout
 
 \begin_layout Standard
-After applying inverse Fourier transform to 
+Knowing Fourier transforms of influx 
+\begin_inset Formula $\hat{q}_{in}\left(\xi\right)$
+\end_inset
+
+ and response function 
+\begin_inset Formula $\hat{f}\left(\xi\right)$
+\end_inset
+
+ allows us to calculate an approximation of outflux 
 \begin_inset Formula $\hat{q}_{out}\left(\xi\right)$
 \end_inset
 
- we will obtain an approximation of outflux in an efficient way.
+ in an efficient way.
 \end_layout
 
 \begin_layout Subsection
@@ -289,25 +395,92 @@ name "sec:Variable-moisture-content"
 \end_layout
 
 \begin_layout Standard
-Hydraulic properties of porous medium, however, depend among others on its
- remaining storage capacity.
- We define remaining storage capacity as relative pore volume not filled
+Theory based on transfer function works well for saturated systems 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "Jury1986"
+
+\end_inset
+
+ or for systems where water contents doesn't change substantially 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "Rosqvist1999"
+
+\end_inset
+
+.
+ Systems with variable water content are, however, extremely nonlinear,
+ we observe variable response PDF's in such cases.
+ Hydraulic properties of porous medium depend among others on its remaining
+ storage capacity.
+ Higher moisture content and hence lower storage capacity will result in
+ faster response and vice versa.
+ 
+\end_layout
+
+\begin_layout Standard
+Here we define remaining storage capacity as relative pore volume not filled
  with water (
 \begin_inset Formula $1-V_{water}/V_{pore}$
 \end_inset
 
 ).
- In case of non-steady systems where moisture content is varying to high
- extent, we will observe variable response PDF's.
- Higher moisture content and hence lower storage capacity will result in
- faster response and vice versa.
+ Figures
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:travel-time-fitted-ln-pdf"
+
+\end_inset
+
+ a and b illustrate BTC's for the same system with only different initial
+ water table level (
+\begin_inset Formula $-0.5$
+\end_inset
+
+
+\begin_inset space \thinspace{}
+\end_inset
+
+m and 
+\begin_inset Formula $-1$
+\end_inset
+
+
+\begin_inset space \thinspace{}
+\end_inset
+
+m respectively) and hence different storage capacity.
+ In the first case the water table is higher thus leading to faster response
+ times and more narrow BTC figure
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:travel-time-fitted-ln-pdf"
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
 In order to quantify effect of varying storage capacity on response times
- distribution, we first approximate these distribution with log-normal PDF's.
- The fitting was done for a range of storage capacity values assuming that
- a system was in equilibrium at initial time.
+ distribution, we computed BTC's as response to single input pulses for
+ a range of storage capacity values and approximated these distributions
+ with log-normal PDF's.
+ The computations were carried for a homogeneous system containing a block
+ with lower hydraulic conductivity inside.
+ The setup was in equilibrium at initial time.
+ The properties of the system and input didn't change in between cases,
+ with the only exception - variable initial water table levels.
+ 2-dimensional Richards equation was used to model water flow.
  Figure
 \begin_inset space \thinspace{}
 \end_inset
@@ -373,9 +546,11 @@ name "fig:log-normal-mu-sigma-of-theta"
 \end_layout
 
 \begin_layout Standard
-Adjusting parameters of log-normal (or any other) distribution according
- to moisture content inside soil may improve quality of outflux approximation
- with convolution (forward problem).
+Since changes in system's properties affect the shape of response function,
+ our goal is to analyze how adjusting parameters of log-normal (or any other)
+ distribution according to moisture content inside soil may improve quality
+ of outflux approximation with convolution (forward problem).
+ 
 \end_layout
 
 \begin_layout Subsection
@@ -737,7 +912,7 @@ This algorithm allows us to eliminate responses to all input events that
 \end_layout
 
 \begin_layout Section
-Numerical experiments
+Experiments
 \end_layout
 
 \begin_layout Standard
@@ -1333,50 +1508,481 @@ At the same time the biggest effect of variable response function is observed
  during extreme cases (very dry or very wet system).
  Therefore we are interested in getting parameters of the response function
  for extreme events as accurate as possible, while averaging works rather
- accurate for other cases.
+ accurate for moderate conditions.
 \end_layout
 
 \begin_layout Standard
-Among possible applications of the described concepts we see:
-\end_layout
+The example considered in present paper represents a well defined case.
+ All the quantities and times are measured accurately, despite heterogeneity
+ introduced by adding less permeable block inside the system, both types
+ of material are considered perfectly homogeneous etc.
+ In real life these conditions cannot be met, and thus the datasets may
+ be less suitable for conducting described analysis.
+ We describe a 
+\begin_inset Quotes eld
+\end_inset
 
-\begin_layout Itemize
-Efficient and more accurate (compared to constant response function) predicting
- water flux for arbitrary systems.
-\end_layout
+successful
+\begin_inset Quotes erd
+\end_inset
 
-\begin_layout Itemize
-Versatile analysis of hydraulic flow: response times and possibly travel
- times, degree of heterogeneity etc.
-\end_layout
-
-\begin_layout Standard
-When it doesn't work?
-\end_layout
-
-\begin_layout Itemize
-periodic signal
-\end_layout
-
-\begin_layout Itemize
-very long (spread) response function
+ application to illustrate the concept.
+ At the same time the approach will not work even for a well defined conditions
+ in certain cases.
 \end_layout
 
 \begin_layout Standard
------------------------
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="2" columns="2">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<row>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename fig/Richards_Output_rainfall_Uniform_long_response.mat_short_fail_convolution.png
+	width 55text%
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename fig/Richards_Output_rainfall_Uniform_long_response.mat_short_fail_PDF_est.png
+	width 40text%
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+a)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+b)
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Example of unsuccessful application of deconvolution: a) input and output
+ datasets; b) estimated response function.
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Example-of-unsuccessful-deconvolution"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
-Relationship between moisture content and properties of output signal must
- be known in advance.
- However it can be partly estimated from inverse problem.
- One possibility is to split the dataset into intervals with similar rain
- patterns.
- In this case moisture content will remain within a more narrow range and
- hence the response function will be more smooth to accurately define its
- properties.
+Figure
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Example-of-unsuccessful-deconvolution"
+
+\end_inset
+
+ shows an example of such a case, when the deconvolution resulted in an
+ erratic function.
+ In contrast, if we truncate the in-/out-put datasets to 50 days, we obtain
+ relatively good estimate of response PDF (figure
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Example-of-successful-deconvolution"
+
+\end_inset
+
+).
+ This phenomenon results from properties of Fourier transform, which requires
+ function to approach zero on both ends.
+ As can be seen from figures
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Example-of-unsuccessful-deconvolution"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Example-of-successful-deconvolution"
+
+\end_inset
+
+, the latter ends closer to zero, and thus provides us with a better estimate
+ of response distribution.
+ This is despite the fact that in the first case the datasets provide more
+ information (more data points).
 \end_layout
 
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="2" columns="2">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<row>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename fig/Richards_Output_rainfall_Uniform_long_response.mat_short_success_convolution.png
+	width 55text%
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename fig/Richards_Output_rainfall_Uniform_long_response.mat_short_success_PDF_est.png
+	width 40text%
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+a)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+b)
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Example of successful application of deconvolution: a) input and output
+ datasets vs.
+ modelled output; b) estimated response function vs.
+ log-normal approximation.
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Example-of-successful-deconvolution"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+There are cases, however, when even the datasets ending with zeros don't
+ give good estimates.
+ Figure
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Example-of-deconvolution-periodic-signal"
+
+\end_inset
+
+ shows an example of a very simple case with periodic input signal, giving
+ enough time for the output signal to fade out at the end.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="2" columns="2">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<row>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename fig/Richards_Output_rainfall_Repeat_Short_333.mat_convolution.png
+	width 55text%
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename fig/Richards_Output_rainfall_Repeat_Short_333.mat_PDF_est.png
+	width 40text%
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+a)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+b)
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Example of successful application of deconvolution: a) input and output
+ datasets vs.
+ modelled output; b) estimated response function vs.
+ log-normal approximation.
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Example-of-deconvolution-periodic-signal"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+As one can see from figure
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Example-of-deconvolution-periodic-signal"
+
+\end_inset
+
+
+\begin_inset space \thinspace{}
+\end_inset
+
+b) even in such a simple case the approach results in a weird shape response
+ function.
+ It is important to note that sometimes exactly same setup with only different
+ number of square waves resulted in estimated PDF's allowing to identify
+ the real shape of response functions.
+ 
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+I don't have any idea why it is so!
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Based on the above we give following recommendations when carrying out impulse-r
+esponse analysis:
+\end_layout
+
+\begin_layout Itemize
+Signals must be long enough to contain at least one width of bulk quantity
+ response distribution.
+\end_layout
+
+\begin_layout Itemize
+Signal ends must be as close to zero as possible (it is a good practice
+ to stop sample dataset after long dry period etc.).
+\end_layout
+
+\begin_layout Itemize
+Sometimes repetitive pattern of in-/out- signals may result in inability
+ to identify the shape of response function.
+\end_layout
+
+\begin_layout Standard
+This paper describes the application of Fourier transforms for analysis
+ of water discharge data.
+ Presented example illustrates the possibilities of such analysis.
+ We also describe some difficulties faced during investigations.
+ Among possible applications of the described concepts we see:
+\end_layout
+
+\begin_layout Itemize
+Computationally efficient and more accurate (compared to constant response
+ function) predicting water flux for arbitrary systems.
+\end_layout
+
+\begin_layout Itemize
+Versatile analysis of hydraulic flow: 
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+response times;
+\end_layout
+
+\begin_layout Itemize
+travel times (by incorporating concentration data and considering clean
+ water as tracer);
+\end_layout
+
+\begin_layout Itemize
+degree of heterogeneity etc.
+\end_layout
+
+\end_deeper
 \begin_layout Standard
 \begin_inset CommandInset bibtex
 LatexCommand bibtex
