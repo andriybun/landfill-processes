@@ -2,7 +2,7 @@
 \lyxformat 413
 \begin_document
 \begin_header
-\textclass article
+\textclass elsarticle
 \use_default_options true
 \maintain_unincluded_children false
 \language english
@@ -28,7 +28,7 @@
 \spacing single
 \use_hyperref false
 \papersize default
-\use_geometry false
+\use_geometry true
 \use_amsmath 1
 \use_esint 1
 \use_mhchem 1
@@ -43,6 +43,10 @@
 \shortcut idx
 \color #008000
 \end_index
+\leftmargin 3cm
+\topmargin 3cm
+\rightmargin 3cm
+\bottommargin 3cm
 \secnumdepth 3
 \tocdepth 3
 \paragraph_separation indent
@@ -74,9 +78,11 @@ Introduction
 \end_layout
 
 \begin_layout Standard
-Richards equation is a typical model of water flow in unsaturated porous
+The Richards equation is a typical model for water flow in unsaturated porous
  media.
- It can provide all the necessary information about properties of the flow.
+ Its implementation for large scale problems with lots of heterogeneity
+ is computationally demanding (large resolution etc.) and is difficult to
+ parameterize.
  In some cases however this information may be excessive considering computation
 al resources required.
  This may happen when only in-/out-flux information is needed and Richards
@@ -85,17 +91,25 @@ al resources required.
 \end_layout
 
 \begin_layout Standard
-Richards equation is also often applied when modelling landfill processes.
+Richards equation is also often applied when modelling landfill processes
+ 
+\begin_inset CommandInset citation
+LatexCommand citep
+before "e.g. "
+key "Kueper1991,McCreanor2000,Fellner2010"
+
+\end_inset
+
+.
  Landfill researchers typically have lack of information about their hydraulic
- properties which makes Richards equation difficult or even impossible to
- use.
+ properties which makes it difficult or even impossible to use.
  At the same time easily obtainable information is the amount of water from
  rainfall, irrigation and recirculation infiltrating in to the waste body,
  
 \begin_inset Formula $q_{in}\left(t\right)$
 \end_inset
 
-, and the amount and quality of leachate pumped out of the drainage system,
+, and the amount and quality of leachate pumped out from the drainage system,
  
 \begin_inset Formula $q_{out}\left(t\right)$
 \end_inset
@@ -105,26 +119,39 @@ Richards equation is also often applied when modelling landfill processes.
 \end_inset
 
  respectively.
-\end_layout
-
-\begin_layout Standard
-The challenge we face is to use this information to obtain a quantitative
- estimate of hydraulic properties of waste.
+ The challenge we face is to use this information to obtain a quantitative
+ estimate of water/leachate flux through a landfill.
  Results of such analysis can then be used for integrated modelling.
 \end_layout
 
 \begin_layout Standard
-Here we use an impulse-response approach.
- We assume that every injection of liquid into the system will cause a response
- of certain shape.
- Assuming that the properties of the system don't change significantly over
- time, the shape of response will not change significantly either.
+We use an impulse-response approach which assumes that every injection of
+ liquid into the system will cause a response of certain shape 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "Jury1990"
+
+\end_inset
+
+.
+ If the properties of the system don't change significantly over time, the
+ shape of response will not change significantly either.
  Therefore we believe that in some cases it will be possible to determine
  the distribution of response and it's variability due to changes in the
  system.
- The purpose of current study is to investigate feasibility of using impulse-res
-ponse approach for such analysis and to analyze what information can be
- extracted from it.
+ 
+\end_layout
+
+\begin_layout Standard
+The objective of current study is to investigate the feasibility of using
+ the impulse-response approach for such analysis and to analyze what information
+ can be extracted from it.
+ Since variable moisture content causes changes in the shape of response
+ function, our goal is to analyze whether it is possible to quantify (hence
+ simulate) the effect of variable moisture content on the response function
+ and how adjusting parameters of log-normal (or any other) distribution
+ according to moisture content inside soil may improve the quality of outflux
+ approximation.
 \end_layout
 
 \begin_layout Section
@@ -178,7 +205,11 @@ where
 \begin_inset Formula $f\left(\tau\right)\cdot d\tau$
 \end_inset
 
- of water in the landfill having a travel time.
+ of water in the landfill having a travel time within range 
+\begin_inset Formula $\left[\tau,\,\tau+d\tau\right]$
+\end_inset
+
+.
  
 \end_layout
 
@@ -254,6 +285,7 @@ status open
 \begin_layout Plain Layout
 \begin_inset Graphics
 	filename fig/Richards_Output_rainfall_pulse_zref=-0.50.mat_PDF_est.png
+	width 45text%
 
 \end_inset
 
@@ -268,6 +300,7 @@ status open
 \begin_layout Plain Layout
 \begin_inset Graphics
 	filename fig/Richards_Output_rainfall_pulse_zref=-1.00.mat_PDF_est.png
+	width 45text%
 
 \end_inset
 
@@ -377,6 +410,10 @@ Knowing Fourier transforms of influx
 \end_inset
 
  allows us to calculate an approximation of outflux 
+\begin_inset Formula $q_{out}\left(\xi\right)$
+\end_inset
+
+ using inverse Fourier transform of 
 \begin_inset Formula $\hat{q}_{out}\left(\xi\right)$
 \end_inset
 
@@ -414,8 +451,6 @@ key "Rosqvist1999"
  we observe variable response PDF's in such cases.
  Hydraulic properties of porous medium depend among others on its remaining
  storage capacity.
- Higher moisture content and hence lower storage capacity will result in
- faster response and vice versa.
  
 \end_layout
 
@@ -455,8 +490,7 @@ m and
 \end_inset
 
 m respectively) and hence different storage capacity.
- In the first case the water table is higher thus leading to faster response
- times and more narrow BTC figure
+ In the first case (figure
 \begin_inset space \thinspace{}
 \end_inset
 
@@ -467,21 +501,25 @@ reference "fig:travel-time-fitted-ln-pdf"
 
 \end_inset
 
-.
+a) the water table is higher.
+ This leads to faster response times and more narrow BTC.
+ Thus higher moisture content and hence lower storage capacity will result
+ in faster response and vice versa.
 \end_layout
 
 \begin_layout Standard
 In order to quantify effect of varying storage capacity on response times
  distribution, we computed BTC's as response to single input pulses for
- a range of storage capacity values and approximated these distributions
- with log-normal PDF's.
- The computations were carried for a homogeneous system containing a block
- with lower hydraulic conductivity inside.
- The setup was in equilibrium at initial time.
+ a range of storage capacity values.
+ The computations were carried for a system with homogeneous material containing
+ a block with lower hydraulic conductivity inside (in such a way heterogeneity
+ was introduced).
+ The setup was in equilibrium at initial time .
  The properties of the system and input didn't change in between cases,
- with the only exception - variable initial water table levels.
+ with the only exception of variable initial water table levels.
  2-dimensional Richards equation was used to model water flow.
- Figure
+ Having a number of BTC's we approximated them with log-normal PDF's.
+ Figures
 \begin_inset space \thinspace{}
 \end_inset
 
@@ -492,7 +530,14 @@ reference "fig:log-normal-mu-sigma-of-theta"
 
 \end_inset
 
- shows how values of location and scale parameters 
+a and 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:log-normal-mu-sigma-of-theta"
+
+\end_inset
+
+b show how values of location and scale parameters 
 \begin_inset Formula $\mu$
 \end_inset
 
@@ -514,7 +559,7 @@ status open
 \align center
 \begin_inset Graphics
 	filename fig/Log-normal_Params_of_Initial_Moisture.png
-	width 80text%
+	width 90text%
 
 \end_inset
 
@@ -545,14 +590,6 @@ name "fig:log-normal-mu-sigma-of-theta"
 
 \end_layout
 
-\begin_layout Standard
-Since changes in system's properties affect the shape of response function,
- our goal is to analyze how adjusting parameters of log-normal (or any other)
- distribution according to moisture content inside soil may improve quality
- of outflux approximation with convolution (forward problem).
- 
-\end_layout
-
 \begin_layout Subsection
 Inverse modelling
 \begin_inset CommandInset label
@@ -567,7 +604,11 @@ name "sub:Inverse-modelling"
 \begin_layout Standard
 In real life situations travel time distribution is unknown, while outflux
  can be easily obtained.
- Therefore from 
+ Therefore from equation
+\begin_inset space \thinspace{}
+\end_inset
+
+
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "eq:conv_fourier_domain"
@@ -598,6 +639,7 @@ reference "eq:inv_conv_fourier_domain"
 \end_inset
 
  we get an estimate of response times PDF.
+ This process is called deconvolution.
 \end_layout
 
 \begin_layout Standard
@@ -606,7 +648,7 @@ Assuming that the dataset is long enough, we can apply deconvolution technique
  By moving this interval and keeping track of the changes in storage capacity
  and properties of PDF we can get a quantitative estimate of relationship
  between them.
- This will improve the quality of further outflux simulation.
+ This may improve the quality of further outflux simulation.
 \end_layout
 
 \begin_layout Standard
@@ -619,7 +661,7 @@ status open
 \align center
 \begin_inset Graphics
 	filename fig/Deconvolution_Moving_Window_Concept.png
-	width 50text%
+	width 70text%
 
 \end_inset
 
@@ -651,8 +693,8 @@ name "fig:moving-window-concept"
 \end_layout
 
 \begin_layout Standard
-We apply aforementioned concept of moving interval according to the following
- algorithm (figure
+We apply deconvolution in combination with aforementioned concept of moving
+ interval according to the following algorithm (figure
 \begin_inset space \thinspace{}
 \end_inset
 
@@ -690,12 +732,14 @@ The time domain is discretized into
 \end_inset
 
 .
- Deconvolution is done for time interval (window) of 
+ Deconvolution is applied for time interval (window) of 
 \begin_inset Formula $\Delta t$
 \end_inset
 
  which must be big enough to contain bulk response to input signals, in
  order to correctly detect PDF.
+ In most cases this can be estimated visually from the peaks in outflux
+ graph.
 \end_layout
 
 \begin_layout Enumerate
@@ -703,15 +747,7 @@ On
 \begin_inset Formula $i$
 \end_inset
 
--th step apply deconvolution to a dataset.
- Here we use input signal corresponds to influx (grey line), output signal
- is presented by dashed line.
- Initially it is equal to original outflux 
-\begin_inset Formula $q_{out}$
-\end_inset
-
-, however is adjusted on every time step as described below.
- We consider the dataset on an interval 
+-th we consider the dataset on an interval 
 \begin_inset Formula $[t_{i,begin},\, t_{i,end}]$
 \end_inset
 
@@ -725,6 +761,20 @@ On
 \end_inset
 
  corresponds to vertical dash-dot line.
+ We apply deconvolution to the influx (light grey peaks) and remaining output
+ signal which is presented by dashed line (without a share of already modelled
+ output).
+ Initially it is equal to original outflux 
+\begin_inset Formula $q_{out}$
+\end_inset
+
+ (black line), however is adjusted on every time step as described below.
+ This adjustment is done to ensure the outflux starting with zero by removing
+ any effect of inputs prior to 
+\begin_inset Formula $t_{i,begin}$
+\end_inset
+
+.
 \begin_inset CommandInset label
 LatexCommand label
 name "enu:alg-deconvolution"
@@ -735,29 +785,10 @@ name "enu:alg-deconvolution"
 \end_layout
 
 \begin_layout Enumerate
-If the obtained PDF is ill-shaped, we extend the interval until a well shaped
- response function is observed.
-\begin_inset CommandInset label
-LatexCommand label
-name "enu:alg-extend-window"
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Enumerate
-Obtained from steps 
+Obtained from step 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "enu:alg-deconvolution"
-
-\end_inset
-
--
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "enu:alg-extend-window"
 
 \end_inset
 
@@ -770,12 +801,59 @@ reference "enu:alg-extend-window"
 \begin_inset Formula $\sigma$
 \end_inset
 
- are stored.
+ are stored as function of storage capacity.
  We also keep track of cumulative influx and outflux difference of which
- gives us quantitative estimate of available storage capacity.
+ gives us quantitative value for expressing of available storage capacity.
 \begin_inset CommandInset label
 LatexCommand label
 name "enu:alg-fit-pdf"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+Calculate sum squared error for the approximation obtained in step
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "enu:alg-fit-pdf"
+
+\end_inset
+
+.
+ If it is greater then an empirically estimated threshold, the time window
+ 
+\begin_inset Formula $\Delta t$
+\end_inset
+
+ is extended until a condition is met, or the end of dataset is reached.
+ Steps
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "enu:alg-deconvolution"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "enu:alg-extend-window"
+
+\end_inset
+
+ are repeated in such case.
+\begin_inset CommandInset label
+LatexCommand label
+name "enu:alg-extend-window"
 
 \end_inset
 
@@ -791,7 +869,7 @@ reference "eq:Q_out"
 \end_inset
 
  to all input signals prior to 
-\begin_inset Formula $t_{2,begin}$
+\begin_inset Formula $t_{i+1,begin}$
 \end_inset
 
 , where 
@@ -904,10 +982,12 @@ Already integrated outflux is deducted from the original one.
 \noun off
 \color none
 This algorithm allows us to eliminate responses to all input events that
- happened before current time step on the outflux.
+ happened before current time step.
  This minimizes their impact on the results of deconvolution.
- While moving the interval provides us with information about influence
- of storage capacity on response times.
+ While reducing the interval for deconvolution and moving it allows us to
+ obtain more accurate estimate of response PDF's and influence of storage
+ capacity on them because the computations are done for shorter periods
+ where the storage capacity is less likely to change much.
  Such information can be used for future simulations of outflux.
 \end_layout
 
@@ -932,8 +1012,7 @@ Numerical deconvolution
 \end_layout
 
 \begin_layout Standard
-In order to test approach we used Richards equation to analyze water flux
- for a random input simulating rainfalls over a long period (figure
+Figure
 \begin_inset space ~
 \end_inset
 
@@ -944,8 +1023,11 @@ reference "fig:convolution-const-pdf"
 
 \end_inset
 
-).
- Figure
+ shows results of modelling outflux with Richards equation (black line)
+ as response to random input simulating rainfalls over a long period (light
+ grey peaks).
+ After applying deconvolution technique we obtain estimate of PDF shown
+ in figure
 \begin_inset space \thinspace{}
 \end_inset
 
@@ -956,8 +1038,50 @@ reference "fig:example-deconvolution-pdf"
 
 \end_inset
 
- presents such PDF estimated by deconvolution for system of interest compared
- to log-normally distributed approximation.
+.
+ The figure also presents log-normally distributed approximation of response.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename fig/Richards_Output_Very_Slow_Response.mat_(de)convolution.png
+	width 90text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Comparison of applying different types of response time PDF versus inputs
+ and Richards solution.
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:convolution-const-pdf"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -970,7 +1094,7 @@ status open
 \align center
 \begin_inset Graphics
 	filename fig/Richards_Output_Very_Slow_Response.mat_PDF.png
-	width 40text%
+	width 50text%
 
 \end_inset
 
@@ -1024,44 +1148,6 @@ averaged
 
  density function for the entire dataset.
  For this reason the shape of the estimated PDF is rather irregular.
- Also by comparing figures
-\begin_inset space \thinspace{}
-\end_inset
-
-
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "fig:example-deconvolution-pdf-low-moisture"
-
-\end_inset
-
- and 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "fig:travel-time-fitted-ln-pdf"
-
-\end_inset
-
- one can observe that PDF of response times is less spread in the first
- case.
- This can be explained by constantly varying storage capacity, which is
- most of the time less than initial value.
- Consequently, response times will be faster on average.
-\end_layout
-
-\begin_layout Standard
-As can be seen from figure
-\begin_inset space \thinspace{}
-\end_inset
-
-
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "fig:example-deconvolution-pdf"
-
-\end_inset
-
- the observed distribution is ill-shaped.
  This is probably to the superposition effect, when responses to near signals
  are merged.
  Figure
@@ -1096,48 +1182,6 @@ reference "fig:convolution-const-pdf"
  The figure also contains results of forward simulation of outflux (convolution).
  Here we used two different types of response PDF: obtained from deconvolution
  (dashed grey line) and its log-normal approximation (solid grey line).
-\end_layout
-
-\begin_layout Standard
-\begin_inset Float figure
-wide false
-sideways false
-status open
-
-\begin_layout Plain Layout
-\align center
-\begin_inset Graphics
-	filename fig/Richards_Output_Very_Slow_Response.mat_(de)convolution.png
-	width 90text%
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-\begin_inset Caption
-
-\begin_layout Plain Layout
-Comparison of applying different types of response time PDF versus inputs
- and Richards solution.
-\end_layout
-
-\end_inset
-
-
-\begin_inset CommandInset label
-LatexCommand label
-name "fig:convolution-const-pdf"
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-
-
 \end_layout
 
 \begin_layout Standard
@@ -1335,14 +1379,14 @@ status open
 \align center
 \begin_inset Graphics
 	filename fig/Estimated_Deconvolution_Mu.png
-	width 40text%
+	width 45text%
 
 \end_inset
 
 
 \begin_inset Graphics
 	filename fig/Estimated_Deconvolution_Sigma.png
-	width 40text%
+	width 45text%
 
 \end_inset
 
@@ -1983,11 +2027,15 @@ degree of heterogeneity etc.
 \end_layout
 
 \end_deeper
+\begin_layout Section*
+References
+\end_layout
+
 \begin_layout Standard
 \begin_inset CommandInset bibtex
 LatexCommand bibtex
 bibfiles "references"
-options "plain"
+options "plainnat"
 
 \end_inset
 
