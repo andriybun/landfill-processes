@@ -996,8 +996,8 @@ Experiments
 \end_layout
 
 \begin_layout Standard
-A number of numerical experiments have been conducted in order to analyze
- the feasibility of described approaches.
+A number of numerical experiments have been conducted in order to test described
+ approaches.
  In all cases input datasets have been generated using numerical solutions
  to Richards equation on arbitrary two-dimensional domains.
  Here the idea is that very little information is available about the hydraulic
@@ -1150,19 +1150,6 @@ averaged
  For this reason the shape of the estimated PDF is rather irregular.
  This is probably to the superposition effect, when responses to near signals
  are merged.
- Figure
-\begin_inset space \thinspace{}
-\end_inset
-
-
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "fig:convolution-const-pdf"
-
-\end_inset
-
- displays additionally results of forward convolution operation with estimated
- PDF (solid grey line) and its log-normal approximation (grey line).
 \end_layout
 
 \begin_layout Standard
@@ -1217,6 +1204,8 @@ reference "fig:example-deconvolution-pdf"
 
  minutes, when rainfall events become more often and intense, approximation
  by convolution also becomes less accurate.
+ We believe that higher moisture content results in lower storage capacity
+ and thus reducing travel times for water particles.
 \end_layout
 
 \begin_layout Subsection
@@ -1224,7 +1213,7 @@ Numerical convolution with variable PDF
 \end_layout
 
 \begin_layout Standard
-The aim of next experiment was to analyze the effect of variable storage
+The aim of the next experiment was to analyze the effect of variable storage
  available on convolution results.
  Here we assume that the initial moisture content as well as pore volume
  is known.
@@ -1320,9 +1309,10 @@ reference "fig:convolution-variable-pdf"
  shows the improvement of outflow approximation achieved by adjusting parameters
  of log-normal distribution to variable storage capacity (dashed grey line)
  compared to the convolution result using constant properties of distribution
- (solid grey line) and the output obtained from Richards equation.
- As can be seen from the figure, adjusting PDF to moisture content in the
- system may significantly improve quality of outflow simulation.
+ (solid grey line) and the output obtained from Richards equation (black
+ line).
+ As can be seen from the figure, adjusting PDF to changes in moisture content
+ in the system may significantly improve quality of outflow simulation.
 \end_layout
 
 \begin_layout Subsection
@@ -1341,7 +1331,7 @@ reference "fig:log-normal-mu-sigma-of-theta"
 
 \end_inset
 
- are not known in real life problems.
+, however, are not known in real life problems.
  For that reason the goal of our next experiment was to obtain the approximation
  of these relationships.
  As a result of applying algorithm described in Section
@@ -1432,8 +1422,9 @@ reference "fig:log-normal-mu-sigma-estimated"
 
  represent data obtained from experiment.
  Solid lines show curves fitted to these data points.
- Here x-axis corresponds to decrease in available storage content which
- is inverse of water added into the system.
+ Here x-axis corresponds to decrease in available storage content due to
+ inflow of water.
+ This isinverse of water added into the system.
  Y-axis represents values of parameters estimated for a given storage content.
 \end_layout
 
@@ -1544,11 +1535,8 @@ reference "fig:log-normal-mu-sigma-estimated"
 
 , where same values of remaining storage capacity are represented by a range
  of values of log-normal parameters.
- Usage of variable parameters has a huge advantage when simulating extremes.
-\end_layout
-
-\begin_layout Standard
-At the same time the biggest effect of variable response function is observed
+ However, this accuracy is enough for most cases we tested.
+ At the same time the biggest effect of variable response function is observed
  during extreme cases (very dry or very wet system).
  Therefore we are interested in getting parameters of the response function
  for extreme events as accurate as possible, while averaging works rather
