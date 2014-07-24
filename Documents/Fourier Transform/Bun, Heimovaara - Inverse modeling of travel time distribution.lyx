@@ -65,8 +65,7 @@
 \begin_body
 
 \begin_layout Title
-Inverse modeling of travel time distribution using Fourier transform / Extractin
-g information from in- out-flux data
+Extracting information from in-/out-flux data
 \end_layout
 
 \begin_layout Author
@@ -74,21 +73,29 @@ Andriy Bun, Timo Heimovaara
 \end_layout
 
 \begin_layout Section
-Introduction
+Introduction 
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+maybe add some specific information, studies, why this is important.
+ etc.
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
 The Richards equation is a typical model for water flow in unsaturated porous
  media.
- Its implementation for large scale problems with lots of heterogeneity
- is computationally demanding (large resolution etc.) and is difficult to
- parameterize 
-\begin_inset Note Note
-status open
-
-\begin_layout Plain Layout
-#Ref
-\end_layout
+ Its implementation for large scale and highly heterogeneous problems is
+ computationally demanding (large resolution etc.) and is difficult to parameteri
+ze 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "Zacharof2004a"
 
 \end_inset
 
@@ -101,8 +108,7 @@ status open
 \end_layout
 
 \begin_layout Standard
-Richards equation is also often applied when modelling landfill processes
- 
+Richards equation is also often applied to model landfill processes 
 \begin_inset CommandInset citation
 LatexCommand citep
 before "e.g. "
@@ -147,20 +153,20 @@ key "Jury1990"
  If the properties of the system don't change significantly over time, the
  shape of response will not change significantly either.
  Therefore we believe that in some cases it will be possible to determine
- the distribution of response and it's variability due to changes in the
+ the distribution of response and its variability due to changes in the
  system.
  We believe that using information on variability will improve the quality
  of simulations of leachate break through rates.
 \end_layout
 
 \begin_layout Standard
-The objective of current study is to investigate the feasibility of using
- the impulse-response approach for such analysis and to analyze what information
- can be extracted from it.
+The objective of the current study is to investigate the feasibility of
+ using the impulse-response approach for such analysis and to analyze what
+ information can be extracted from it.
  It is well known that variable moisture content causes changes in the shape
  of response function.
  Our goals are to analyze whether it is possible to quantify the effect
- of variable moisture content on the response function and how adjusting
+ of variable moisture content on the response function, and how adjusting
  parameters of response distribution may improve the quality of outflux
  simulation.
 \end_layout
@@ -236,13 +242,20 @@ reference "fig:travel-time-fitted-ln-pdf"
 
 \end_inset
 
- show two examples of fitting response to a single injection of water at
+a and 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:travel-time-fitted-ln-pdf"
+
+\end_inset
+
+b show two examples of fitting response to a single injection of water at
  initial time 
 \begin_inset Formula $t=0$
 \end_inset
 
  with a log-normal PDF.
- Figures show very good fitting.
+ Both figures show very good fitting.
  Log-normally distributed break through curves (BTC's) have been successfully
  applied by e.g.
  
@@ -354,6 +367,19 @@ b)
 \begin_layout Plain Layout
 Travel time PDF observed from Richards equation (dashed line) fitted with
  log-normal distribution (solid line).
+ Here 
+\begin_inset Formula $\mu$
+\end_inset
+
+ and 
+\begin_inset Formula $\sigma$
+\end_inset
+
+ are location and scale parameters respectively, 
+\begin_inset Formula $err$
+\end_inset
+
+ - sum squared error.
 \end_layout
 
 \end_inset
@@ -754,6 +780,17 @@ name "fig:moving-window-concept"
 \end_inset
 
 
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+#Laura: I don't understant what the modelled until is.
+ And why is this only one line at constant 2.5 ? 
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \end_inset
@@ -776,7 +813,7 @@ The time domain is discretized into
 \begin_inset Formula $n$
 \end_inset
 
- steps 
+ time steps 
 \begin_inset Formula $[t_{1,begin},t_{2,begin},\ldots,t_{n,begin}]$
 \end_inset
 
@@ -796,7 +833,7 @@ On
 \begin_inset Formula $i$
 \end_inset
 
--th step we consider the dataset on an interval 
+-th time step we consider the dataset on an interval 
 \begin_inset Formula $[t_{i,begin},\, t_{i,end}]$
 \end_inset
 
@@ -809,11 +846,26 @@ On
 \begin_inset Formula $t_{i,begin}$
 \end_inset
 
- corresponds to vertical dash-dot line.
+ corresponds to vertical dash-dot line (figure
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:moving-window-concept"
+
+\end_inset
+
+).
  We apply deconvolution to the influx (light grey peaks) and remaining output
  signal which is presented by dashed line (without a share of already modelled
- output).
- Initially it is equal to original outflux 
+ on previous steps output).
+ Initially on time step
+\begin_inset space \thinspace{}
+\end_inset
+
+1 it is equal to original outflux 
 \begin_inset Formula $q_{out}$
 \end_inset
 
@@ -834,14 +886,14 @@ name "enu:alg-deconvolution"
 \end_layout
 
 \begin_layout Enumerate
-Obtained from step 
+The PDF obtained from step 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "enu:alg-deconvolution"
 
 \end_inset
 
- PDF is fitted with log-normal PDF.
+ of this algorithm is fitted with log-normal density function.
  At the same time log-normal parameters 
 \begin_inset Formula $\mu$
 \end_inset
@@ -876,7 +928,7 @@ reference "enu:alg-fit-pdf"
 
  vs.
  PDF obtained from deconvolution.
- If it is greater then an empirically estimated threshold, the time window
+ If it is greater than an empirically estimated threshold, the time window
  
 \begin_inset Formula $\Delta t$
 \end_inset
@@ -1050,11 +1102,12 @@ A number of numerical experiments have been conducted in order to analyze
  the feasibility of described approaches.
  In all cases input datasets have been generated using numerical solutions
  to Richards equation on arbitrary two-dimensional domains.
- Here the idea is that very little information is available about the hydraulic
+ Here we assume that very little information is available about the hydraulic
  properties of the medium.
- Therefore we ignore this data, unless needed for validation purposes.
- All the numerical experiments, however were carried using the same set
- of properties in order to allow comparison between different cases.
+ Therefore we ignore these data, unless needed for validation purposes.
+ All the numerical experiments, however, were carried out using the same
+ set of properties in order to allow for comparison between the different
+ cases.
 \end_layout
 
 \begin_layout Subsection
@@ -1076,7 +1129,7 @@ reference "fig:convolution-const-pdf"
  shows results of modelling outflux with Richards equation (black line)
  as response to random input simulating rainfalls over a long period (light
  grey peaks).
- After applying deconvolution technique we obtain estimate of PDF shown
+ After applying the deconvolution technique we obtain estimate of PDF shown
  in figure
 \begin_inset space \thinspace{}
 \end_inset
@@ -1198,8 +1251,8 @@ averaged
 
  density function for the entire dataset.
  For this reason the shape of the estimated PDF is rather irregular.
- This is probably to the superposition effect, when responses to near signals
- are merged.
+ This is probably due to the superposition effect, when responses to near
+ signals are merged.
  Figure
 \begin_inset space \thinspace{}
 \end_inset
@@ -1216,8 +1269,8 @@ reference "fig:convolution-const-pdf"
 \end_layout
 
 \begin_layout Standard
-An example of outflux (solid black line) for a given inputs (light grey
- columns) is presented on figure
+An example of outflux (solid black line) for a given input (light grey columns)
+ is presented on figure
 \begin_inset space \thinspace{}
 \end_inset
 
@@ -1276,7 +1329,7 @@ Numerical convolution with variable PDF
 \end_layout
 
 \begin_layout Standard
-The aim of next experiment was to analyze the effect of variable storage
+The aim of next experiment is to analyze the effect of variable storage
  available on convolution results.
  Here we assume that the initial moisture content as well as pore volume
  is known.
@@ -1647,7 +1700,7 @@ By using the remaining storage capacity we try to parameterize the effect
  This is an aggregated value of moisture profile.
  There may be an infinite number of moisture profiles corresponding to the
  same value of remaining storage capacity.
- This is confirmed by figures
+ This is confirmed by figure
 \begin_inset space \thinspace{}
 \end_inset
 
