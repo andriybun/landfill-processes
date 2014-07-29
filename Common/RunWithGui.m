@@ -144,12 +144,17 @@ function output = RunWithGui(appName, input, func)
             fieldName = fieldNameVec{i};
             fieldVal = inStruct.(fieldName);
             sz = size(fieldVal);
-            if isequal(sz, [1, 1]) || ischar(fieldVal)
-                outCell(i, 1:3) = {fieldName, fieldVal, class(fieldVal)};
+            if isstruct(fieldVal)
+                valStr = sprintf('struct %d x %d', sz(1), sz(2));
+                outCell(i, :) = {fieldName, valStr, '#Struct', fieldVal};
             else
-                valStr = sprintf('vector %d x %d', sz(1), sz(2));
-                classStr = sprintf('#%s', class(fieldVal));
-                outCell(i, :) = {fieldName, valStr, classStr, fieldVal};
+                if isequal(sz, [1, 1]) || ischar(fieldVal)
+                    outCell(i, 1:3) = {fieldName, fieldVal, class(fieldVal)};
+                else
+                    valStr = sprintf('vector %d x %d', sz(1), sz(2));
+                    classStr = sprintf('#%s', class(fieldVal));
+                    outCell(i, :) = {fieldName, valStr, classStr, fieldVal};
+                end
             end
         end
     end
