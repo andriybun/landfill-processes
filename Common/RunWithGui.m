@@ -1,4 +1,19 @@
-function output = GenerateGui(input, func)
+function output = GenerateGui(appName, input, func)
+% This function is used for running generic function using input parameters defined. It is also able
+% to plot the result.
+% Inputs:
+%   appName - string. The GUI window will have the name as specified by this parameter.
+%   input - a structure with parameters, that will be passed to the function. Note, container-type 
+%           fields (vectors, matrices, cells) are not tested. Thus try using simple signle value
+%           types.
+%   func - handle of a function to run. The function may accept the inputs passed as 'input' 
+%           structure and a progress bar [0, 100]. Its values can be set using 'pvalue' property.
+%           The function must return a structure with results. Its fields then can be plotted using
+%           GUI.
+% This function generates GUI window that allows change values for properties contained in input
+% structure.
+% After the function defined by handle finishes, a user can select its output data to be plot. For
+% this the function should return a structure with vectors for each data entity.
 
     inputCell = struct2cell(input);
     CreateGui(inputCell, func);
@@ -27,6 +42,7 @@ function output = GenerateGui(input, func)
         
         % Create and then hide the GUI as it is being constructed.
         guiWindow = figure('Visible', 'off', 'Position', [200, 200, WINDOW_WIDTH, WINDOW_HEIGHT]);
+        set(guiWindow, 'Name', appName, 'NumberTitle', 'off');
         set(guiWindow, 'Resize', 'off');
         
         % Progress bar
