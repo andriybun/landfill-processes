@@ -1,11 +1,11 @@
-function output = GenerateGui(appName, input, func)
+function output = RunWithGui(appName, input, func)
 % This function is used for running generic function using input parameters defined. It is also able
 % to plot the result.
 % Inputs:
 %   appName - string. The GUI window will have the name as specified by this parameter.
-%   input - a structure with parameters, that will be passed to the function. Note, container-type 
-%           fields (vectors, matrices, cells) are not tested. Thus try using simple signle value
-%           types.
+%   input - a structure with parameters, that will be passed to the function. Note, composite types
+%           of fields (vectors, matrices, cells, sub-structures) may not work properly. In any case,
+%           it will be not possible to edit values of them.
 %   func - handle of a function to run. The function may accept the inputs passed as 'input' 
 %           structure and a progress bar [0, 100]. Its values can be set using 'pvalue' property.
 %           The function must return a structure with results. Its fields then can be plotted using
@@ -15,7 +15,7 @@ function output = GenerateGui(appName, input, func)
 % After the function defined by handle finishes, a user can select its output data to be plot. For
 % this the function should return a structure with vectors for each data entity.
 
-    inputCell = struct2cell(input);
+    inputCell = struct2cellX(input);
     CreateGui(inputCell, func);
     
     output = 3;
@@ -25,13 +25,13 @@ function output = GenerateGui(appName, input, func)
     function CreateGui(inputCell, func)
         % Window properties
         WINDOW_WIDTH = 400;
-        WINDOW_HEIGHT = 500;
+        WINDOW_HEIGHT = 600;
         % Progress bar properties
         PRBAR_HEIGHT = 20;
         PRBAR_MARGIN = 10;
         % Table properties
         MAX_TABLE_HEIGHT = 200;
-        COLUMN_WIDTHS_REL = [70, 180, 50];
+        COLUMN_WIDTHS_REL = [70, 160, 70];
         ROW_HEIGHT = 19;
         BOUND_PIX = 2;
         % Button propeties
@@ -42,7 +42,7 @@ function output = GenerateGui(appName, input, func)
         
         % Create and then hide the GUI as it is being constructed.
         guiWindow = figure('Visible', 'off', 'Position', [200, 200, WINDOW_WIDTH, WINDOW_HEIGHT]);
-        set(guiWindow, 'Name', appName, 'NumberTitle', 'off');
+        set(guiWindow, 'Name', appName, 'NumberTitle', 'off', 'Tag', 'guiWindow');
         set(guiWindow, 'Resize', 'off');
         
         % Progress bar
@@ -51,25 +51,29 @@ function output = GenerateGui(appName, input, func)
         
         % Construct components
         % Button to run model
-        btnVertPos = WINDOW_HEIGHT - 10 - BUTTON_HEIGHT;
+        btnVertPos = WINDOW_HEIGHT - PRBAR_MARGIN - BUTTON_HEIGHT;
         
         % Table
         tableWidth = WINDOW_WIDTH - 2 * PRBAR_MARGIN;
         columnWidths = round(tableWidth / sum(COLUMN_WIDTHS_REL) * COLUMN_WIDTHS_REL);
         columnWidths = columnWidths - [BOUND_PIX, sum(columnWidths) - tableWidth - 1, BOUND_PIX];
-        tableHeight = min(MAX_TABLE_HEIGHT, ...
-            (size(inputCell, 1) + 1) * ROW_HEIGHT + BOUND_PIX * 2 - 1);
-        tableVertPos = btnVertPos - 10 - tableHeight;
+        if (MAX_TABLE_HEIGHT > ((size(inputCell, 1) + 1) * ROW_HEIGHT + BOUND_PIX * 2 - 1))
+            tableHeight = (size(inputCell, 1) + 1) * ROW_HEIGHT + BOUND_PIX * 2 - 1;
+        else
+            tableHeight = MAX_TABLE_HEIGHT;
+            columnWidths = columnWidths - [5, 5, 5];
+        end
+        tableVertPos = btnVertPos - PRBAR_MARGIN - tableHeight;
         hTable = uitable('Position', ...
-            [10, tableVertPos, tableWidth, tableHeight]);
+            [PRBAR_MARGIN, tableVertPos, tableWidth, tableHeight]);
         set(hTable, 'ColumnName', {'Parameter', 'Value', 'Type'});
         set(hTable, 'ColumnEditable', [false, true, false]);
         set(hTable, 'ColumnWidth', num2cell(columnWidths));
         set(hTable, 'RowName', []);
-        set(hTable, 'Data', inputCell);
+        set(hTable, 'Data', inputCell(:, 1:3));
         
         % Pop-up list
-        popListVertPos = tableVertPos - 10 - LIST_HEIGHT;
+        popListVertPos = tableVertPos - PRBAR_MARGIN - LIST_HEIGHT;
         popListWidth = (WINDOW_WIDTH - 3 * PRBAR_MARGIN) / 2;
         hPopListX = uicontrol('Style', 'popupmenu', 'String', 'x-axis data', 'Enable', 'off', ...
             'Position', [PRBAR_MARGIN, popListVertPos, popListWidth, LIST_HEIGHT]);
@@ -78,10 +82,10 @@ function output = GenerateGui(appName, input, func)
             'Position', [popListYhorOffset, popListVertPos, popListWidth, LIST_HEIGHT]);
         
         % Plot
-        plotHeight = WINDOW_HEIGHT - popListVertPos - PRBAR_HEIGHT - 10;
-        plotWidth = WINDOW_WIDTH - 6 * PRBAR_MARGIN;
+        plotWidth = WINDOW_WIDTH - 60;
         plotHorPos = WINDOW_WIDTH - PRBAR_MARGIN - plotWidth;
-        plotVertPos = popListVertPos - 2 * 10 - plotHeight;
+        plotVertPos = 60 + PRBAR_HEIGHT;
+        plotHeight = popListVertPos - plotVertPos - 2 * PRBAR_MARGIN;
         hPlotAxes = axes(...
             'Parent', guiWindow, ...
             'Units', 'pixels', ...
@@ -93,6 +97,7 @@ function output = GenerateGui(appName, input, func)
         uiElements.hPopListX = hPopListX;
         uiElements.hPopListY = hPopListY;
         uiElements.hPlotAxes = hPlotAxes;
+        uiElements.hTable = hTable;
         set(hPopListX, 'Callback', {@PlotGraph, uiElements});
         set(hPopListY, 'Callback', {@PlotGraph, uiElements});
         
@@ -102,20 +107,21 @@ function output = GenerateGui(appName, input, func)
             'Position', [10, btnVertPos, BUTTON_WIDTH, BUTTON_HEIGHT], ...
             'Callback', {@FuncWrap, {func, inputCell, uiElements}});
         
-%         ha = axes('Units','Pixels','Position',[50,60,200,185]);
-%         align([hsurf,hmesh,hcontour,htext,hpopup],'Center','None');
-        
-        %Make the GUI visible.
+        % Make the GUI visible.
         set(guiWindow, 'Visible', 'on');
     end
     
-    function output = FuncWrap(hObject, eventdata, args)
-        output = args{1}(args{2}, args{3}.prBar);
-        set(args{3}.hPopListX, 'String', fieldnames(output));
-        set(args{3}.hPopListX, 'Enable', 'on');
-        set(args{3}.hPopListY, 'String', fieldnames(output));
-        set(args{3}.hPopListY, 'Enable', 'on');
+    function FuncWrap(hObject, eventdata, args)
+        func = args{1};
+        origInputs = args{2};
+        uiElements = args{3};
+        output = func(cell2structX(get(uiElements.hTable, 'data'), origInputs), uiElements.prBar);
+        set(uiElements.hPopListX, 'String', fieldnames(output));
+        set(uiElements.hPopListX, 'Enable', 'on');
+        set(uiElements.hPopListY, 'String', fieldnames(output));
+        set(uiElements.hPopListY, 'Enable', 'on');
         set(hObject, 'UserData', output);
+        cla(uiElements.hPlotAxes);
         guidata(hObject);
     end
 
@@ -130,15 +136,32 @@ function output = GenerateGui(appName, input, func)
         ylabel(uiElements.hPlotAxes, yAxisData);
     end
 
-    function outCell = struct2cell(inStruct)
-        %% TODO: do something with non-single value parameters
+    function outCell = struct2cellX(inStruct)
         fieldNameVec = fieldnames(inStruct);
         nFields = numel(fieldNameVec);
-        outCell = cell(nFields, 3);
+        outCell = cell(nFields, 4);
         for i = 1:nFields
             fieldName = fieldNameVec{i};
             fieldVal = inStruct.(fieldName);
-            outCell(i, :) = {fieldName, fieldVal, class(fieldVal)};
+            sz = size(fieldVal);
+            if isequal(sz, [1, 1]) || strcmp(class(fieldVal), 'char')
+                outCell(i, 1:3) = {fieldName, fieldVal, class(fieldVal)};
+            else
+                valStr = sprintf('vector %d x %d', sz(1), sz(2));
+                classStr = sprintf('#%s', class(fieldVal));
+                outCell(i, :) = {fieldName, valStr, classStr, fieldVal};
+            end
+        end
+    end
+
+    function outStruct = cell2structX(inCell, origCell)
+        outStruct = struct();
+        for i = 1:size(inCell, 1)
+            if (inCell{i, 3}(1) == '#')
+                outStruct.(inCell{i, 1}) = origCell{i, 4};
+            else
+                outStruct.(inCell{i, 1}) = inCell{i, 2};
+            end
         end
     end
 end
