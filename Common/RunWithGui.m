@@ -1,21 +1,25 @@
-function output = RunWithGui(appName, input, func)
+function output = RunWithGui(appName, func, varargin)
 % This function is used for running generic function using input parameters defined. It is also able
 % to plot the result.
 % Inputs:
 %   appName - string. The GUI window will have the name as specified by this parameter.
-%   input - a structure with parameters, that will be passed to the function. Note, composite types
-%           of fields (vectors, matrices, cells, sub-structures) may not work properly. In any case,
-%           it will be not possible to edit values of them.
 %   func - handle of a function to run. The function may accept the inputs passed as 'input' 
 %           structure and a progress bar [0, 100]. Its values can be set using 'pvalue' property.
 %           The function must return a structure with results. Its fields then can be plotted using
 %           GUI.
+%   varargin - structures with parameters, that will be passed to the function. Note, composite 
+%           types of fields (vectors, matrices, cells, sub-structures) may not work properly. In 
+%           any case, it will be not possible to edit values of them.
 % This function generates GUI window that allows change values for properties contained in input
 % structure.
 % After the function defined by handle finishes, a user can select its output data to be plot. For
 % this the function should return a structure with vectors for each data entity.
-
-    inputCell = struct2cellX(input);
+    
+    inputNames = cell(1, nargin-2);
+    for iVar = 1:nargin-2
+        inputNames{iVar} = inputname(iVar + 2);
+    end
+    inputCell = struct2cellX(varargin{:}, inputNames);
     CreateGui(inputCell, func);
     
     output = 3;
@@ -101,6 +105,7 @@ function output = RunWithGui(appName, input, func)
         set(hPopListX, 'Callback', {@PlotGraph, uiElements});
         set(hPopListY, 'Callback', {@PlotGraph, uiElements});
         
+        % Add button to run function
         hBtnStart = uicontrol('Style', 'pushbutton', ...
             'String', 'Start', ...
             'Tag', 'hBtnStart', ...
@@ -112,10 +117,12 @@ function output = RunWithGui(appName, input, func)
     end
     
     function FuncWrap(hObject, eventdata, args)
+        % Wrapper is used to run function with given set of arguments
         func = args{1};
         origInputs = args{2};
         uiElements = args{3};
-        output = func(cell2structX(get(uiElements.hTable, 'data'), origInputs), uiElements.prBar);
+        varArgPass = cell2structX(get(uiElements.hTable, 'data'), origInputs);
+        output = func(varArgPass{:}, uiElements.prBar);
         set(uiElements.hPopListX, 'String', fieldnames(output));
         set(uiElements.hPopListX, 'Enable', 'on');
         set(uiElements.hPopListY, 'String', fieldnames(output));
@@ -136,37 +143,62 @@ function output = RunWithGui(appName, input, func)
         ylabel(uiElements.hPlotAxes, yAxisData);
     end
 
-    function outCell = struct2cellX(inStruct)
-        fieldNameVec = fieldnames(inStruct);
-        nFields = numel(fieldNameVec);
-        outCell = cell(nFields, 4);
-        for i = 1:nFields
-            fieldName = fieldNameVec{i};
-            fieldVal = inStruct.(fieldName);
-            sz = size(fieldVal);
-            if isstruct(fieldVal)
-                valStr = sprintf('struct %d x %d', sz(1), sz(2));
-                outCell(i, :) = {fieldName, valStr, '#Struct', fieldVal};
-            else
-                if isequal(sz, [1, 1]) || ischar(fieldVal)
-                    outCell(i, 1:3) = {fieldName, fieldVal, class(fieldVal)};
+    function outCell = struct2cellX(varargin)
+        % Convert input structures into cell array of fields and their values
+        inStruct = varargin(1:end-1);
+        structName = varargin{end};
+        % Initialize output struct
+        outCell = cell(0, 4);
+        % Process all structures
+        for idx = 1:numel(inStruct)
+            % Get fields of structure
+            fieldNameVec = fieldnames(inStruct{idx});
+            nFields = numel(fieldNameVec);
+            % Append row with the name of struct:
+            outCell = cat(1, outCell, {['# ' structName{idx}], '', 'input struct', ''});
+            rowOffset = size(outCell, 1);
+            % Append blank cells for data
+            outCell = cat(1, outCell, cell(nFields, 4));
+            % Process data
+            for i = 1:nFields
+                fieldName = fieldNameVec{i};
+                fieldVal = inStruct{idx}.(fieldName);
+                sz = size(fieldVal);
+                if isstruct(fieldVal)
+                    valStr = sprintf('struct %d x %d', sz(1), sz(2));
+                    outCell(rowOffset + i, :) = {fieldName, valStr, '#Struct', fieldVal};
                 else
-                    valStr = sprintf('vector %d x %d', sz(1), sz(2));
-                    classStr = sprintf('#%s', class(fieldVal));
-                    outCell(i, :) = {fieldName, valStr, classStr, fieldVal};
+                    if isequal(sz, [1, 1]) || ischar(fieldVal)
+                        outCell(rowOffset + i, 1:3) = {fieldName, fieldVal, class(fieldVal)};
+                    else
+                        valStr = sprintf('vector %d x %d', sz(1), sz(2));
+                        classStr = sprintf('#%s', class(fieldVal));
+                        outCell(rowOffset + i, :) = {fieldName, valStr, classStr, fieldVal};
+                    end
                 end
             end
         end
     end
 
     function outStruct = cell2structX(inCell, origCell)
-        outStruct = struct();
+        % Convert array of cells containing field names and their values into structures to be
+        % passed to function
+        outStruct = cell(1, 0);
+        iStruct = 0;
         for i = 1:size(inCell, 1)
-            if (inCell{i, 3}(1) == '#')
-                outStruct.(inCell{i, 1}) = origCell{i, 4};
+            if (inCell{i, 1}(1) == '#')
+                iStruct = iStruct + 1;
+                outStruct = [outStruct, struct()];
             else
-                outStruct.(inCell{i, 1}) = inCell{i, 2};
+                if (inCell{i, 3}(1) == '#')
+                    outStruct{iStruct}.(inCell{i, 1}) = origCell{i, 4};
+                else
+                    outStruct{iStruct}.(inCell{i, 1}) = inCell{i, 2};
+                end
             end
         end
     end
+
 end
+
+%% TODO: if multiple structures? maybe long table ...?
