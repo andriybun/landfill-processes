@@ -164,9 +164,11 @@ function output = RunWithGui(appName, func, varargin)
                 fieldName = fieldNameVec{i};
                 fieldVal = inStruct{idx}.(fieldName);
                 sz = size(fieldVal);
-                if isstruct(fieldVal)
-                    valStr = sprintf('struct %d x %d', sz(1), sz(2));
-                    outCell(rowOffset + i, :) = {fieldName, valStr, '#Struct', fieldVal};
+                if ~isnumeric(fieldVal) && ~ischar(fieldVal) && ~islogical(fieldVal)
+                    fieldType = class(fieldVal);
+                    valStr = sprintf('%s %d x %d', fieldType, sz(1), sz(2));
+                    outCell(rowOffset + i, :) = ...
+                        {fieldName, valStr, sprintf('#%s', fieldType), fieldVal};
                 else
                     if isequal(sz, [1, 1]) || ischar(fieldVal)
                         outCell(rowOffset + i, 1:3) = {fieldName, fieldVal, class(fieldVal)};
