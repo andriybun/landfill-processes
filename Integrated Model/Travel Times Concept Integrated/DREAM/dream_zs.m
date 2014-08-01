@@ -74,12 +74,12 @@ function [Sequences,Reduced_Seq,X,Z,output] = dream_zs(MCMCPar,ParRange,Measurem
 %                                                                                               %
 % Additionally, redistribution and use in source and binary forms, with or without              %
 % modification, are permitted provided that the following conditions are met:                   %
-% ï¿½ Redistributions of source code must retain the above copyright notice, this list of         %
+% • Redistributions of source code must retain the above copyright notice, this list of         %
 %   conditions and the following disclaimer.                                                    %
-% ï¿½ Redistributions in binary form must reproduce the above copyright notice, this list of      %
+% • Redistributions in binary form must reproduce the above copyright notice, this list of      %
 %   conditions and the following disclaimer in the documentation and/or other materials         %
 %   provided with the distribution.                                                             %
-% ï¿½ Neither the name of Los Alamos National Security, LLC, Los Alamos National Laboratory, LANL %
+% • Neither the name of Los Alamos National Security, LLC, Los Alamos National Laboratory, LANL %
 %   the U.S. Government, nor the names of its contributors may be used to endorse or promote    s%
 %   products derived from this software without specific prior written permission.              %
 %                                                                                               %
@@ -117,9 +117,7 @@ if strcmp(Restart,'No'),
     % Step 0: Initialize variables
     [MCMCPar,pCR,lCR,CR,Iter,teller,new_teller,Sequences,Z,Table_JumpRate,Reduced_Seq,iloc,output] = ...
         InitVariables(MCMCPar,Extra);
-    
-    newPb = progressbar(MCMCPar.ndraw, 'Iterations');
-    
+
     % Step 1: Sample MCMCPar.m0 points in the parameter space and store in Z
     if strcmp(Extra.InitPopulation,'LHS_BASED'),
         % Latin hypercube sampling
@@ -159,7 +157,7 @@ if strcmp(Restart,'No'),
 
     % Calculate posterior density associated with each value of X
     [p,log_p] = CompDensity(X,MCMCPar,Measurement,ModelName,Extra,option);
-    
+
     % Append X with information about posterior density (or transformation thereof)
     X = [X p(:,1) log_p];
 
@@ -185,21 +183,13 @@ if strcmp(Restart,'No'),
 
 else % If a restart run is being done: just load the output from the previous ongoing trial
 
-    ORI = Extra.ORI;
-    load Optimization.mat;
-    
-    if Iter >= MCMCPar.ndraw
-       MCMCPar.ndraw = 2 * MCMCPar.ndraw;
-    end
-    
-    newPb = progressbar(MCMCPar.ndraw, 'Iterations');
-    Extra.ORI = ORI;
-    
+    load DREAM_ZS.mat; MCMCPar.ndraw = 2 * MCMCPar.ndraw;
+
 end;
 
 % Move prior population to posterior population ...
 while (Iter < MCMCPar.ndraw),
-    tic
+
     % Initialize totaccept;
     totaccept = 0;
 
@@ -288,7 +278,7 @@ while (Iter < MCMCPar.ndraw),
 
         % Update Iteration
         Iter = Iter + MCMCPar.seq;
-        newPb.update(Iter);
+
     end;
 
     % Reduce MCMCPar.steps to get rounded iteration numbers
@@ -330,12 +320,12 @@ while (Iter < MCMCPar.ndraw),
     teller = teller + 1;
 
     % Save statement
-    varsExceptOri = setdiff(who, 'ORI');
-    save('Optimization.mat', varsExceptOri{:});
+    save DREAM_ZS.mat
 
     % Print Iteration to screen
     Iter
-    toc
+
+
 end;
 
 % Postprocess output from DREAM before returning arguments
@@ -371,7 +361,3 @@ if isempty(i) == 0,
     % Derive i
     i = i(1) - 1; output.CR = output.CR(1:i,:);
 end;
-
-newPb.delete();
-
-end

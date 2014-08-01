@@ -26,10 +26,6 @@ end;
 if option == 5, % Similar as 3 but now weighted with Measurement.Sigma
     alpha = exp(-0.5*(-p_x + p_old)./Measurement.Sigma^2); % signs are different because we write -SSR
 end;
-
-if option == 6, %S.Korteland august 2011
-    alpha = exp(0.5*(p_x - p_old)); % 
-end;
 % -------------------------------------------------------------------------
 
 % Using a prior or not? If so, alpha needs to adjusted: multiplied with prior

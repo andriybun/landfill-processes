@@ -1,0 +1,13 @@
+//*********************************************************************************************
+// This input file defines the initial cell composition
+//*********************************************************************************************
+
+// Define all the state variables that define the chemical system
+
+@Var: pH      		7
+
+
+@include: input.dat
+@include_global_vars: chemistry
+@include_vars: output.dat
+@include_vars: outputformat.txt

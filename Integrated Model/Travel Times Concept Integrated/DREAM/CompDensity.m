@@ -6,7 +6,6 @@ p = []; log_p = [];
 % Loop over the individual parameter combinations of x
 for ii = 1:size(x,1),
     % Call model to generate simulated data
-
     evalstr = ['ModPred = ',ModelName,'(x(ii,:),Extra);']; eval(evalstr);
     
     if option == 1, % Model directly computes posterior density
@@ -44,13 +43,6 @@ for ii = 1:size(x,1),
         p(ii,1:2) = [-SSR ii]; log_p(ii,1) = -0.5 * SSR;
     end;
 
-    if option ==6  %SSR weighted with measurement error, maximizing log likelyhood...S.Korteland august 2011
-        Err = (Measurement.MeasData(:)-ModPred(:));
-        SSR = sum(abs(Err./Measurement.Sigma).^(2/(1+MCMCPar.Gamma)));
-        % And retain in memory
-        p(ii,1:2) = [-SSR ii]; log_p(ii,1) = -0.5 * SSR;
-    end
-    
     if option == 8, % Generalized log likelihood (GL)
         % Extract statistical model parameters
         par = Extra.fpar;               % fixed parameters

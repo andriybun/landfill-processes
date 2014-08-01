@@ -1,0 +1,14 @@
+// Composer settings. 
+Font:  16
+HSize: 600
+VSize: 600
+HPos:  100
+VPos:  100
+ProxyPort: 8080
+Intropage:  none
+Concertfile: concert.xml
+
+// The Composer will allow to edit the files listed here.
+// Changes in this file are effective after refreshing or restarting the composer.
+//    <Title>     <Tab>       <Filename>
+
