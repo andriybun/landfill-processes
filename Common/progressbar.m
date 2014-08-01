@@ -55,6 +55,7 @@ classdef progressbar < handle
             % range.
             set(obj.pbar, 'XData', [obj.range(1) value(end) value(end) obj.range(1)]);
             set(obj.ptext, 'String', sprintf('%3.0f%%', obj.percent * 100));
+            drawnow;
         end     
         function value = get.pvalue(obj)
             % The progress bar is actually 2D, but we treat as if it is 1D.
