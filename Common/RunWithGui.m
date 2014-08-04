@@ -1,4 +1,4 @@
-function output = RunWithGui(appName, func, varargin)
+function RunWithGui(appName, func, varargin)
 % This function is used for running generic function using input parameters defined. It is also able
 % to plot the result.
 % Inputs:
@@ -21,8 +21,6 @@ function output = RunWithGui(appName, func, varargin)
     end
     inputCell = struct2cellX(varargin{:}, inputNames);
     CreateGui(inputCell, func);
-    
-    output = 3;
     
     return
     

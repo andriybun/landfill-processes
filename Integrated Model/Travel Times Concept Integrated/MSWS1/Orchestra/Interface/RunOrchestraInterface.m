@@ -48,7 +48,18 @@ function result = RunOrchestraInterface(chemistryFilePath, varDefinitionTable, i
         
         % Next we specify the path to a compiled JAR file with the ORCHESTRA
         % interface. And import corresponding libraries
-        javaclasspath([orchestraDir '/OrchestraInterface.jar']);
+        ORCHESTRA_JAR = [orchestraDir '/OrchestraInterface.jar'];
+        javaclasspath('-v1');
+        jp = javaclasspath;
+        jpFull = cell(size(jp));
+        for i = 1:numel(jp)
+            jpFull{i} = which(jp{i});
+        end
+        if ~ismember(which(ORCHESTRA_JAR), jpFull)
+            warning(['Adding Orchestra to Matlab path. This may cause your program to misbehave. ' ...
+                'In such case stry restarting your program without rebooting Matlab.']);
+            javaaddpath(ORCHESTRA_JAR);
+        end
         import OrchestraInterface.*;
         
         % We initialize a list of variables
