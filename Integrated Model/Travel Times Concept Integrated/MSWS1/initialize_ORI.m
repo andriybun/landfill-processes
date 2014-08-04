@@ -1,4 +1,4 @@
-function ORI = initialize_ORI(Comp, x)
+function ORI = initialize_ORI(Comp, sw)
     % Specify the path to a compiled JAR file with the ORCHESTRA interface.
     % And import corresponding libraries
     ORCHESTRA_FOLDER = [cd '/../Orchestra/Interface/OrchestraInterface.jar'];
@@ -26,7 +26,6 @@ function ORI = initialize_ORI(Comp, x)
     end
     
     switch sw
-        
         % Initializes ORCHESTRA with total/derived concentrations in Bioreactor/chemistry.inp, returns JAVA module
         case 0
             ORI = OrchestraModule([cd '/./Orchestra/Bioreactor/chemistry.inp'], variableList, ioVariableList);
