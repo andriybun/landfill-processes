@@ -1,4 +1,4 @@
-function MainLabColumn
+function MainLabColumnGui
 
     close all
 
@@ -26,14 +26,6 @@ function MainLabColumn
 %     rainData(6:end) = 0;
     % Structure containing time parameters
     TimeParams = TimeParamsCl(RawData.t);
-    % TimeParams =
-    %
-    %             maxDays: 365
-    %     intervalsPerDay: 24
-    %                  dt: 0.041666666666667
-    %        numIntervals: 8760
-    %         daysElapsed: [1x8760 double]
-    %                   t: [1x8760 double]
     
     % Concentration of solutes in rainwater
     rainConcentrationData = 0 * ones(size(rainData));
@@ -87,7 +79,9 @@ function MainLabColumn
         
         tic
         % Main computations are done here
-        ModelOutput = ComputeTravelTimes(TimeParams, RainInfo, ModelDim, ModelParams);
+        result = RunWithGui('Integrated landfill model', ...
+            @ComputeTravelTimes, TimeParams, RainInfo, ModelDim, ModelParams);
+%         ModelOutput = ComputeTravelTimes(TimeParams, RainInfo, ModelDim, ModelParams);
         toc
         
         if profilerOn
@@ -100,48 +94,48 @@ function MainLabColumn
         validateAction = Const.NO_VALIDATION;
     end
 
-    % Validate
-    COMP_VARS = {'cOutTotal', 'mOutTotal', 'mRemRes'};
-    CheckResults(ModelOutput, ModelParams, validateAction, RESULTS_FILE_NAME, COMP_VARS);
-    
-    %% Plotting
-    iSpecies = 25;
-    ShowPlots(ModelOutput, ModelParams, TimeParams, iSpecies);
-    figure(4);
-    hold on;
-    plot(RawData.t, RawData.c-3.05, 'r');
-    lH = findobj(gcf, 'Type', 'axes', 'Tag', 'legend');
-    legendEntries = get(lH, 'String');
-    legend({legendEntries{:}, 'Experimental result'});
-    hold off;
-    
-    fH = figure(1);
-    colorOrder = [ ...
-        0.6, 0.6, 0.6; ...
-        0.0, 0.7, 0.0; ...
-        0.3, 0.0, 0.0];
-    set(gca, 'ColorOrder', colorOrder, 'NextPlot', 'replacechildren');
-    plotyy(RawData.t, [RawData.fluxIn; RawData.fluxOut], RawData.t, RawData.c);
-    axH = get(fH, 'children');
-    lH = get(axH, 'children');
-    ylim([-1e-5, 5e-4]);
-    ylabel('Water flux');
-    set(get(axH(1), 'ylabel'), 'string', 'Out concentration');
-    xlabel('time');
-    legend('In flux', 'Out flux', 'Out concentration');
-    set(axH(1), 'xlim', [0, 9000]);
-    set(axH(2), 'xlim', [0, 9000]);
-    
-    
-    return
-    
-    close all
-    iSpecies = 22; % [1:12, 17:20]; % [2:5, 8:9, 22] % [2, 4]
-    PLOT_SEPARATELY = true;
-    AnalyzeOutConcentrations(ModelOutput, TimeParams, ModelParams, ...
-        ParameterOfInterest, iSpecies, Const, PLOT_SEPARATELY, TimeParams.maxDays);
-    
-    return
+%     % Validate
+%     COMP_VARS = {'cOutTotal', 'mOutTotal', 'mRemRes'};
+%     CheckResults(ModelOutput, ModelParams, validateAction, RESULTS_FILE_NAME, COMP_VARS);
+%     
+%     %% Plotting
+%     iSpecies = 25;
+%     ShowPlots(ModelOutput, ModelParams, TimeParams, iSpecies);
+%     figure(4);
+%     hold on;
+%     plot(RawData.t, RawData.c-3.05, 'r');
+%     lH = findobj(gcf, 'Type', 'axes', 'Tag', 'legend');
+%     legendEntries = get(lH, 'String');
+%     legend({legendEntries{:}, 'Experimental result'});
+%     hold off;
+%     
+%     fH = figure(1);
+%     colorOrder = [ ...
+%         0.6, 0.6, 0.6; ...
+%         0.0, 0.7, 0.0; ...
+%         0.3, 0.0, 0.0];
+%     set(gca, 'ColorOrder', colorOrder, 'NextPlot', 'replacechildren');
+%     plotyy(RawData.t, [RawData.fluxIn; RawData.fluxOut], RawData.t, RawData.c);
+%     axH = get(fH, 'children');
+%     lH = get(axH, 'children');
+%     ylim([-1e-5, 5e-4]);
+%     ylabel('Water flux');
+%     set(get(axH(1), 'ylabel'), 'string', 'Out concentration');
+%     xlabel('time');
+%     legend('In flux', 'Out flux', 'Out concentration');
+%     set(axH(1), 'xlim', [0, 9000]);
+%     set(axH(2), 'xlim', [0, 9000]);
+%     
+%     
+%     return
+%     
+%     close all
+%     iSpecies = 22; % [1:12, 17:20]; % [2:5, 8:9, 22] % [2, 4]
+%     PLOT_SEPARATELY = true;
+%     AnalyzeOutConcentrations(ModelOutput, TimeParams, ModelParams, ...
+%         ParameterOfInterest, iSpecies, Const, PLOT_SEPARATELY, TimeParams.maxDays);
+%     
+%     return
     
     
 end
