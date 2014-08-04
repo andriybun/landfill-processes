@@ -42,7 +42,7 @@ function ModelOutput = ComputeTravelTimes(TimeParams, RainInfo, ModelDim, ModelP
     dt = TimeParams.dt;
     t = TimeParams.t;
     if isfield(TimeParams, 'intervalsPerDay')
-        nT = TimeParams.maxDays * TimeParams.intervalsPerDay;
+        nT = TimeParams.nDays * TimeParams.intervalsPerDay;
     else
         nT = numel(t);
     end
