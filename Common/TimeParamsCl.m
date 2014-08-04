@@ -25,17 +25,17 @@ classdef TimeParamsCl
                         % Received time vector
                         self.t = varargin{1};
                         self.dt = self.t(2) - self.t(1);
-                        self.nIntervals = updNumIntervals();
-                        self.intervalsPerDay = updIntervalsPerDay();
-                        self.nDays = updNumDays();
+                        self = self.updNumIntervals();
+                        self = self.updIntervalsPerDay();
+                        self = self.updNumDays();
                     end
                 case 2
                     % Received num days and time step
                     self.nDays = varargin{1};
                     self.dt = varargin{2};
                     self.t = 0:self.dt:self.nDays;
-                    self.intervalsPerDay = updIntervalsPerDay();
-                    self.nIntervals = updNumIntervals();
+                    self = self.updIntervalsPerDay();
+                    self = self.updNumIntervals();
                 otherwise
                     % Nothing so far
                     error('Not implemented');
