@@ -76,12 +76,16 @@ function RunWithGui(appName, func, varargin)
         
         % Pop-up list
         popListVertPos = tableVertPos - PRBAR_MARGIN - LIST_HEIGHT;
-        popListWidth = (WINDOW_WIDTH - 3 * PRBAR_MARGIN) / 2;
+        popListWidth = (WINDOW_WIDTH - 3 * PRBAR_MARGIN) * 0.43;
         hPopListX = uicontrol('Style', 'popupmenu', 'String', 'x-axis data', 'Enable', 'off', ...
             'Position', [PRBAR_MARGIN, popListVertPos, popListWidth, LIST_HEIGHT]);
         popListYhorOffset = 2 * PRBAR_MARGIN + popListWidth;
         hPopListY = uicontrol('Style', 'popupmenu', 'String', 'y-axis data', 'Enable', 'off', ...
             'Position', [popListYhorOffset, popListVertPos, popListWidth, LIST_HEIGHT]);
+        popList3rdDimHorOffset = 3 * PRBAR_MARGIN + 2 * popListWidth;
+        popList3rdDimWidth = WINDOW_WIDTH - 4 * PRBAR_MARGIN - 2 * popListWidth;
+        hPopList3rdDim = uicontrol('Style', 'popupmenu', 'String', '3rd dim', 'Enable', 'off', ...
+            'Position', [popList3rdDimHorOffset, popListVertPos, popList3rdDimWidth, LIST_HEIGHT]);
         
         % Plot
         plotWidth = WINDOW_WIDTH - 60;
@@ -98,10 +102,12 @@ function RunWithGui(appName, func, varargin)
         uiElements.prBar = prBar;
         uiElements.hPopListX = hPopListX;
         uiElements.hPopListY = hPopListY;
+        uiElements.hPopList3rdDim = hPopList3rdDim;
         uiElements.hPlotAxes = hPlotAxes;
         uiElements.hTable = hTable;
         set(hPopListX, 'Callback', {@PlotGraph, uiElements});
         set(hPopListY, 'Callback', {@PlotGraph, uiElements});
+        set(hPopList3rdDim, 'Callback', {@PlotGraph3d, uiElements});
         
         % Add button to run function
         hBtnStart = uicontrol('Style', 'pushbutton', ...
@@ -131,14 +137,44 @@ function RunWithGui(appName, func, varargin)
     end
 
     function PlotGraph(hObject, eventdata, uiElements)
+        cla(uiElements.hPlotAxes);
         output = get(findobj('Tag', 'hBtnStart'), 'UserData');
         xStrings = get(uiElements.hPopListX, 'String');
         xAxisData = xStrings{get(uiElements.hPopListX, 'Value')};
         yStrings = get(uiElements.hPopListY, 'String');
         yAxisData = yStrings{get(uiElements.hPopListY, 'Value')};
-        plot(uiElements.hPlotAxes, output.(xAxisData), output.(yAxisData));
+        if ~isvector(output.(xAxisData))
+            %% TODO: is error
+        end
+        switch (ndims(output.(yAxisData)))
+            case 2
+                set(uiElements.hPopList3rdDim, 'Enable', 'off');
+                plot(uiElements.hPlotAxes, output.(xAxisData), output.(yAxisData));
+            case 3
+                set(uiElements.hPopList3rdDim, 'Enable', 'on');
+                set(uiElements.hPopList3rdDim, 'String', ...
+                    cat(2, {'all'}, num2cellStr(1:size(output.(yAxisData), 3))));
+                set(uiElements.hPopList3rdDim, 'Value', 1);
+        end
         xlabel(uiElements.hPlotAxes, xAxisData);
         ylabel(uiElements.hPlotAxes, yAxisData);
+    end
+
+    function PlotGraph3d(hObject, eventdata, uiElements)
+        output = get(findobj('Tag', 'hBtnStart'), 'UserData');
+        xStrings = get(uiElements.hPopListX, 'String');
+        xAxisData = xStrings{get(uiElements.hPopListX, 'Value')};
+        yStrings = get(uiElements.hPopListY, 'String');
+        yAxisData = yStrings{get(uiElements.hPopListY, 'Value')};
+        yDimStrings = get(uiElements.hPopList3rdDim, 'String');
+        if strcmp(yDimStrings{get(uiElements.hPopList3rdDim, 'Value')}, 'all')
+            [x, y] = meshgrid(output.(xAxisData), 1:size(output.(yAxisData), 3));
+            mesh(uiElements.hPlotAxes, x, y, permute(output.(yAxisData), [3, 2, 1]));
+        else
+            yDimData = str2double(yDimStrings{get(uiElements.hPopList3rdDim, 'Value')});
+            plot(uiElements.hPlotAxes, output.(xAxisData), ...
+                squeeze(output.(yAxisData)(:, :, yDimData)));
+        end
     end
 
     function outCell = struct2cellX(varargin)
@@ -199,6 +235,12 @@ function RunWithGui(appName, func, varargin)
         end
     end
 
+    function cellStr = num2cellStr(numVector)
+        cellStr = cell(size(numVector));
+        for iX = 1:numel(numVector)
+            cellStr{iX} = num2str(numVector(iX));
+        end
+    end
 end
 
 %% TODO: if multiple structures? maybe long table ...?
