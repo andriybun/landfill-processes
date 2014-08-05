@@ -41,12 +41,7 @@ function ModelOutput = ComputeTravelTimes(TimeParams, RainInfo, ModelDim, ModelP
     tEnd = TimeParams.t(end);
     dt = TimeParams.dt;
     t = TimeParams.t;
-    if isfield(TimeParams, 'intervalsPerDay')
-        nT = TimeParams.nDays * TimeParams.intervalsPerDay;
-    else
-        nT = numel(t);
-    end
-    t = t(1:nT);
+	nT = numel(t);
     
     REL_TOL = 1e-5;
     ABS_TOL = 1e-5;
