@@ -98,13 +98,25 @@ function RunWithGui(appName, func, varargin)
             'HandleVisibility', 'callback', ...
             'Position', [plotHorPos, plotVertPos, plotWidth, plotHeight]);
         
+        % Add button to save figure to file
+        btnSaveFigHorPos = 2 * PRBAR_MARGIN + BUTTON_WIDTH, 
+        hBtnSaveFig = uicontrol('Style', 'pushbutton', ...
+            'String', 'Save to file', ...
+            'Tag', 'hBtnSaveFig', ...
+            'Enable', 'off', ...
+            'Position', [btnSaveFigHorPos, btnVertPos, BUTTON_WIDTH, BUTTON_HEIGHT]);
+        
         uiElements = struct();
+        uiElements.guiWindow = guiWindow;
         uiElements.prBar = prBar;
         uiElements.hPopListX = hPopListX;
         uiElements.hPopListY = hPopListY;
         uiElements.hPopList3rdDim = hPopList3rdDim;
         uiElements.hPlotAxes = hPlotAxes;
         uiElements.hTable = hTable;
+        uiElements.hBtnSaveFig = hBtnSaveFig;
+        
+        set(hBtnSaveFig, 'Callback', {@SaveGraph, uiElements});
         set(hPopListX, 'Callback', {@PlotGraph, uiElements});
         set(hPopListY, 'Callback', {@PlotGraph, uiElements});
         set(hPopList3rdDim, 'Callback', {@PlotGraph3d, uiElements});
@@ -113,7 +125,7 @@ function RunWithGui(appName, func, varargin)
         hBtnStart = uicontrol('Style', 'pushbutton', ...
             'String', 'Start', ...
             'Tag', 'hBtnStart', ...
-            'Position', [10, btnVertPos, BUTTON_WIDTH, BUTTON_HEIGHT], ...
+            'Position', [PRBAR_MARGIN, btnVertPos, BUTTON_WIDTH, BUTTON_HEIGHT], ...
             'Callback', {@FuncWrap, {func, inputCell, uiElements}});
         
         % Make the GUI visible.
@@ -137,7 +149,7 @@ function RunWithGui(appName, func, varargin)
     end
 
     function PlotGraph(hObject, eventdata, uiElements)
-        cla(uiElements.hPlotAxes);
+        DeactivateGraph(uiElements);
         output = get(findobj('Tag', 'hBtnStart'), 'UserData');
         xStrings = get(uiElements.hPopListX, 'String');
         xAxisData = xStrings{get(uiElements.hPopListX, 'Value')};
@@ -148,8 +160,8 @@ function RunWithGui(appName, func, varargin)
         end
         switch (ndims(output.(yAxisData)))
             case 2
-                set(uiElements.hPopList3rdDim, 'Enable', 'off');
                 plot(uiElements.hPlotAxes, output.(xAxisData), output.(yAxisData));
+                ActivateGraph(uiElements);
             case 3
                 set(uiElements.hPopList3rdDim, 'Enable', 'on');
                 set(uiElements.hPopList3rdDim, 'String', ...
@@ -175,6 +187,25 @@ function RunWithGui(appName, func, varargin)
             plot(uiElements.hPlotAxes, output.(xAxisData), ...
                 squeeze(output.(yAxisData)(:, :, yDimData)));
         end
+        ActivateGraph(uiElements);
+    end
+
+    function SaveGraph(hObject, eventdata, uiElements)
+        [fileName, pathName] = uiputfile('*.fig', 'Select file to write plot');
+        if ~isequal(fileName, 0) 
+            fileName = fullfile(pathName, fileName);
+            SaveFigureToFile(uiElements.hPlotAxes, fileName);
+        end
+    end
+
+    function ActivateGraph(uiElements)
+        set(uiElements.hBtnSaveFig, 'Enable', 'on');
+    end
+
+    function DeactivateGraph(uiElements)
+        cla(uiElements.hPlotAxes);
+        set(uiElements.hPopList3rdDim, 'Enable', 'off');
+        set(uiElements.hBtnSaveFig, 'Enable', 'off');
     end
 
     function outCell = struct2cellX(varargin)
@@ -240,6 +271,22 @@ function RunWithGui(appName, func, varargin)
         for iX = 1:numel(numVector)
             cellStr{iX} = num2str(numVector(iX));
         end
+    end
+
+    function SaveFigureToFile(hX, fileName)
+        % Save figure from axes with handle hX to file
+        fig2save = figure('Visible', 'off');
+        newAxes = copyobj(hX, fig2save);
+        set(newAxes, 'Units', 'normalized', 'Position', [0.13, 0.11, 0.775, 0.815]);
+        saveas(fig2save, fileName, 'fig');
+        close(fig2save);
+        % Change visibility to 'on'
+        map = load(fileName, '-mat');
+        names = fieldnames(map);
+        for j = 1:numel(names)
+            map.(names{j}).properties.Visible = 'on';
+        end
+        save(fileName, '-struct', 'map');
     end
 end
 
