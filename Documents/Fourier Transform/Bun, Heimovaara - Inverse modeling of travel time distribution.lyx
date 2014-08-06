@@ -152,11 +152,11 @@ key "Jury1990"
 .
  If the properties of the system don't change significantly over time, the
  shape of response will not change significantly either.
- Therefore we believe that in some cases it will be possible to determine
- the distribution of response and its variability due to changes in the
- system.
- We believe that using information on variability will improve the quality
- of simulations of leachate break through rates.
+ Therefore we believe that in some cases (depending on the relations between
+ the shape of in- and out-flux) it will be possible to determine the distributio
+n of response and its variability due to changes in the system properties.
+ Using information on variability will improve the quality of simulations
+ of leachate break through rates.
 \end_layout
 
 \begin_layout Standard
@@ -254,7 +254,30 @@ b show two examples of fitting response to a single injection of water at
 \begin_inset Formula $t=0$
 \end_inset
 
- with a log-normal PDF.
+ with a log-normal PDF:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+f\left(\tau\right)=\frac{1}{\tau\cdot\sqrt{2\cdot\pi\cdot\sigma}}\cdot\exp\left(-\frac{\left(\ln\tau-\mu\right)^{2}}{2\cdot\sigma^{2}}\right),
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+where 
+\begin_inset Formula $\mu$
+\end_inset
+
+ and 
+\begin_inset Formula $\sigma$
+\end_inset
+
+ are location and scale parameters respectively.
  Both figures show very good fitting.
  Log-normally distributed break through curves (BTC's) have been successfully
  applied by e.g.
@@ -286,7 +309,7 @@ key "Fellner2009"
 
 \end_inset
 
-.
+to describe water retention curves.
 \end_layout
 
 \begin_layout Standard
@@ -368,14 +391,6 @@ b)
 Travel time PDF observed from Richards equation (dashed line) fitted with
  log-normal distribution (solid line).
  Here 
-\begin_inset Formula $\mu$
-\end_inset
-
- and 
-\begin_inset Formula $\sigma$
-\end_inset
-
- are location and scale parameters respectively, 
 \begin_inset Formula $err$
 \end_inset
 
@@ -509,7 +524,7 @@ Here we define remaining storage capacity as relative pore volume not filled
 \end_inset
 
 ).
- Figures
+ Figure
 \begin_inset space \thinspace{}
 \end_inset
 
@@ -520,8 +535,8 @@ reference "fig:travel-time-fitted-ln-pdf"
 
 \end_inset
 
- a and b illustrate BTC's for the same system with only different initial
- water table level (
+ illustrates BTC's modelled using Richards equation for the same system
+ with only different initial water table level (
 \begin_inset Formula $-0.5$
 \end_inset
 
@@ -596,7 +611,7 @@ reference "fig:log-normal-mu-sigma-of-theta"
 
 \end_inset
 
-b show how values of location and scale parameters 
+b show how values of 
 \begin_inset Formula $\mu$
 \end_inset
 
