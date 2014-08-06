@@ -23,28 +23,32 @@ function Main
     % Precipitation in meters per time interval dt
     rainData = PrecipitationData.rainData;
     % Structure containing time parameters
-    TimeParams = PrecipitationData.TimeParams;
+    TimeParams = TimeParamsCl(PrecipitationData.TimeParams);
 
     % %% For recirculation / irrigation
     % rainData = zeros(size(rainData));
     % totalRecirculation = 3;
     % recirculationIntervalsPerDay = 4;
-    % nRecirculationIntervals = TimeParams.maxDays * recirculationIntervalsPerDay;
+    % nRecirculationIntervals = TimeParams.nDays * recirculationIntervalsPerDay;
     % recirculationRate = totalRecirculation / nRecirculationIntervals;
-    % iRecirculation = mod(1:TimeParams.numIntervals, 24) < recirculationIntervalsPerDay;
+    % iRecirculation = mod(1:TimeParams.nIntervals, 24) < recirculationIntervalsPerDay;
     % rainData(iRecirculation) = recirculationRate;
     % %%
 
-    % Copy rain inputs for one more year
-    rainData = cat(2, rainData, rainData);
-    % Update time parameters for an extended interval
-    TimeParams.numIntervals = numel(rainData);
-    TimeParams.maxDays = TimeParams.numIntervals / TimeParams.intervalsPerDay;
-    TimeParams.t = (1:TimeParams.numIntervals) * TimeParams.dt;
-    TimeParams.daysElapsed = TimeParams.t / (TimeParams.dt * TimeParams.intervalsPerDay);
-
+%     % Copy rain inputs for one more year
+%     rainData = cat(2, rainData, rainData);
+%     % Update time parameters for an extended interval
+%     TimeParams.nIntervals = numel(rainData);
+%     TimeParams.nDays = TimeParams.nIntervals / TimeParams.intervalsPerDay;
+%     TimeParams.t = (1:TimeParams.nIntervals) * TimeParams.dt;
+%     TimeParams.daysElapsed = TimeParams.t / (TimeParams.dt * TimeParams.intervalsPerDay);
+    
     % Concentration of solutes in rainwater
     rainConcentrationData = 0 * ones(size(rainData));
+    
+    RainInfo = struct();
+    RainInfo.intensity = rainData;
+    RainInfo.concentration = rainConcentrationData;
     
     %% Model parameters
     ModelParams = struct();
@@ -68,7 +72,7 @@ function Main
     % Initial concentration of intert specie(s)
     ModelParams.mInertIni = 1;
 
-%     TimeParams.maxDays = 40;
+    TimeParams = TimeParams.setNDays(40);
 
     ParameterOfInterest = struct();
     % 'baseline'; 'no_rain'; 'no_chem'; 'short'; 'constant_rain'; 'recirculation'
@@ -117,8 +121,7 @@ function Main
         
         tic
         % Main computations are done here
-        ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentrationData, ...
-            ModelDim, ModelParams);
+        ModelOutput = ComputeTravelTimes(TimeParams, RainInfo, ModelDim, ModelParams);
         toc
         
         if profilerOn
@@ -155,5 +158,5 @@ function Main
     iSpecies = 22; % [1:12, 17:20]; % [2:5, 8:9, 22] % [2, 4]
     PLOT_SEPARATELY = true;
     AnalyzeOutConcentrations(ModelOutput, TimeParams, ModelParams, ...
-        ParameterOfInterest, iSpecies, Const, PLOT_SEPARATELY, TimeParams.maxDays);
+        ParameterOfInterest, iSpecies, Const, PLOT_SEPARATELY, TimeParams.nDays);
 end

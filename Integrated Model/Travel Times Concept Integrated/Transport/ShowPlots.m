@@ -10,8 +10,8 @@ function ShowPlots(ModelOutput, ModelParams, TimeParams, iSpecies, tShow)
     cOutTotal = ModelOutput.cOutTotal;
 %     emissionPotential = sum(ModelOutput.mRemaining(:, 2:nT+1, iSpecies), 1);
 
-    if nargin < 6
-        nT = TimeParams.numIntervals;
+    if nargin < 5
+        nT = TimeParams.nIntervals;
         tShow = true(1, nT);
         t = TimeParams.t(1:nT);
     else
@@ -143,6 +143,6 @@ function ShowPlots(ModelOutput, ModelParams, TimeParams, iSpecies, tShow)
     function fileName = GenerateFileName(Var1, Var2, ext)
         fileName = sprintf('fig/%s_-_%s_sp_#%02d_%d_days_lambda_%4.3f.%s', ...
             strrep(Var1.name{1}, ' ', '_'), strrep(Var2.name{1}, ' ', '_'), ...
-            iSpecies, TimeParams.maxDays, lambda, ext);
+            iSpecies, TimeParams.nDays, lambda, ext);
     end
 end

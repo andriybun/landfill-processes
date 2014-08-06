@@ -26,7 +26,7 @@ function AnalyzeOutConcentrations(ModelOutput, TimeParams, ModelParams, ...
         22, ''
         };
 
-    nT = min(ModelOutput.nT, TimeParams.numIntervals);
+    nT = min(ModelOutput.nT, TimeParams.nIntervals);
     tShow = true(1, nT);
     
     if ~PLOT_SEPARATELY

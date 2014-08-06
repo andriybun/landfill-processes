@@ -31,7 +31,7 @@ function out = LogNormalParams(theta)
 % %     set(h, 'position', [0, 0, 0.5, 0.8]);
 %     plot(1 - data(:, 2) / 0.4, data(:, 3));
 %     xlabel('Remaining storage capacity, %');
-%     ylabel('mu');
+%     ylabel('\mu');
 %     xlim([0, 0.8]);
 %     h = title('a)');
 %     set(h, 'VerticalAlignment', 'bottom');
@@ -39,7 +39,7 @@ function out = LogNormalParams(theta)
 % %     set(h, 'position', [0.5, 0, 0.5, 0.8]);
 %     plot(1 - data(:, 2) / 0.4, data(:, 4));
 %     xlabel('Remaining storage capacity, %');
-%     ylabel('sigma');
+%     ylabel('\sigma');
 %     xlim([0, 0.8]);
 %     h = title('b)');
 % %     set(h, 'VerticalAlignment', 'bottom');

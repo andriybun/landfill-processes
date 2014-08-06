@@ -25,10 +25,7 @@ function MainLabColumn
 %     rainData(1:5) = 1e-2;
 %     rainData(6:end) = 0;
     % Structure containing time parameters
-    TimeParams.t = RawData.t;
-    TimeParams.dt = diff(TimeParams.t(1:2));
-    TimeParams.numIntervals = numel(TimeParams.t);
-    TimeParams.maxDays = (TimeParams.t(end) - TimeParams.t(1)) / (60 * 60 * 24);
+    TimeParams = TimeParamsCl(RawData.t);
     % TimeParams =
     %
     %             maxDays: 365
@@ -40,6 +37,10 @@ function MainLabColumn
     
     % Concentration of solutes in rainwater
     rainConcentrationData = 0 * ones(size(rainData));
+    
+    RainInfo = struct();
+    RainInfo.intensity = rainData;
+    RainInfo.concentration = rainConcentrationData;
     
     %% Model parameters
     ModelParams = struct();
@@ -86,8 +87,7 @@ function MainLabColumn
         
         tic
         % Main computations are done here
-        ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentrationData, ...
-            ModelDim, ModelParams);
+        ModelOutput = ComputeTravelTimes(TimeParams, RainInfo, ModelDim, ModelParams);
         toc
         
         if profilerOn

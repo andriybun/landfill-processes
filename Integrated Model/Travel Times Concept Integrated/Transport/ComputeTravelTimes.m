@@ -1,5 +1,4 @@
-function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentrationData, ...
-        ModelDim, ModelParams)
+function ModelOutput = ComputeTravelTimes(TimeParams, RainInfo, ModelDim, ModelParams, prBar)
 
     DO_BIOCHEMISTRY = ModelParams.DO_BIOCHEMISTRY;
     DO_RECIRCULATION = ModelParams.DO_RECIRCULATION;
@@ -10,12 +9,17 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
     
     Const = DefineConstants();
     
+    rainData = RainInfo.intensity;
+    rainConcentrationData = RainInfo.concentration;
+    
+	HAS_PROGRESS_BAR = (nargin == 5);
+    
     %% Initializing chemical module
     CHEM_MODEL_DIR = '../';
     addpath(genpath(CHEM_MODEL_DIR));
     modus = 0;
-    [mIni, Comp, Pm, S, Rp] = initialize_ODE('../Pmatrix/Pmatrix.csv');
-    ORI = initialize_ORI(Comp, 0);
+    % javaclasspath('/../Orchestra/Interface/OrchestraInterface.jar');
+    [mIni, Pm, ORI, ~, ~] = initialize('../MSWS1/Pmatrix/Pmatrix.csv');
     
     mInertIni = ModelParams.mInertIni;
     nInertSpecies = numel(mInertIni);
@@ -24,7 +28,7 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
     nSpecies = numel(mIni);
     iReactiveSpecies = 1:nReactiveSpecies;
     iInertSpecies = nReactiveSpecies:nSpecies;
-    iFlushSpecies = [2:4, 8:9, 25];
+    iFlushSpecies = [2:4, 8:9, 24];
     nFlushSpecies = numel(iFlushSpecies);
     
     nPhases = 2;
@@ -37,12 +41,7 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
     tEnd = TimeParams.t(end);
     dt = TimeParams.dt;
     t = TimeParams.t;
-    if isfield(TimeParams, 'intervalsPerDay')
-        nT = TimeParams.maxDays * TimeParams.intervalsPerDay;
-    else
-        nT = numel(t);
-    end
-    t = t(1:nT);
+	nT = numel(t);
     
     REL_TOL = 1e-5;
     ABS_TOL = 1e-5;
@@ -143,7 +142,7 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
         if DO_BIOCHEMISTRY
             tRange = [tAfter(1), tAfter(1) + dt];
             [~, mChem] = ode15s(@bioreactor, tRange, ...
-                mRemaining(1, iT, iReactiveSpecies) / pvAdj(1), optionsChem, Comp, Pm, S, Rp, ORI);
+                mRemaining(1, iT, iReactiveSpecies) / pvAdj(1), optionsChem, Pm, ORI);
             mChem = mChem * pvAdj(1);
         else
             mChem = squeeze(repmat(mRemaining(1, iT, iReactiveSpecies), [1, 2, 1]));
@@ -191,8 +190,13 @@ function ModelOutput = ComputeTravelTimes(TimeParams, rainData, rainConcentratio
             error('iT = %d: Concentration is negative.', iT);
         end
         % Output progress
-        if mod(iT, nPercent) == 0
-            fprintf('%5.3f%% complete\n', iT / nT * 100);
+        if (mod(iT, nPercent) == 0) || (iT == nT)
+            if HAS_PROGRESS_BAR
+                prBar.pvalue = iT / nT * 100;
+                %% TODO: redraw GUI (maybe inside set method)
+            else
+                fprintf('%5.3f%% complete\n', iT / nT * 100);
+            end
         end
     end
     
