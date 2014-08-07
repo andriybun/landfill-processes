@@ -1301,8 +1301,8 @@ reference "fig:convolution-const-pdf"
 
 \end_inset
 
- that output signal can be approximated to a certain extent of accuracy
- by applying both types of responses presented in figure
+ that output signal can be approximated by applying both types of responses
+ presented in figure
 \begin_inset space \thinspace{}
 \end_inset
 
@@ -2199,7 +2199,36 @@ degree of heterogeneity etc.
 Presented approach can be used not only in landfill research, but in any
  other case when only information about in-/outflux is needed and computational
  resources are limited.
- 
+\end_layout
+
+\begin_layout Section*
+Acknowledgments
+\end_layout
+
+\begin_layout Standard
+This work was supported by funding from Dutch Technology Foundation (STW)
+ and Sustainable Landfill Foundation.
+ We are grateful to L.A.
+\begin_inset space \thinspace{}
+\end_inset
+
+Konstantaki, M.
+\begin_inset space \thinspace{}
+\end_inset
+
+Afanasyev, A.G.
+\begin_inset space \thinspace{}
+\end_inset
+
+van
+\begin_inset space \thinspace{}
+\end_inset
+
+Turnhout and S.M.
+\begin_inset space \thinspace{}
+\end_inset
+
+Baviskar for their discussions and criticism at early stages of paper.
 \end_layout
 
 \begin_layout Section*
