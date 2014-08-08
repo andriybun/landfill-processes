@@ -77,14 +77,14 @@ function RunWithGui(appName, func, varargin)
         % Pop-up list
         popListVertPos = tableVertPos - PRBAR_MARGIN - LIST_HEIGHT;
         popListWidth = (WINDOW_WIDTH - 3 * PRBAR_MARGIN) * 0.43;
-        hPopListX = uicontrol('Style', 'popupmenu', 'String', 'x-axis data', 'Enable', 'off', ...
+        hPopListX = uicontrol('Style', 'popupmenu', ...
             'Position', [PRBAR_MARGIN, popListVertPos, popListWidth, LIST_HEIGHT]);
         popListYhorOffset = 2 * PRBAR_MARGIN + popListWidth;
-        hPopListY = uicontrol('Style', 'popupmenu', 'String', 'y-axis data', 'Enable', 'off', ...
+        hPopListY = uicontrol('Style', 'popupmenu', ...
             'Position', [popListYhorOffset, popListVertPos, popListWidth, LIST_HEIGHT]);
         popList3rdDimHorOffset = 3 * PRBAR_MARGIN + 2 * popListWidth;
         popList3rdDimWidth = WINDOW_WIDTH - 4 * PRBAR_MARGIN - 2 * popListWidth;
-        hPopList3rdDim = uicontrol('Style', 'popupmenu', 'String', '3rd dim', 'Enable', 'off', ...
+        hPopList3rdDim = uicontrol('Style', 'popupmenu',...
             'Position', [popList3rdDimHorOffset, popListVertPos, popList3rdDimWidth, LIST_HEIGHT]);
         
         % Plot
@@ -116,6 +116,8 @@ function RunWithGui(appName, func, varargin)
         uiElements.hTable = hTable;
         uiElements.hBtnSaveFig = hBtnSaveFig;
         
+        ResetPopups(uiElements);
+        
         set(hBtnSaveFig, 'Callback', {@SaveGraph, uiElements});
         set(hPopListX, 'Callback', {@PlotGraph, uiElements});
         set(hPopListY, 'Callback', {@PlotGraph, uiElements});
@@ -137,6 +139,8 @@ function RunWithGui(appName, func, varargin)
         func = args{1};
         origInputs = args{2};
         uiElements = args{3};
+        DeactivateGraph(uiElements);
+        ResetPopups(uiElements);
         varArgPass = cell2structX(get(uiElements.hTable, 'data'), origInputs);
         output = func(varArgPass{:}, uiElements.prBar);
         set(uiElements.hPopListX, 'String', fieldnames(output));
@@ -200,12 +204,21 @@ function RunWithGui(appName, func, varargin)
 
     function ActivateGraph(uiElements)
         set(uiElements.hBtnSaveFig, 'Enable', 'on');
+        drawnow;
     end
 
     function DeactivateGraph(uiElements)
         cla(uiElements.hPlotAxes);
         set(uiElements.hPopList3rdDim, 'Enable', 'off');
         set(uiElements.hBtnSaveFig, 'Enable', 'off');
+        drawnow;
+    end
+
+    function ResetPopups(uiElements)
+        set(uiElements.hPopListX, 'String', 'x-axis data', 'Enable', 'off', 'Value', 1);
+        set(uiElements.hPopListY, 'String', 'y-axis data', 'Enable', 'off', 'Value', 1); 
+        set(uiElements.hPopList3rdDim, 'String', '3rd dim', 'Enable', 'off', 'Value', 1);
+        drawnow;
     end
 
     function outCell = struct2cellX(varargin)
@@ -289,5 +302,3 @@ function RunWithGui(appName, func, varargin)
         save(fileName, '-struct', 'map');
     end
 end
-
-%% TODO: if multiple structures? maybe long table ...?
