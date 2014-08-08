@@ -27,25 +27,28 @@ function RunWithGui(appName, func, varargin)
     function CreateGui(inputCell, func)
         % Window properties
         WINDOW_WIDTH = 400;
-        WINDOW_HEIGHT = 600;
+        WINDOW_HEIGHT = 630;
         % Progress bar properties
         PRBAR_HEIGHT = 20;
         PRBAR_MARGIN = 10;
         % Table properties
         MAX_TABLE_HEIGHT = 200;
-        COLUMN_WIDTHS_REL = [70, 160, 70];
+        COLUMN_WIDTHS_REL = [90, 140, 70];
         ROW_HEIGHT = 19;
         BOUND_PIX = 2;
         % Button propeties
-        BUTTON_WIDTH = 70;
+        BUTTON_WIDTH = 80;
         BUTTON_HEIGHT = 25;
         % Pop-up properties
         LIST_HEIGHT = 20;
+        TEXT_HEIGHT = 13;
+        TEXT_OFFSET = 5;
         
         % Create and then hide the GUI as it is being constructed.
         guiWindow = figure('Visible', 'off', 'Position', [200, 200, WINDOW_WIDTH, WINDOW_HEIGHT]);
         set(guiWindow, 'Name', appName, 'NumberTitle', 'off', 'Tag', 'guiWindow');
         set(guiWindow, 'Resize', 'off');
+        windowColor = get(guiWindow, 'Color');
         
         % Progress bar
         prBar = progressbar(guiWindow, ...
@@ -74,16 +77,30 @@ function RunWithGui(appName, func, varargin)
         set(hTable, 'RowName', []);
         set(hTable, 'Data', inputCell(:, 1:3));
         
-        % Pop-up list
-        popListVertPos = tableVertPos - PRBAR_MARGIN - LIST_HEIGHT;
-        popListWidth = (WINDOW_WIDTH - 3 * PRBAR_MARGIN) * 0.43;
+        % Pop-up lists
+        popListTitlesVertPos = tableVertPos - PRBAR_MARGIN - TEXT_HEIGHT;
+        popListVertPos = popListTitlesVertPos - TEXT_OFFSET - LIST_HEIGHT;
+        popListWidth = (WINDOW_WIDTH - 3 * PRBAR_MARGIN) * 0.4;
+        uicontrol('Style', 'text', ...
+            'String', 'X-axis dataset',...
+            'Backgroundcolor', windowColor, ...
+            'Position', [PRBAR_MARGIN, popListTitlesVertPos, popListWidth, TEXT_HEIGHT]);
         hPopListX = uicontrol('Style', 'popupmenu', ...
             'Position', [PRBAR_MARGIN, popListVertPos, popListWidth, LIST_HEIGHT]);
         popListYhorOffset = 2 * PRBAR_MARGIN + popListWidth;
+        uicontrol('Style', 'text', ...
+            'String', 'Y-axis dataset',...
+            'Backgroundcolor', windowColor, ...
+            'Position', [popListYhorOffset, popListTitlesVertPos, popListWidth, TEXT_HEIGHT]);
         hPopListY = uicontrol('Style', 'popupmenu', ...
             'Position', [popListYhorOffset, popListVertPos, popListWidth, LIST_HEIGHT]);
         popList3rdDimHorOffset = 3 * PRBAR_MARGIN + 2 * popListWidth;
         popList3rdDimWidth = WINDOW_WIDTH - 4 * PRBAR_MARGIN - 2 * popListWidth;
+        uicontrol('Style', 'text', ...
+            'String', '3rd dim',...
+            'Backgroundcolor', windowColor, ...
+            'Position', [popList3rdDimHorOffset, popListTitlesVertPos, ...
+            popList3rdDimWidth, TEXT_HEIGHT]);
         hPopList3rdDim = uicontrol('Style', 'popupmenu',...
             'Position', [popList3rdDimHorOffset, popListVertPos, popList3rdDimWidth, LIST_HEIGHT]);
         
