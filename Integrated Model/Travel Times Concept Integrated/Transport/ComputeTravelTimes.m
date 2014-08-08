@@ -6,13 +6,16 @@ function ModelOutput = ComputeTravelTimes(TimeParams, RainInfo, ModelDim, ModelP
 %% TODO: setting concentration of cloride Comp.consti = XX; Is already concentration
 %%       (unit = mol/l). Is very inert.
 %%
-    
+
     Const = DefineConstants();
     
     rainData = RainInfo.intensity;
     rainConcentrationData = RainInfo.concentration;
     
 	HAS_PROGRESS_BAR = (nargin == 5);
+    if HAS_PROGRESS_BAR
+        prBar.pvalue = 0;
+    end
     
     %% Initializing chemical module
     CHEM_MODEL_DIR = '../';
@@ -193,7 +196,6 @@ function ModelOutput = ComputeTravelTimes(TimeParams, RainInfo, ModelDim, ModelP
         if (mod(iT, nPercent) == 0) || (iT == nT)
             if HAS_PROGRESS_BAR
                 prBar.pvalue = iT / nT * 100;
-                %% TODO: redraw GUI (maybe inside set method)
             else
                 fprintf('%5.3f%% complete\n', iT / nT * 100);
             end
