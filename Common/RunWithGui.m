@@ -115,10 +115,16 @@ function RunWithGui(appName, func, varargin)
             'HandleVisibility', 'callback', ...
             'Position', [plotHorPos, plotVertPos, plotWidth, plotHeight]);
         
-        % Add button to save figure to file
-        btnSaveFigHorPos = 2 * PRBAR_MARGIN + BUTTON_WIDTH, 
+        % Add button to save data and figure to file
+        btnSaveDataHorPos = 2 * PRBAR_MARGIN + BUTTON_WIDTH; 
+        hBtnSaveData = uicontrol('Style', 'pushbutton', ...
+            'String', 'Data to file', ...
+            'Tag', 'hBtnSaveData', ...
+            'Enable', 'off', ...
+            'Position', [btnSaveDataHorPos , btnVertPos, BUTTON_WIDTH, BUTTON_HEIGHT]);
+        btnSaveFigHorPos = 3 * PRBAR_MARGIN + 2 * BUTTON_WIDTH; 
         hBtnSaveFig = uicontrol('Style', 'pushbutton', ...
-            'String', 'Save to file', ...
+            'String', 'Plot to file', ...
             'Tag', 'hBtnSaveFig', ...
             'Enable', 'off', ...
             'Position', [btnSaveFigHorPos, btnVertPos, BUTTON_WIDTH, BUTTON_HEIGHT]);
@@ -131,11 +137,13 @@ function RunWithGui(appName, func, varargin)
         uiElements.hPopList3rdDim = hPopList3rdDim;
         uiElements.hPlotAxes = hPlotAxes;
         uiElements.hTable = hTable;
+        uiElements.hBtnSaveData = hBtnSaveData;
         uiElements.hBtnSaveFig = hBtnSaveFig;
         
         ResetPopups(uiElements);
         
         set(hBtnSaveFig, 'Callback', {@SaveGraph, uiElements});
+        set(hBtnSaveData, 'Callback', {@SaveData, uiElements});
         set(hPopListX, 'Callback', {@PlotGraph, uiElements});
         set(hPopListY, 'Callback', {@PlotGraph, uiElements});
         set(hPopList3rdDim, 'Callback', {@PlotGraph3d, uiElements});
@@ -166,6 +174,7 @@ function RunWithGui(appName, func, varargin)
         set(uiElements.hPopListY, 'Enable', 'on');
         set(hObject, 'UserData', output);
         cla(uiElements.hPlotAxes);
+        set(uiElements.hBtnSaveData, 'Enable', 'on');
         guidata(hObject);
     end
 
@@ -211,6 +220,15 @@ function RunWithGui(appName, func, varargin)
         ActivateGraph(uiElements);
     end
 
+    function SaveData(hObject, eventdata, uiElements)
+        [fileName, pathName] = uiputfile('*.mat', 'Select file to write data');
+        if ~isequal(fileName, 0) 
+            fileName = fullfile(pathName, fileName);
+            data = get(findobj('Tag', 'hBtnStart'), 'UserData');
+            save(fileName, '-struct', 'data');
+        end
+    end
+
     function SaveGraph(hObject, eventdata, uiElements)
         [fileName, pathName] = uiputfile('*.fig', 'Select file to write plot');
         if ~isequal(fileName, 0) 
@@ -228,6 +246,7 @@ function RunWithGui(appName, func, varargin)
         cla(uiElements.hPlotAxes);
         set(uiElements.hPopList3rdDim, 'Enable', 'off');
         set(uiElements.hBtnSaveFig, 'Enable', 'off');
+        set(uiElements.hBtnSaveData, 'Enable', 'off');
         drawnow;
     end
 
