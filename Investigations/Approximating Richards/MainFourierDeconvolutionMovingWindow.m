@@ -40,14 +40,22 @@ function MainFourierDeconvolutionMovingWindow
     MAT_FILE_DIR = '../Transforms/mat/';
 %     CASE_NAME = 'Richards_Output_Very_Slow_Response.mat';
 %     SAVE_FILE = 'DeconvoluteMuSigma_Very_Slow_Response.mat';
-    caseNameVector = {'Extreme', 'Middle_Extreme', 'Netherlands', 'Uniform', ...
-        'Repeat_Short_333', 'Repeat_Sin_31', 'Repeat_Medium', 'pulse_zref=-0.50'};
-    caseIdx = 8;
-    CASE_NAME = sprintf('Richards_Output_rainfall_%s.mat', caseNameVector{caseIdx});
-    % Name of savefile
-    SAVE_FILE = sprintf('DeconvoluteMuSigma_%s', caseNameVector{caseIdx});
+    CASE_NAME = 'ShirishSimulation.mat';
+    SAVE_FILE = 'DeconvoluteMuSigma_ShirishSimulation.mat';
+%     caseNameVector = {'Extreme', 'Middle_Extreme', 'Netherlands', 'Uniform', ...
+%         'Repeat_Short_333', 'Repeat_Sin_31', 'Repeat_Medium', 'pulse_zref=-0.50'};
+%     caseIdx = 8;
+%     CASE_NAME = sprintf('Richards_Output_rainfall_%s.mat', caseNameVector{caseIdx});
+%     % Name of savefile
+%     SAVE_FILE = sprintf('DeconvoluteMuSigma_%s', caseNameVector{caseIdx});
     
     RawData = load([MAT_FILE_DIR CASE_NAME]);
+    if ~isfield(RawData, 'qIn') && isfield(RawData, 'fluxIn')
+        RawData.qIn = RawData.fluxIn;
+    end
+    if ~isfield(RawData, 'qOut') && isfield(RawData, 'fluxOut')
+        RawData.qOut = RawData.fluxOut;
+    end
     
     % Get data for processing
     inpSel =  ':';
