@@ -17,11 +17,11 @@ function MainFourierDeconvolutionMovingWindow
     COARSE_SCALE = 5;               % Coarsen time stepping by a scale of ...
     STEP = 50;                      % Time step for considering windows
     INITIAL_WINDOW_WIDTH = 16000;   % Number of time steps/intervals per window
-    INITIAL_PDF_WIDTH = 8000;
+    INITIAL_PDF_WIDTH = 2000;
     
     % Ranges of log-normal parameters
-    RANGE_MU = [8.5, 10.5]; % [1.0, 2.0];             % Range of possible values for log-normal parameter mu
-    RANGE_SIGMA = [0.4, 0.7]; % [0.8, 1.1];          % Range of possible values for sigma
+    RANGE_MU = [0, 5]; % [1.0, 2.0];              % Range of possible values for log-normal parameter mu
+    RANGE_SIGMA = [0.4, 1.2]; % [0.8, 1.1];           % Range of possible values for sigma
     DELTA_MU = 2e-2;                        % Step for values of mu within a range
     DELTA_SIGMA = 5e-3;                     % Step for values of sigma within a range
     
@@ -38,19 +38,19 @@ function MainFourierDeconvolutionMovingWindow
     
     % Choose for the case to consider
     MAT_FILE_DIR = '../Transforms/mat/';
-    CASE_NAME = 'Richards_Output_Very_Slow_Response.mat';
-    SAVE_FILE = 'DeconvoluteMuSigma_Very_Slow_Response.mat';
-%     caseNameVector = {'Extreme', 'Middle_Extreme', 'Netherlands', 'Uniform', ...
-%         'Repeat_Medium'};
-%     caseIdx = 4;
-%     CASE_NAME = sprintf('Richards_Output_rainfall_%s.mat', caseNameVector{caseIdx});
-%     % Name of savefile
-%     SAVE_FILE = sprintf('DeconvoluteMuSigma_%s', caseNameVector{caseIdx});
+%     CASE_NAME = 'Richards_Output_Very_Slow_Response.mat';
+%     SAVE_FILE = 'DeconvoluteMuSigma_Very_Slow_Response.mat';
+    caseNameVector = {'Extreme', 'Middle_Extreme', 'Netherlands', 'Uniform', ...
+        'Repeat_Short_333', 'Repeat_Sin_31', 'Repeat_Medium', 'pulse_zref=-0.50'};
+    caseIdx = 8;
+    CASE_NAME = sprintf('Richards_Output_rainfall_%s.mat', caseNameVector{caseIdx});
+    % Name of savefile
+    SAVE_FILE = sprintf('DeconvoluteMuSigma_%s', caseNameVector{caseIdx});
     
     RawData = load([MAT_FILE_DIR CASE_NAME]);
     
     % Get data for processing
-    inpSel =  ':'; % ':'; % 2125:5000 6500:8760
+    inpSel =  ':';
     t = reshape(RawData.t(inpSel), [], 1);
     t = t - t(1);
     dt = RawData.t(2) - RawData.t(1);
@@ -73,13 +73,50 @@ function MainFourierDeconvolutionMovingWindow
     pdfWidth = ceil(INITIAL_PDF_WIDTH / STEP);
 
     %% Determine initial estimate of constant parameters of log-normal distribution
+    % iSel = 1:160;
+    % CASE_NAME = [CASE_NAME, '_short_fail'];
+    % t = t(iSel);
+    % qIn = qIn(iSel);
+    % qOut = qOut(iSel);
+    showApproximation = true;
     pdfEst = Deconvolution(qIn, qOut);
 	[muEst, sigmaEst, ~] = CalcLognormMuSigma(t(1:pdfWidth), pdfEst(1:pdfWidth));
     fprintf('Initial estimate:\n');
     fprintf('mu = %f\nsigma = %f\n', muEst, sigmaEst);
     confBounds = LogNormalBounds(muEst, sigmaEst, 2);
     fprintf('Recommended PDF width is %d\n', ceil(confBounds(2) / dt) * STEP);
-    ComparePdf(t(1:pdfWidth), pdfEst(1:pdfWidth), muEst, sigmaEst, dt)
+    ComparePdf(t(1:pdfWidth), pdfEst(1:pdfWidth), muEst, sigmaEst, dt);
+    qOutConvLogn = NumericalConvolution(t, qIn, ...
+        @(t, mu, sigma) lognpdfX(t, mu, sigma, dt), muEst, sigmaEst);
+    
+    % Plot
+    tInfo = struct();
+    tInfo.data = t;
+    tInfo.axisLabel = 'time [days]';
+    
+	qInInfo = struct();
+    qInInfo.data = qIn;
+    qInInfo.name = {'Influx'};
+    qInInfo.axisLabel = 'Influx';
+    qInInfo.color = [0.75, 0.75, 0.75];
+    qInInfo.lineStyle = '-';
+    
+    qOutInfo = struct();
+    if showApproximation
+        qOutInfo.data = cat(2, qOut, qOutConvLogn);
+        qOutInfo.name = {'Real data', 'Convolution'};
+    else
+        qOutInfo.data = cat(2, qOut);
+        qOutInfo.name = {'Real data'};
+    end
+    qOutInfo.axisLabel = 'Outflux';
+    qOutInfo.color = [0., 0., 0.; ...
+                      0.5, 0.5, 0.5];
+    qOutInfo.lineStyle = {'-', '--'};
+    
+    figH = PlotYyCustom(tInfo, qInInfo, qOutInfo, 'NorthEast', ceil(0.9 * [500, 400, 500, 220]));
+    hgsave(figH, sprintf('./fig/%s_convolution.fig', CASE_NAME));
+
     %% Proceed
     
     switch ACTION
@@ -89,6 +126,7 @@ function MainFourierDeconvolutionMovingWindow
             muAll = nan(1, nSteps);
             sigmaAll = nan(1, nSteps);
             mcBalanceAll = nan(1, nSteps);
+            lastRfAll = zeros(1, nSteps);
             errAll = nan(1, nSteps);
             qOutConv = zeros(nEl, 1);
             
@@ -100,6 +138,7 @@ function MainFourierDeconvolutionMovingWindow
                 iAll = ceil(i / STEP);
                 mcBalanceAll(iAll) = mcBalance;
                 mcBalance = qInCum(i) - qOutCum(i);
+                lastRfAll(iAll) = i - find(qIn(1:i) > 0, true, 'last');
                 windowWidthLocal = windowWidth;
                 err = Inf;
                 minErr = Inf;
@@ -159,6 +198,7 @@ function MainFourierDeconvolutionMovingWindow
             
             isNan = isnan(muAll);
             mcBalanceAll(isNan) = [];
+            lastRfAll(isNan) = [];
             muAll(isNan) = [];
             sigmaAll(isNan) = [];
             errAll(isNan) = [];
@@ -252,6 +292,9 @@ function MainFourierDeconvolutionMovingWindow
         sigOutF = fft(sigOut);
         % Deconvolution
         pdfF = sigOutF ./ sigInF;
+        EPS = 1e-14;
+        isZero = RealEq(real(sigInF), 0, EPS) & RealEq(imag(sigInF), 0, EPS);
+        pdfF(isZero) = complex(0.0, 0.0);
         % Inverse Fourier transform to get approximation of probability density function
         pdfEst = smooth(ifft(pdfF), 5);
     end
@@ -320,14 +363,26 @@ function MainFourierDeconvolutionMovingWindow
     end
 
     function ComparePdf(t_, pdfEst_, mu_, sigma_, dt_)
-        figure(1);
-        plot(t_, pdfEst_);
+        figH = figure(1);
+        set(figH, 'position', ceil(0.9 * [400, 300, 350, 220]));
+        plot(t_, pdfEst_, 'Color', [0.5, 0.5, 0.5], 'LineStyle', '--');
         hold on;
         pdfAnalytic = lognpdfX(t_, mu_, sigma_, dt_);
-        plot(t_, pdfAnalytic, 'r');
+        if showApproximation
+            plot(t_, pdfAnalytic, 'Color', [0.2, 0.2, 0.2]);
+        end
+        maxVal = max(max(pdfAnalytic), max(pdfEst));
+        ylim([-0.1 * maxVal, maxVal]);
         hold off;
-        err_ = SumSquares(max(0, pdfEst_), pdfAnalytic);
-        title(sprintf('mu = %f, sigma = %f, err = %e',  mu_, sigma_, err_));
+        if showApproximation
+            legend('Estimated PDF', 'Log-normal');
+            err_ = SumSquares(max(0, pdfEst_), pdfAnalytic);
+            title(sprintf('%s = %2.3f, %s = %2.3f, err = %2.2e',  ...
+                '\mu', mu_, '\sigma', sigma_, err_));
+        else
+            legend('Estimated PDF');
+        end
+        hgsave(figH, sprintf('./fig/%s_PDF_est.fig', CASE_NAME));
     end
     
 end
