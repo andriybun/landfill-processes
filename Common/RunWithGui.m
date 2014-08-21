@@ -165,6 +165,7 @@ function RunWithGui(appName, func, varargin)
         origInputs = args{2};
         uiElements = args{3};
         DeactivateGraph(uiElements);
+        set(uiElements.hBtnSaveData, 'Enable', 'off');
         ResetPopups(uiElements);
         varArgPass = cell2structX(get(uiElements.hTable, 'data'), origInputs);
         output = func(varArgPass{:}, uiElements.prBar);
@@ -246,7 +247,6 @@ function RunWithGui(appName, func, varargin)
         cla(uiElements.hPlotAxes);
         set(uiElements.hPopList3rdDim, 'Enable', 'off');
         set(uiElements.hBtnSaveFig, 'Enable', 'off');
-        set(uiElements.hBtnSaveData, 'Enable', 'off');
         drawnow;
     end
 
