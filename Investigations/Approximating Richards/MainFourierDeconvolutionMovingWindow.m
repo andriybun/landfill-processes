@@ -11,17 +11,22 @@ function MainFourierDeconvolutionMovingWindow
 
     %% PARAMETERS
     % Desired tolerance (adjust empirically)
-    ERR_EPSILON = 2e-4;
+    ERR_EPSILON = 5e-4;
     
     % Time stepping parameters
     COARSE_SCALE = 5;               % Coarsen time stepping by a scale of ...
     STEP = 50;                      % Time step for considering windows
     INITIAL_WINDOW_WIDTH = 16000;   % Number of time steps/intervals per window
-    INITIAL_PDF_WIDTH = 2000;
+    INITIAL_PDF_WIDTH = 10000;
     
     % Ranges of log-normal parameters
-    RANGE_MU = [0, 5]; % [1.0, 2.0];              % Range of possible values for log-normal parameter mu
-    RANGE_SIGMA = [0.4, 1.2]; % [0.8, 1.1];           % Range of possible values for sigma
+    % %% OLD:[7, 10] [0.4, 0.7]
+    % %% EX: [0.7, 2.0] [0.9, 1.2]
+    % %% ME: [0.7, 2.0] [0.9, 1.2] 
+    % %% NL: [2.3, 3.5] [0.8, 1.1]
+    % %% UN: [2.3, 3.5] [0.8, 1.1]
+    RANGE_MU = [4.0, 7.0];    %               % Range of possible values for log-normal parameter mu
+    RANGE_SIGMA = [0.6, 0.9]; %            % Range of possible values for sigma
     DELTA_MU = 2e-2;                        % Step for values of mu within a range
     DELTA_SIGMA = 5e-3;                     % Step for values of sigma within a range
     
@@ -44,7 +49,7 @@ function MainFourierDeconvolutionMovingWindow
 %     SAVE_FILE = 'DeconvoluteMuSigma_ShirishSimulation.mat';
     caseNameVector = {'Extreme', 'Middle_Extreme', 'Netherlands', 'Uniform', ...
         'Repeat_Short_333', 'Repeat_Sin_31', 'Repeat_Medium', 'pulse_zref=-0.50'};
-    caseIdx = 8;
+    caseIdx = 4;
     CASE_NAME = sprintf('Richards_Output_rainfall_%s.mat', caseNameVector{caseIdx});
     % Name of savefile
     SAVE_FILE = sprintf('DeconvoluteMuSigma_%s', caseNameVector{caseIdx});
@@ -97,7 +102,13 @@ function MainFourierDeconvolutionMovingWindow
     % qOut = qOut(iSel);
     showApproximation = true;
     pdfEst = Deconvolution(qIn, qOut);
+%     pdfEstExp = DeconvolutionExperimental(qIn, qOut);
+% plot([pdfEst, pdfEstExp / 30]);
+% legend('orig', 'expr');
+
 	[muEst, sigmaEst, ~] = CalcLognormMuSigma(t(1:pdfWidth), pdfEst(1:pdfWidth));
+% muEst = 9.4;
+% sigmaEst = 0.55;
     fprintf('Initial estimate:\n');
     fprintf('mu = %f\nsigma = %f\n', muEst, sigmaEst);
     confBounds = LogNormalBounds(muEst, sigmaEst, 2);
@@ -108,7 +119,7 @@ function MainFourierDeconvolutionMovingWindow
     
     % Plot
     tInfo = struct();
-    tInfo.data = t;
+    tInfo.data = t; % / 24 / 60;
     tInfo.axisLabel = 'time [days]';
     
 	qInInfo = struct();
@@ -161,12 +172,27 @@ function MainFourierDeconvolutionMovingWindow
                 minErr = Inf;
                 while ~(err < ERR_EPSILON) && ~(i + windowWidthLocal == nEl)
                     iSel = i:(i+windowWidthLocal);
-                    cumErr = qOut(i) - qOutConv(i);
-                    pdfEst = Deconvolution(qIn(iSel), qOut(iSel) - qOutConv(iSel) - cumErr);
-                    pdfSel = 1:pdfWidth;
+                    qAdj = qOut(iSel) - qOutConv(iSel);
+                    [pks, lcs] = findpeaks(-qAdj);
+                    minIdx = find(qAdj == min(qAdj(1:ceil(0.1 * pdfWidth))), true, 'last');
+                    if isempty(minIdx)
+                        minIdx = 1;
+                    end
+                    iInc = minIdx;
+                    cumErr = -qAdj(minIdx);
+                    qAdj = qAdj + cumErr;
+                    maxPeak = max(pks(lcs > INITIAL_PDF_WIDTH / STEP));
+                    if isempty(maxPeak)
+                        minIdx = numel(qAdj);
+                    else
+                        minIdx = lcs(find(pks == maxPeak, true, 'last'));
+                    end
+                    pdfEst = Deconvolution(qIn(i+(iInc:minIdx)), qAdj(iInc:minIdx));
+                    pdfSel = 1:min(pdfWidth, numel(pdfEst));
                     tEst = t(i-1+pdfSel)-t(i);
                     [optMu, optSigma, err] = CalcLognormMuSigma(tEst, pdfEst(pdfSel));
                     windowWidthLocal = min(windowWidthLocal * 1.5, nEl - i);
+%% TODO: select window until the nearest minimum / close to zero
                     if (err < minErr)
                         minErr = err;
                         muAll(iAll) = optMu;
@@ -227,8 +253,12 @@ function MainFourierDeconvolutionMovingWindow
     
     %% Plotting
     iSel = ':';
-    mcBalanceAll = -mcBalanceAll;
+    mcBalanceAll = mcBalanceAll;
+% mcBalanceAll = cat(2, mcBalanceAll, 0.018);
+% muAll = cat(2, muAll, 9.05);
+% sigmaAll = cat(2, sigmaAll, 0.61);
     [mcBalanceAll, iSort] = sort(mcBalanceAll(iSel)');
+
 
     close all;
     fWidth = 390;
@@ -238,33 +268,31 @@ function MainFourierDeconvolutionMovingWindow
     plot(mcBalanceAll, muAll(iSort), '*');
     hold on;
     [muFit, eqStr, muCoeff] = RegressionAnalysis(mcBalanceAll, muAll(iSort), 2);
+%muCoeff = [-2539.64, -20.79, 9.51];
     plot(mcBalanceAll, muFit, 'r');
     hold off;
     title('Log-normal location parameter (\mu)');
     ylabel('\mu');
-    xlabel('Available storage decrement');
+    xlabel('Decrease in available storage');
     legend('points', eqStr);
     fH = figure(4);
     set(fH, 'Position', [100 + ceil(fWidth * 1.2), 200, fWidth, fHeight]);
     plot(mcBalanceAll, sigmaAll(iSort), '*');
     hold on;
     [sigmaFit, eqStr, sigmaCoeff] = RegressionAnalysis(mcBalanceAll, sigmaAll(iSort), 2);
+%sigmaCoeff = [-95.53, -4.42, 0.55];
     plot(mcBalanceAll, sigmaFit, 'r');
     hold off;
     title('Log-normal shape parameter (\sigma)');
     ylabel('\sigma');
-    xlabel('Available storage decrement');
+    xlabel('Decrease in available storage');
     legend('points', eqStr);
 
     thetaIni = 0;
     vPore = 1;
     
-%     % Experiment 1:
-%     muEst = 9.795014435936489;
-%     sigmaEst = 0.575230541445190;
-%     % Functions of log-normal parameters of moisture content
-%     fMu = @(x) -1820.71579 * x.^2 + 7.42552 * x + 9.51092;
-%     fSigma = @(x) -156.37151 * x.^2 + 5.66496 * x + 0.52888;
+    
+    
     
     % Minimum storage capacity change
     fMu = @(x) muCoeff(1) * max(-x, mcBalanceAll(1)).^2 + ...
@@ -278,13 +306,16 @@ function MainFourierDeconvolutionMovingWindow
     [qOutConvLognVar, dTheta, dMu, dSigma] = NumericalConvolution(t, qIn, ...
         @(t, mu, sigma) lognpdfX(t, mu, sigma, dt), LogNormalParams, thetaIni, vPore);
     
+    % Scale time
+    t = t / 24 / 60;
+    
     % Plot
     fH = figure(2);
     set(fH, 'Position', [500, 400, 700, 350]);
     plotyy(t, qIn, t, cat(2, qOutConvLogn, qOutConvLognVar, qOut));
-    legend('Influx', 'Convolution (lognormal)', 'Convolution (lognormal, variable)', ...
+    legend('Influx', 'Convolution (lognormal)', 'Convolution (lognormal, estimated dependency)', ...
         'Real data', 'Location', 'Northwest');
-    xlabel('Time, minutes');
+    xlabel('Time, days');
     ylabel('In flux');
     % Get handles of lines and change their styles
     axH = get(fH, 'children');
@@ -315,12 +346,36 @@ function MainFourierDeconvolutionMovingWindow
         % Inverse Fourier transform to get approximation of probability density function
         pdfEst = smooth(ifft(pdfF), 5);
     end
-    
+
+%% Experimental
+
+    function pdfEst = DeconvolutionExperimental(sigIn, sigOut)
+        % Fourier transforms of inputs
+        sigInF = fft(AddExtraZeros(diff(sigIn)));
+        sigOutF = fft(AddExtraZeros(diff(sigOut)));
+        % Deconvolution
+        pdfF = sigOutF ./ sigInF;
+        EPS = 1e-14;
+        isZero = RealEq(real(sigInF), 0, EPS) & RealEq(imag(sigInF), 0, EPS);
+        pdfF(isZero) = complex(0.0, 0.0);
+        % Inverse Fourier transform to get approximation of probability density function
+        pdfEst = smooth(cumsum(RemoveExtraZeros(ifft(pdfF))), 5);
+    end
+
+    function dOut = AddExtraZeros(dIn)
+        dOut = cat(1, 0, dIn, [0; 0; 0]);
+    end
+
+    function dOut = RemoveExtraZeros(dIn)
+        dOut = dIn(2:(end-2));
+    end
+%% END Experimental
+
     function pdf = lognpdfX(t, mu, sigma, dt)
         pdf = logncdf([t; t(end)+dt], mu, sigma);
         pdf = diff(pdf);
     end
-    
+
     function [optMu, optSigma, optErr] = CalcLognormMuSigma(x, pdf)
        if any(isnan(pdf))
             optMu = nan;

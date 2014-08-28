@@ -1,14 +1,16 @@
-function ChangeAxisUnits(hFig, axisName, unitScale)
+function ChangeAxisUnits(hFig, axisName, unitScale, newLabel)
 
     axesObjs = get(hFig, 'Children');
     dataObjs = get(axesObjs, 'Children');
     for idx = 2:numel(dataObjs)
         dataObj = dataObjs{idx};
         axisLimStr = sprintf('%slim', axisName);
+        axisLabelStr = sprintf('%slabel', axisName);
+        set(get(axesObjs(idx), axisLabelStr), 'string', newLabel);
         oldLims = get(axesObjs(idx), axisLimStr) * unitScale;
         set(axesObjs(idx), axisLimStr, [-Inf, Inf]);
-%         newLims = get(axesObjs(idx), axisLimStr);
-%         set(axesObjs(idx), axisLimStr, [max(oldLims(1), newLims(1)), min(oldLims(2), newLims(2))]);
+        newLims = get(axesObjs(idx), axisLimStr);
+        set(axesObjs(idx), axisLimStr, [max(oldLims(1), newLims(1)), min(oldLims(2), newLims(2))]);
         if any(strcmp(get(dataObj, 'Type'), 'line'))
             axisData = get(dataObj, sprintf('%sData', axisName));
             if iscell(axisData)
