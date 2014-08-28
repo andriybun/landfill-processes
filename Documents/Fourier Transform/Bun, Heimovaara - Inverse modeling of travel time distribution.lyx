@@ -4,6 +4,9 @@
 \begin_header
 \textclass elsarticle
 \use_default_options true
+\begin_modules
+enumitem
+\end_modules
 \maintain_unincluded_children false
 \language english
 \language_package default
@@ -199,12 +202,17 @@ q_{out}\left(t\right)=\int_{0}^{t}q_{in}\left(t-\tau\right)\cdot f\left(\tau\rig
 
 \begin_layout Standard
 where 
+\begin_inset Formula $\tau$
+\end_inset
+
+ is a time passed since the influx event that caused a given response and
+ 
 \begin_inset Formula $f\left(\tau\right)$
 \end_inset
 
- is a system response function.
- We describe it as probability density function (PDF) specifying distribution
- of responses.
+ − is the system response function (SRF).
+ It can be described as a probability density function (PDF) specifying
+ distribution of responses at different times.
  In this equation, the leachate volume flux 
 \begin_inset Formula $q_{out}\left(t\right)$
 \end_inset
@@ -309,7 +317,62 @@ key "Fellner2009"
 
 \end_inset
 
-to describe water retention curves.
+to describe drainage patterns.
+\end_layout
+
+\begin_layout Standard
+Figures
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:travel-time-fitted-ln-pdf"
+
+\end_inset
+
+a and 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:travel-time-fitted-ln-pdf"
+
+\end_inset
+
+b illustrate BTC's modelled using Richards equation for the same system
+ (all Richards parameters are equal) with only different initial water table
+ level (
+\begin_inset Formula $-0.5$
+\end_inset
+
+
+\begin_inset space \thinspace{}
+\end_inset
+
+m and 
+\begin_inset Formula $-1$
+\end_inset
+
+
+\begin_inset space \thinspace{}
+\end_inset
+
+m respectively) and hence different storage capacity.
+ In the first case (figure
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:travel-time-fitted-ln-pdf"
+
+\end_inset
+
+a) the water table is higher.
+ This leads to faster response times and more narrow BTC.
+ Thus higher moisture content and hence lower storage capacity will result
+ in faster response and vice versa.
 \end_layout
 
 \begin_layout Standard
@@ -388,7 +451,7 @@ b)
 \begin_inset Caption
 
 \begin_layout Plain Layout
-Travel time PDF observed from Richards equation (dashed line) fitted with
+Travel time SRF observed from Richards equation (dashed line) fitted with
  log-normal distribution (solid line).
  Here 
 \begin_inset Formula $err$
@@ -501,7 +564,7 @@ key "Rosqvist1999"
 
 .
  Systems with variable water content are, however, extremely nonlinear,
- we observe variable response PDF's in such cases.
+ we observe variable SRF's in such cases.
  Hydraulic properties of porous medium depend among others on its remaining
  storage capacity 
 \begin_inset Note Note
@@ -514,60 +577,12 @@ status open
 \end_inset
 
 .
- 
-\end_layout
-
-\begin_layout Standard
-Here we define remaining storage capacity as relative pore volume not filled
+ Here we define remaining storage capacity as relative pore volume not filled
  with water (
 \begin_inset Formula $1-V_{water}/V_{pore}$
 \end_inset
 
 ).
- Figure
-\begin_inset space \thinspace{}
-\end_inset
-
-
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "fig:travel-time-fitted-ln-pdf"
-
-\end_inset
-
- illustrates BTC's modelled using Richards equation for the same system
- with only different initial water table level (
-\begin_inset Formula $-0.5$
-\end_inset
-
-
-\begin_inset space \thinspace{}
-\end_inset
-
-m and 
-\begin_inset Formula $-1$
-\end_inset
-
-
-\begin_inset space \thinspace{}
-\end_inset
-
-m respectively) and hence different storage capacity.
- In the first case (figure
-\begin_inset space \thinspace{}
-\end_inset
-
-
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "fig:travel-time-fitted-ln-pdf"
-
-\end_inset
-
-a) the water table is higher.
- This leads to faster response times and more narrow BTC.
- Thus higher moisture content and hence lower storage capacity will result
- in faster response and vice versa.
 \end_layout
 
 \begin_layout Standard
@@ -588,11 +603,12 @@ reference "fig:modelled-domain"
 
 ).
  In such a way heterogeneity was introduced.
- The setup was in equilibrium at initial time.
+ This in its turn introduces long tailing in the output signal.
+ The setup was under hydrostatic conditions at initial time.
  The properties of the system and input didn't change in between cases,
  with the only exception of variable initial water table levels.
  2-dimensional Richards equation was used to model water flow.
- Having a number of BTC's we approximated them with log-normal PDF's.
+ Having a number of BTC's we approximated them with log-normal SRF's.
  Figures
 \begin_inset space \thinspace{}
 \end_inset
@@ -730,8 +746,8 @@ reference "eq:conv_fourier_domain"
 
 \end_inset
 
- one can see that travel time PDF in frequency domain can be computed by
- division of outflux by influx:
+ one can see that the SRF in frequency domain can be computed by division
+ of outflux by the influx:
 \end_layout
 
 \begin_layout Standard
@@ -753,7 +769,7 @@ reference "eq:inv_conv_fourier_domain"
 
 \end_inset
 
- we get an estimate of response times PDF.
+ we get an estimate of the SRF.
  This process is called deconvolution.
 \end_layout
 
@@ -761,7 +777,7 @@ reference "eq:inv_conv_fourier_domain"
 Assuming that the dataset is long enough, we can apply deconvolution technique
  to shorter time intervals.
  By moving this interval and keeping track of the changes in storage capacity
- and properties of PDF we can get a quantitative estimate of relationship
+ and properties of the SRF we can get a quantitative estimate of relationship
  between them.
  This will improve the quality of further outflux simulation.
 \end_layout
@@ -823,7 +839,7 @@ We apply deconvolution in combination with aforementioned concept of moving
  interval according to the following algorithm:
 \end_layout
 
-\begin_layout Enumerate
+\begin_layout Enumerate-Resume
 The time domain is discretized into 
 \begin_inset Formula $n$
 \end_inset
@@ -838,12 +854,12 @@ The time domain is discretized into
 \end_inset
 
  which must be big enough to contain bulk response to input signals, in
- order to correctly detect PDF.
+ order to correctly detect the SRF.
  In most cases this can be estimated visually from the peaks in outflux
  graph.
 \end_layout
 
-\begin_layout Enumerate
+\begin_layout Enumerate-Resume
 On 
 \begin_inset Formula $i$
 \end_inset
@@ -874,9 +890,54 @@ reference "fig:moving-window-concept"
 
 ).
  We apply deconvolution to the influx (light grey peaks) and remaining output
- signal which is presented by dashed line (without a share of already modelled
- on previous steps output).
- Initially on time step
+ signal 
+\begin_inset Formula $q_{out,rem_{i}}$
+\end_inset
+
+ which is presented by dashed line (without a share of already modelled
+ on previous steps output):
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+f_{i}\left(t\right)=\left.(q_{out,rem_{i}}\text{∗{}^{-1}}\, q_{in})(t)\right|_{t_{i,begin}}^{t_{i,end}},
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+where 
+\begin_inset Formula $\text{∗{}^{-1}}$
+\end_inset
+
+ is a deconvolution operation, 
+\begin_inset Formula $q_{out,rem_{i}}$
+\end_inset
+
+ is calculated for every 
+\begin_inset Formula $t_{i,begin}$
+\end_inset
+
+ as follows:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+q_{out,rem_{i}}\left(t\right)=\left.q_{out}\left(t\right)-(q_{in}\text{∗}\, f_{i})(t)\right|_{0}^{t_{i,begin}}\label{eq:q_out_rem_i}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Initially on time step
 \begin_inset space \thinspace{}
 \end_inset
 
@@ -900,8 +961,8 @@ name "enu:alg-deconvolution"
 
 \end_layout
 
-\begin_layout Enumerate
-The PDF obtained from step 
+\begin_layout Enumerate-Resume
+The SRF obtained from step 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "enu:alg-deconvolution"
@@ -929,7 +990,7 @@ name "enu:alg-fit-pdf"
 
 \end_layout
 
-\begin_layout Enumerate
+\begin_layout Enumerate-Resume
 Calculate sum squared error for the fit obtained in step
 \begin_inset space \thinspace{}
 \end_inset
@@ -942,7 +1003,7 @@ reference "enu:alg-fit-pdf"
 \end_inset
 
  vs.
- PDF obtained from deconvolution.
+ SRF obtained from deconvolution.
  If it is greater than an empirically estimated threshold, the time window
  
 \begin_inset Formula $\Delta t$
@@ -977,7 +1038,7 @@ name "enu:alg-extend-window"
 
 \end_layout
 
-\begin_layout Enumerate
+\begin_layout Enumerate-Resume
 Apply equation 
 \begin_inset CommandInset ref
 LatexCommand ref
@@ -1005,7 +1066,31 @@ reference "eq:Q_out"
 \begin_inset Formula $f\left(\tau\right)$
 \end_inset
 
- is a log-normall PDF fitted on step 
+ is the log-normal 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+SRF
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+ fitted on step 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "enu:alg-fit-pdf"
@@ -1039,7 +1124,7 @@ reference "fig:moving-window-concept"
 .
 \end_layout
 
-\begin_layout Enumerate
+\begin_layout Enumerate-Resume
 
 \family roman
 \series medium
@@ -1052,9 +1137,48 @@ reference "fig:moving-window-concept"
 \uwave off
 \noun off
 \color none
-Already integrated outflux is deducted from the original one.
- The result (dashed black line) is used during following steps as a response
- to inputs after 
+Already integrated outflux is deducted from the original one (eq.
+\begin_inset space \thinspace{}
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:q_out_rem_i"
+
+\end_inset
+
+).
+ The result 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+
+\begin_inset Formula $q_{out,rem_{i}}$
+\end_inset
+
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+ (dashed black line) is used during following steps as a response to inputs
+ after 
 \family default
 \series default
 \shape default
@@ -1102,9 +1226,33 @@ This algorithm allows us to eliminate responses to all input events that
  happened before current time step.
  This minimizes their impact on the results of deconvolution.
  Reducing the interval for deconvolution and moving it allows us to obtain
- more accurate estimate of response PDF's and influence of storage capacity
- on them because the computations are done for shorter periods where the
- storage capacity is less likely to change much.
+ more accurate estimate of 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+SRF
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+'s and influence of storage capacity on them because the computations are
+ done for shorter periods where the storage capacity is less likely to change
+ much.
  Such information can be used for future simulations of outflux.
 \end_layout
 
@@ -1144,8 +1292,8 @@ reference "fig:convolution-const-pdf"
  shows results of modelling outflux with Richards equation (black line)
  as response to random input simulating rainfalls over a long period (light
  grey peaks).
- After applying the deconvolution technique we obtain estimate of PDF shown
- in figure
+ After applying the deconvolution technique we obtain estimate of the SRF
+ shown in figure
 \begin_inset space \thinspace{}
 \end_inset
 
@@ -1181,8 +1329,8 @@ status open
 \begin_inset Caption
 
 \begin_layout Plain Layout
-Comparison of applying different types of response time PDF versus inputs
- and Richards solution.
+Comparison of applying different types of SRF versus inputs and Richards
+ solution.
 \end_layout
 
 \end_inset
@@ -1223,8 +1371,7 @@ status open
 \begin_inset Caption
 
 \begin_layout Plain Layout
-Example of applying deconvolution technique to determine response times
- PDF.
+Example of applying deconvolution technique to determine the SRF.
 \begin_inset CommandInset label
 LatexCommand label
 name "fig:example-deconvolution-pdf"
@@ -1265,7 +1412,7 @@ averaged
 \end_inset
 
  density function for the entire dataset.
- For this reason the shape of the estimated PDF is rather irregular.
+ For this reason the shape of the estimated SRF is rather irregular.
  This is probably due to the superposition effect, when responses to near
  signals are merged.
 \end_layout
@@ -1285,7 +1432,7 @@ reference "fig:convolution-const-pdf"
 
 .
  The figure also contains results of forward simulation of outflux (convolution).
- Here we used two different types of response PDF: obtained from deconvolution
+ Here we used two different types of the SRF: obtained from deconvolution
  (dashed grey line) and its log-normal approximation (solid grey line).
 \end_layout
 
@@ -1316,20 +1463,20 @@ reference "fig:example-deconvolution-pdf"
 .
  Experiments show that in general log-normal distribution (solid grey line)
  provides better results - both peaks and low flux periods are modelled
- rather precise with the only exception around 
-\begin_inset Formula $4.5\cdot10^{5}$
+ rather precise with the only exception around time 
+\begin_inset Formula $4.5$
 \end_inset
 
- minutes.
- At the same time usage of PDF estimated from deconvolution results in accurate
- peaks, but very inaccurate low flux periods.
- Most likely because of irregular tale of estimated PDF.
+.
+ At the same time usage of the SRF estimated from deconvolution results
+ in accurate peaks, but very inaccurate low flux periods.
+ Most likely because of irregular tale of the estimated SRF.
  We believe that higher moisture content results in lower storage capacity
  and thus reducing travel times for water particles.
 \end_layout
 
 \begin_layout Subsection
-Numerical convolution with variable PDF
+Numerical convolution with variable SRF
 \end_layout
 
 \begin_layout Standard
@@ -1365,11 +1512,11 @@ reference "fig:convolution-variable-pdf"
 
 .
  Here we skip the dataset for time intervals before 
-\begin_inset Formula $3\cdot10^{5}$
+\begin_inset Formula $3$
 \end_inset
 
- minutes because the storage capacity doesn't change significantly on this
- interval and hence the difference between curves is minimal.
+ because the storage capacity doesn't change significantly on this interval
+ and hence the difference between curves is minimal.
 \end_layout
 
 \begin_layout Standard
@@ -1431,8 +1578,8 @@ reference "fig:convolution-variable-pdf"
  compared to the convolution result using constant properties of distribution
  (solid grey line) and the output obtained from Richards equation (black
  line).
- As can be seen from the figure, adjusting PDF to changes in moisture content
- in the system may significantly improve quality of outflow simulation.
+ As can be seen from the figure, adjusting the SRF to changes in moisture
+ content in the system may significantly improve quality of outflow simulation.
 \end_layout
 
 \begin_layout Subsection
@@ -1562,7 +1709,7 @@ b)
 
 \begin_layout Plain Layout
 Estimated relations between available storage content and parameters of
- log-normal PDF.
+ log-normal SRF.
 \begin_inset CommandInset label
 LatexCommand label
 name "fig:log-normal-mu-sigma-estimated"
@@ -1595,17 +1742,7 @@ reference "fig:log-normal-mu-sigma-estimated"
 \end_inset
 
  represent data obtained from experiment.
- Solid lines show curves fitted to these data points 
-\begin_inset Note Note
-status open
-
-\begin_layout Plain Layout
-Revise graphs maybe? Revise description?
-\end_layout
-
-\end_inset
-
-.
+ Solid lines show curves fitted to these data points.
  Here x-axis corresponds to decrease in available storage content due to
  inflow of water.
  This isinverse of water added into the system.
@@ -1625,7 +1762,7 @@ reference "fig:log-normal-mu-sigma-estimated"
 \end_inset
 
  to calculate outflux.
- Comparison of outflux based on variable parameters of PDF (dashed line)
+ Comparison of outflux based on variable parameters of the SRF (dashed line)
  versus outflux based on constant parameters (solid grey line) and real
  data (black line) is presented in figure
 \begin_inset space \thinspace{}
@@ -1651,7 +1788,7 @@ reference "fig:log-normal-mu-sigma-estimated"
 
 \end_inset
 
- compared to application of log-normal PDF with constant parameters.
+ compared to application of the log-normal SRF with constant parameters.
 \end_layout
 
 \begin_layout Standard
@@ -1675,7 +1812,7 @@ status open
 \begin_inset Caption
 
 \begin_layout Plain Layout
-Comparison of applying PDF with estimated variable parameters versus inputs
+Comparison of applying SRF with estimated variable parameters versus inputs
  and Richards solution.
 \end_layout
 
@@ -1859,7 +1996,7 @@ reference "fig:Example-of-unsuccessful-deconvolution"
  shows an example of such a case, when the deconvolution resulted in an
  erratic function.
  In contrast, if we truncate the in-/out-put datasets to 50 days, we obtain
- relatively good estimate of response PDF (figure
+ relatively good estimate of the SRF (figure
 \begin_inset space \thinspace{}
 \end_inset
 
@@ -2125,10 +2262,10 @@ reference "fig:Example-of-deconvolution-periodic-signal"
 
 \end_inset
 
-b even in such a simple case the approach results in a weird shape response
- function.
+b even in such a simple case the approach results in a response function
+ of irregular shape.
  It is important to note that sometimes exactly same setup with only different
- number of square waves resulted in estimated PDF's allowing to identify
+ number of square waves resulted in the estimated SRF's allowing to identify
  the real shape of response functions.
  
 \begin_inset Note Note
