@@ -1463,11 +1463,11 @@ reference "fig:example-deconvolution-pdf"
 .
  Experiments show that in general log-normal distribution (solid grey line)
  provides better results - both peaks and low flux periods are modelled
- rather precise with the only exception around time 
-\begin_inset Formula $4.5$
+ rather precise with the only exception around 
+\begin_inset Formula $315$
 \end_inset
 
-.
+ days.
  At the same time usage of the SRF estimated from deconvolution results
  in accurate peaks, but very inaccurate low flux periods.
  Most likely because of irregular tale of the estimated SRF.
@@ -1511,12 +1511,12 @@ reference "fig:convolution-variable-pdf"
 \end_inset
 
 .
- Here we skip the dataset for time intervals before 
-\begin_inset Formula $3$
+ Here we skip the dataset before 
+\begin_inset Formula $210$
 \end_inset
 
- because the storage capacity doesn't change significantly on this interval
- and hence the difference between curves is minimal.
+ days because the storage capacity doesn't change significantly on this
+ interval and hence the difference between curves is minimal.
 \end_layout
 
 \begin_layout Standard
