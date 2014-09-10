@@ -1,4 +1,5 @@
-function [orchestraInstance, loopVarsOut] = InitializeOrchestraInterface(chemistryFilePath, varDefinitionTable, ioVariableList, loopVars)
+function [orchestraInstance, loopVarsOut] = InitializeOrchestraInterface(chemistryFilePath, ...
+    varDefinitionTable, ioVariableList, loopVars)
     % Run ORCHESTRA model using MATLAB-Java interface for ORCHESTRA.
     % Inputs:
     %   * chemistryFilePath - a path to file defining a chemistry for the

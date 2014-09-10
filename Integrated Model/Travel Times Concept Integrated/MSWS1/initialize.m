@@ -1,4 +1,4 @@
-function [IM, Pm, ORI, Meas, Comp] = initialize(fn)
+function [IM, Pm, OrchestraObj, Meas, Comp] = initialize(fn)
 
 % Read CSV file into XX
 [MT_l, MT_g, OUTPUT, PARAMETERS, INHIBITION_TYPE] = read_Pmatrix(fn);
@@ -53,11 +53,15 @@ Mout_add = cellfun(@(x) [x(1:end-7) '.tot'], Comp.master(k1), 'UniformOutput', f
 k2 = strfind(Comp.master,'pH'); k2 = find(cellfun(@isempty,k2)==0);
 H_add = cellfun(@(x) 'H+.tot', Comp.master(k2), 'UniformOutput', false);
 Mout_add = [Mout_add H_add]; k1 = [k1 k2]; Comp.all = [Comp.all Mout_add]; Comp.alli = [Comp.alli 0.001*ones(1,length(Mout_add))];
-Cini = initialize_ORI(Comp,1);
-Comp.master(k1) = Mout_add; Comp.masteri(k1) = Cini(end+1-length(k1):end);
+% Cini = initialize_ORI(Comp,1);
+OrchestraObj = OrchestraCompositeCl();
+OrchestraObj = OrchestraObj.add(OrchestraCl(Comp));
+Cini = OrchestraObj.Calculate();
+
+Comp.master(k1) = Mout_add; Comp.masteri(k1) = Cini{1}(end+1-length(k1):end);
 Comp.all = [Comp.master Comp.out]; Comp.alli = [Comp.masteri Comp.outi];
 
-MT_g_ini = Cini(Pm.Ci_tf).*Pm.H.*Pm.V_g./Pm.R_gas./Pm.T; % mol px = Hx*Cx nx = pxVg/R
+MT_g_ini = Cini{1}(Pm.Ci_tf).*Pm.H.*Pm.V_g./Pm.R_gas./Pm.T; % mol px = Hx*Cx nx = pxVg/R
 N2i = Pm.p*Pm.V_g/Pm.R_gas/Pm.T-sum(MT_g_ini(2:end));
 MT_g_ini = [N2i;MT_g_ini(2:end)];
 MT_l_ini = Comp.masteri*Pm.V_l;
@@ -73,7 +77,9 @@ Pm.cumgasi = find(ismember(Pm.gas_name,Mcum_add));
 IM = [MT_l_ini MT_g_ini' Comp.outi(k1)];
 
 % Initialize ORCHESTRA
-ORI = initialize_ORI(Comp,0);
+% ORI = initialize_ORI(Comp,0);
+OrchestraObj = OrchestraCompositeCl;
+OrchestraObj = OrchestraObj.add(OrchestraCl(Comp));
 
 % Load experimental data
 if Pm.dataset > 0; Meas = load_data(Pm.dataset); end
