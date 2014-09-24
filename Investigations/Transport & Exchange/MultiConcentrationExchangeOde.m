@@ -13,44 +13,35 @@ function cPart = MultiConcentrationExchangeOde(tRange, cIni, kExch, v, Const)
 
     % Get dimensions of a problem
     [~, nEl, nSolutes] = size(cIni);
-    nTX = numel(tRange);
-
-    cIni = permute(cIni, [2, 3, 1]);
-    cIni = reshape(cIni, [], 1);
-    [t, cResRaw] = ode45(@(tX, cX) dC(tX, cX, v', kExch, [1, nEl, nSolutes]), tRange, cIni);
-    cPart = reshape(cResRaw, [nTX, nEl, nSolutes]);
     
-    return
-    
-    % System of ODE's
-    function dCdt = dC(tX, cX, vX, kExch, dimVec)
-        nEl = dimVec(2);
-        nSolutes = dimVec(3);
-        % Resulting array
-        dCdt = zeros(nEl * nSolutes, 1);
-        % Indices of mobile particles
-        iPartMob = 2:nEl;
-        % Loop over solutes (this is slightly faster than matrix operations
-        for iSolute = 1:nSolutes
-            % Concentrations and their changes are stored in a 1D vector, where all solutes are
-            % located sequentially. Thus offset of indices for each solute is calculated
-            iSoluteOffset = (iSolute - 1) * nEl;
-            % Indices of concentrations of current solute in mobile particles
-            iPartMobSol = iPartMob + iSoluteOffset;
-            % Gradient of concentrations between immobile phase and mobile particles
-            gradC = cX(iPartMobSol) - cX(iSoluteOffset + 1);
-            % Sum of volumes of immobile phase and mobile particles
-            sumVx = vX(1) + vX(iPartMob);
-            % The main relationships
-            dCdt(iSoluteOffset + 1) = sum(kExch * vX(iPartMob) ./ sumVx .* gradC - ...
-                R(tX, cX(iSoluteOffset + 1)));
-            dCdt(iPartMobSol) = -kExch * vX(1) ./ sumVx .* gradC;
-        end
+    iIm = 1;
+    iM = 2:nEl;
+    Cim0 = cIni(1, iIm, :);
+    vim = v(iIm);
+    vm = sum(v(iM));
+    Cm0 = nan(1, 1, nSolutes);
+    for iSol = 1:nSolutes
+        Cm0(1, 1, iSol) = sum(cIni(1, iM, iSol) .* v(iM)) / vm;
     end
-
-    % Stub. Reactions function
-    function rX = R(tX, cX)
-        kX = 1e-3;
-        rX = kX * (1 - cos(tX)) * cX;
+    
+    % Immobile phase
+    t = tRange(2) - tRange(1);
+    % Change in concentration of immobile phase
+    Cim = (Cm0 * vm + Cim0 * vim) / (vm + vim) + vm * (-Cm0 + Cim0) * exp(-kExch * t) / (vm + vim);
+    % Change in total concentration of all mobile elements
+    Cm = (Cm0 * vm + Cim0 * vim) / (vm + vim) - vim * (-Cm0 + Cim0) * exp(-kExch * t) / (vm + vim);
+    % Total change of mass of compounds in all mobile elements
+    dm = (Cm - Cm0) .* vm;
+    % Distribute this change over all elements proportionally to 1/vm
+    dmDistr = nan(1, nEl, nSolutes);
+    % Combine in the resulting array
+    cPart = nan(1, nEl, nSolutes);
+    cPart(1, 1, :) = Cim;
+    
+    % Change of gradient between mobile-immobile concentrations
+    k = (Cm - Cim) ./ (Cm0 - Cim0);
+    % Adjust individual mobile elements' concentrations to meet newly calculated mean
+    for iSol = 1:nSolutes
+        cPart(1, iM, iSol) = k(iSol) * (cIni(1, iM, iSol) - Cm0(iSol)) + Cm(iSol);
     end
 end

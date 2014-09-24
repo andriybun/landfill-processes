@@ -40,7 +40,13 @@ function MainMultiConcentrationExchange
     mIni = squeeze(sum(cIni .* repmat(pv, [1, 1, nSolutes]), 2));
     
     tic
-    cPart = MultiConcentrationExchangeOde(tRange, cIni, kExch, pv, Const);
+    cPart = nan(nT, nEl+1, nSolutes);
+    cPart(1, :, :) = cIni;
+    for iT = 2:numel(tRange)
+        % Immobile phase
+        cPart(iT, :, :) = ...
+            MultiConcentrationExchangeOde(tRange(iT-1:iT), cPart(iT-1, :, :), kExch, pv, Const);
+    end
     toc
     
     mEnd = squeeze(sum(cPart(nT, :, :) .* repmat(pv, [1, 1, nSolutes]), 2));
