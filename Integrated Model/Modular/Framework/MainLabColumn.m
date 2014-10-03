@@ -60,8 +60,7 @@ function MainLabColumn
     
     % Precipitation in meters per time interval dt
     rainData = 1e-2 * RawData.fluxIn;
-    rainData(1:end) = 0;
-    rainData(1) = 1e-2;
+%     rainData(1:end) = 0;
 %     rainData([10:80, 80:100]) = 1e-2;
 %     rainData([6:10,30:35]) = 1e-2;
     % Structure containing time parameters

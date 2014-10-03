@@ -1,7 +1,10 @@
 function [pv, PartInfo, mRemaining, cRemaining] = ExchangePhases(...
     t, dt, iT, pv, mRemaining, cRemaining, PartInfo, SpeciesInfo, ModelParams, Const)
     %
-
+    nPartGeneral = 2;
+    iImmobile = 1;
+    iMobileIni = 2;
+    
     nT = numel(t);
     tOffset = t(iT);
     tAfter = t(iT:nT) - tOffset;
@@ -15,7 +18,7 @@ function [pv, PartInfo, mRemaining, cRemaining] = ExchangePhases(...
     mRemaining(1, iT + 1, SpeciesInfo.iInert) = mRemaining(1, iT, SpeciesInfo.iInert);
     mRemaining(2, iT + 1, :) = mRemaining(2, iT, :);
     % Prepare inputs for exchange equation
-    iActivePart = [1, 2, 2 + (iT:iTend)];
+    iActivePart = [iImmobile, iMobileIni, nPartGeneral + (iT:iTend)];
 %     cPartOutR = cat(2, cRemaining(1, iT, SpeciesInfo.iFlush), ...
 %         PartInfo.GetConcentration(1, iActivePart, SpeciesInfo.iFlush));
 %     pvPartOutR = cat(2, pv(1), PartInfo.GetVolume(1, iActivePart));
@@ -24,7 +27,7 @@ function [pv, PartInfo, mRemaining, cRemaining] = ExchangePhases(...
     % Don't calculate for particles vith (almost) zero volume
     iCalcLog = (pvPartOutR > Const.VOLUME_EPSILON);
     % ... but make sure immobile phase is calculated
-    iCalcLog(1) = 1;
+    iCalcLog(1) = iImmobile;
     iCalc = find(iCalcLog);
     % Solve exchange equation in order to obtain concentrations in both phases at the end of
     % current time step. Different volumes will have different effect on exchange here

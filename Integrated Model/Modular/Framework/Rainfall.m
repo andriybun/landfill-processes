@@ -1,6 +1,10 @@
 function [pv, PartInfo, mRemaining] = Rainfall(...
     t, dt, iT, pv, mRemaining, RainInfo, PartInfo, SpeciesInfo, ModelParams, Const)
     %
+
+    nPartGeneral = 2;
+    iImmobile = 1;
+    iMobileIni = 2;
     
     if RealGt(RainInfo.intensity(iT), 0, Const.EPSILON)
         nT = numel(t);
@@ -32,13 +36,14 @@ function [pv, PartInfo, mRemaining] = Rainfall(...
                 mRemaining(2, iT, SpeciesInfo.iFlush) = mRemaining(2, iT, SpeciesInfo.iFlush) + ...
                     RainInfo.intensity(iT) * cOutPrevStep;
                 PartInfo = PartInfo.AddSolute([qOutAfter, RainInfo.intensity(iT) - sum(qOutAfter)], ...
-                    repmat(cOutPrevStep, [1, nCalcT+1, 1]), :, [2, 2 + (iT:iTend)], SpeciesInfo.iFlush);
+                    repmat(cOutPrevStep, [1, nCalcT+1, 1]), ...
+                    :, [iMobileIni, nPartGeneral + (iT:iTend)], SpeciesInfo.iFlush);
             end
         else
             % Increase volume of water leaving the system at future times
             PartInfo = PartInfo.AddSolute([qOutAfter, RainInfo.intensity(iT) - sum(qOutAfter)], ...
                 repmat(RainInfo.concentration(iT), [1, nCalcT+1, SpeciesInfo.nFlush]), ...
-                :, [2, 2 + (iT:iTend)], SpeciesInfo.iFlush);
+                :, [iMobileIni, nPartGeneral + (iT:iTend)], SpeciesInfo.iFlush);
             mRemaining(2, iT, :) = mRemaining(2, iT, :) + ...
                 RainInfo.intensity(iT) * RainInfo.concentration(iT);
         end

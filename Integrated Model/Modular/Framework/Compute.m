@@ -77,15 +77,19 @@ function ModelOutput = Compute(TimeParams, RainInfo, ModelDim, ModelParams, prBa
         permute(mIni, [3, 1, 2]) * pvAdj(2));
     % Initial concentrations of solutes
     cIni = mIni ./ repmat(pv, [1, 1, nSpecies]);
-    
+
+    % Some indices for the following particles
+    nPartGeneral = 2;
+    iImmobile = 1;
+    iMobileIni = 2;
     % Initialize object to keep information about volumes and concentrations dimensions of arrays 
     % (1 x leave time) + 2 extra particles for water that is staying after tEnd and was originally 
     % in mobile phase (located in the beginning of array)
-    PartInfo = ConcentrationCl(zeros(1, nT+2), zeros(1, nT+2, nSpecies));
+    PartInfo = ConcentrationCl(zeros(1, nT + nPartGeneral), zeros(1, nT + nPartGeneral, nSpecies));
     % Immobile phase
-    PartInfo = PartInfo.AddSolute(pv(1), cIni(1, 1, :), 1, 1, :);
+    PartInfo = PartInfo.AddSolute(pv(1), cIni(1, 1, :), 1, iImmobile, :);
     % Originally present in mobile phase
-    PartInfo = PartInfo.AddSolute(pv(2), cIni(2, 1, :), 1, 2, :);
+    PartInfo = PartInfo.AddSolute(pv(2), cIni(2, 1, :), 1, iMobileIni, :);
 
     %% Initializing output arrays
     mOutTotal = zeros(1, nT, nSpecies);
@@ -133,13 +137,13 @@ function ModelOutput = Compute(TimeParams, RainInfo, ModelDim, ModelParams, prBa
             t, dt, iT, pv, mRemaining, cRemaining, PartInfo, SpeciesInfo, ModelParams, Const);
         
         % Remove volume of drained leachate from the volume of liquid in the system.
-        pv(2) = pv(2) - PartInfo.GetVolume(1, iT + 2);
+        pv(2) = pv(2) - PartInfo.GetVolume(1, nPartGeneral + iT);
         % Calculate the remaining concentrations
         cRemaining(:, iT + 1, :) = mRemaining(:, iT + 1, :) ./ repmat(pv, [1, 1, SpeciesInfo.n]);
         isPvZero = (pv == 0);
         cRemaining(isPvZero, iT + 1, :) = 0;
         % Update masses of solutes per particle
-        mOutTotal(1, iT, SpeciesInfo.iFlush) = PartInfo.GetMass(1, iT + 2, SpeciesInfo.iFlush);
+        mOutTotal(1, iT, SpeciesInfo.iFlush) = PartInfo.GetMass(1, nPartGeneral + iT, SpeciesInfo.iFlush);
         
         % Some checks
         if any(RealLt(reshape(cRemaining(:, iT + 1, iFlushSpecies), 1, []), 0, ...
