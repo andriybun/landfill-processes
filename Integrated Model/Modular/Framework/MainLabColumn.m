@@ -18,13 +18,13 @@ function MainLabColumn
 %     cAdj = 3.5;
     RESULTS_FILE_NAME_TEMPLATE = '../Data/ShirishSimulation_%s.mat';
     DATA_FILE_NAME = '../../../Investigations/Transforms/mat/ShirishSimulation.mat';
-    mu = 4.9;
-    sigma = 6.2e-1;
+    mu = log(132);
+    sigma = 0.62;
     delay = 0;
     tAdj = 2;
-    pvTot = 2.3;
-    kExch = 1.3e-3;
-    beta = 1;
+    pvTot = 6e+0;            % Total pore volume
+    kExch = 5e-3;
+    beta = 2;               % Immobile-mobile volume ratio
     cAdj = 0;
     fluxAdj = 1e+2;
     
@@ -59,9 +59,11 @@ function MainLabColumn
 %     plot(RawData.t', [RawData.fluxOut', fluxOutNum]);
     
     % Precipitation in meters per time interval dt
-    rainData = RawData.fluxIn;
-%     rainData(1:5) = 1e-2;
-%     rainData(6:end) = 0;
+    rainData = 1e-2 * RawData.fluxIn;
+    rainData(1:end) = 0;
+    rainData(1) = 1e-2;
+%     rainData([10:80, 80:100]) = 1e-2;
+%     rainData([6:10,30:35]) = 1e-2;
     % Structure containing time parameters
     TimeParams = TimeParamsCl(RawData.t);
     
@@ -114,7 +116,7 @@ function MainLabColumn
         
         tic
         % Main computations are done here
-        ModelOutput = ComputeTravelTimes(TimeParams, RainInfo, ModelDim, ModelParams);
+        ModelOutput = Compute(TimeParams, RainInfo, ModelDim, ModelParams);
         toc
         
         if profilerOn

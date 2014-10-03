@@ -72,7 +72,7 @@ function Main
     % Initial concentration of intert specie(s)
     ModelParams.mInertIni = 1;
 
-    TimeParams = TimeParams.setNDays(40);
+%     TimeParams = TimeParams.setNDays(40);
 
     ParameterOfInterest = struct();
     % 'baseline'; 'no_rain'; 'no_chem'; 'short'; 'constant_rain'; 'recirculation'

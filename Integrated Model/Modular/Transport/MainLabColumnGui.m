@@ -25,7 +25,7 @@ function MainLabColumnGui
 %     rainData(1:5) = 1e-2;
 %     rainData(6:end) = 0;
     % Structure containing time parameters
-    TimeParams = TimeParamsCl(RawData.t);
+    TimeParams = TimeParamsCl(RawData.t / 280);
     
     % Concentration of solutes in rainwater
     rainConcentrationData = 0 * ones(size(rainData));
@@ -79,7 +79,7 @@ function MainLabColumnGui
         
         tic
         % Main computations are done here
-        result = RunWithGui('Integrated landfill model', ...
+        RunWithGui('Integrated landfill model', ...
             @ComputeTravelTimes, TimeParams, RainInfo, ModelDim, ModelParams);
 %         ModelOutput = ComputeTravelTimes(TimeParams, RainInfo, ModelDim, ModelParams);
         toc
