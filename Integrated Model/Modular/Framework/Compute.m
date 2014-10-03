@@ -143,7 +143,8 @@ function ModelOutput = Compute(TimeParams, RainInfo, ModelDim, ModelParams, prBa
         isPvZero = (pv == 0);
         cRemaining(isPvZero, iT + 1, :) = 0;
         % Update masses of solutes per particle
-        mOutTotal(1, iT, SpeciesInfo.iFlush) = PartInfo.GetMass(1, nPartGeneral + iT, SpeciesInfo.iFlush);
+        mOutTotal(1, iT, SpeciesInfo.iFlush) = PartInfo.GetMass(1, nPartGeneral + iT, ...
+            SpeciesInfo.iFlush);
         
         % Some checks
         if any(RealLt(reshape(cRemaining(:, iT + 1, iFlushSpecies), 1, []), 0, ...
@@ -167,7 +168,7 @@ function ModelOutput = Compute(TimeParams, RainInfo, ModelDim, ModelParams, prBa
     ModelOutput.nT = nT;
     ModelOutput.mIni = mIni;
     ModelOutput.qIn = rainData;
-    ModelOutput.qOutTotal = PartInfo.GetVolume(1, 2 + (1:nT));
+    ModelOutput.qOutTotal = PartInfo.GetVolume(1, nPartGeneral + (1:nT));
     ModelOutput.mOutTotal = mOutTotal;
     ModelOutput.cRemaining = cRemaining;
     ModelOutput.mRemaining = mRemaining;
