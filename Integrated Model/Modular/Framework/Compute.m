@@ -55,8 +55,6 @@ function ModelOutput = Compute(TimeParams, RainInfo, ModelDim, ModelParams, prBa
     LogNorm = ModelParams.LogNorm;
     totalPv = ModelParams.totalPv;
     beta = ModelParams.beta;
-    lambda = ModelParams.lambda;
-    kExch = ModelParams.kExch;
 
     % Other geometrical params
     zLength = abs(ModelDim.zin(1) - ModelDim.zin(end));
@@ -131,10 +129,19 @@ function ModelOutput = Compute(TimeParams, RainInfo, ModelDim, ModelParams, prBa
         cRemaining(1, iT, iReactiveSpecies) = mChem(end, :) / pv(1);
         mRemaining(1, iT + 1, iReactiveSpecies) = mChem(end, :);
         
-        [pv, MobileC, LongTermC, ImmobileC, mRemaining, cRemaining] = ExchangePhases(...
-            t, dt, iT, pv, mRemaining, cRemaining, MobileC, LongTermC, ImmobileC, ...
-            SpeciesInfo, ModelParams, Const);
+        [pv, MobileC, LongTermC, ImmobileC] = ExchangePhases(...
+            t, dt, iT, pv, MobileC, LongTermC, ImmobileC, SpeciesInfo, ModelParams, Const);
         
+        % Update total masses of solutes in phases
+        mRemaining(1, iT + 1, SpeciesInfo.iFlush) = ...
+            ImmobileC.GetMass(:, :, SpeciesInfo.iFlush);
+        %     mRemaining(2, iT + 1, SpeciesInfo.iFlush) = ...
+        %         LongTermC.GetMass(:, :, SpeciesInfo.iFlush) + ...
+        %         sum(sum(MobileC.GetMass(1:iT, (iT+1):iTend, SpeciesInfo.iFlush), 2), 1);
+        mRemaining(2, iT + 1, SpeciesInfo.iFlush) = ...
+            LongTermC.GetMass(:, :, SpeciesInfo.iFlush) + ...
+            sum(sum(MobileC.GetMass(1, (iT+1):iTend, SpeciesInfo.iFlush), 2), 1);
+
         % Remove volume of drained leachate from the volume of liquid in the system.
         pv(2) = pv(2) - sum(MobileC.GetVolume(:, iT));
         % Calculate the remaining concentrations
