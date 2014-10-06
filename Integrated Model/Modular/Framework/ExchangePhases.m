@@ -12,8 +12,6 @@ function [pv, MobileC, LongTermC, ImmobileC, mRemaining, cRemaining] = ExchangeP
     iTend = iT + nCalcT - 1;
     tAfter = tAfter(iCalcT);
 
-    mRemaining(1, iT + 1, SpeciesInfo.iInert) = mRemaining(1, iT, SpeciesInfo.iInert);
-    mRemaining(2, iT + 1, :) = mRemaining(2, iT, :);
     % Prepare inputs for exchange equation
 %     cMob = MobileC.GetConcentration(1:iT, iT:iTend, SpeciesInfo.iFlush);
     cMob = MobileC.GetConcentration(1, iT:iTend, SpeciesInfo.iFlush);
@@ -30,8 +28,8 @@ function [pv, MobileC, LongTermC, ImmobileC, mRemaining, cRemaining] = ExchangeP
     % Update computed concentrations for particles
 %     MobileC = MobileC.SetConcentration(cMob, 1:iT, iT:iTend, SpeciesInfo.iFlush);
     MobileC = MobileC.SetConcentration(cMob, 1, iT:iTend, SpeciesInfo.iFlush);
-    LongTermC.SetConcentration(cLongTerm, :, :, SpeciesInfo.iFlush);
-    ImmobileC.SetConcentration(cImmob, :, :, SpeciesInfo.iFlush);
+    LongTermC = LongTermC.SetConcentration(cLongTerm, :, :, SpeciesInfo.iFlush);
+    ImmobileC = ImmobileC.SetConcentration(cImmob, :, :, SpeciesInfo.iFlush);
     % Update total masses of solutes in phases
     mRemaining(1, iT + 1, SpeciesInfo.iFlush) = ...
         ImmobileC.GetMass(:, :, SpeciesInfo.iFlush);
