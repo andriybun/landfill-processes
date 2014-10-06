@@ -78,18 +78,15 @@ function ModelOutput = Compute(TimeParams, RainInfo, ModelDim, ModelParams, prBa
     % Initial concentrations of solutes
     cIni = mIni ./ repmat(pv, [1, 1, nSpecies]);
 
-    % Some indices for the following particles
-    nPartGeneral = 2;
-    iImmobile = 1;
-    iMobileIni = 2;
     % Initialize object to keep information about volumes and concentrations dimensions of arrays 
-    % (1 x leave time) + 2 extra particles for water that is staying after tEnd and was originally 
-    % in mobile phase (located in the beginning of array)
-    PartInfo = ConcentrationCl(zeros(1, nT + nPartGeneral), zeros(1, nT + nPartGeneral, nSpecies));
+    % (entry time x leave time) 
+    % 2 extra particles for water that is staying after tEnd and was originally in mobile phase
+%     MobileC = ConcentrationCl(zeros(nT, nT), zeros(nT, nT, nSpecies));
+    MobileC = ConcentrationCl(zeros(1, nT), zeros(1, nT, nSpecies));
     % Immobile phase
-    PartInfo = PartInfo.AddSolute(pv(1), cIni(1, 1, :), 1, iImmobile, :);
+    ImmobileC = ConcentrationCl(pv(1), cIni(1, 1, :));
     % Originally present in mobile phase
-    PartInfo = PartInfo.AddSolute(pv(2), cIni(2, 1, :), 1, iMobileIni, :);
+    LongTermC = ConcentrationCl(pv(2), cIni(2, 1, :));
 
     %% Initializing output arrays
     mOutTotal = zeros(1, nT, nSpecies);
@@ -115,8 +112,9 @@ function ModelOutput = Compute(TimeParams, RainInfo, ModelDim, ModelParams, prBa
         tAfter = tAfter(iCalcT);
         
         % Apply rainfall
-        [pv, PartInfo, mRemaining] = Rainfall(...
-            t, dt, iT, pv, mRemaining, RainInfo, PartInfo, SpeciesInfo, ModelParams, Const);
+        [pv, MobileC, LongTermC, mRemaining] = Rainfall(...
+            t, dt, iT, pv, mRemaining, RainInfo, MobileC, LongTermC, ...
+            SpeciesInfo, ModelParams, Const);
         if RealGt(rainData(iT), 0, Const.EPSILON)
             cRemaining(2, iT, :) = mRemaining(2, iT, :) /  pv(2);
         end
@@ -133,18 +131,18 @@ function ModelOutput = Compute(TimeParams, RainInfo, ModelDim, ModelParams, prBa
         cRemaining(1, iT, iReactiveSpecies) = mChem(end, :) / pv(1);
         mRemaining(1, iT + 1, iReactiveSpecies) = mChem(end, :);
         
-        [pv, PartInfo, mRemaining, cRemaining] = ExchangePhases(...
-            t, dt, iT, pv, mRemaining, cRemaining, PartInfo, SpeciesInfo, ModelParams, Const);
+        [pv, MobileC, LongTermC, ImmobileC, mRemaining, cRemaining] = ExchangePhases(...
+            t, dt, iT, pv, mRemaining, cRemaining, MobileC, LongTermC, ImmobileC, ...
+            SpeciesInfo, ModelParams, Const);
         
         % Remove volume of drained leachate from the volume of liquid in the system.
-        pv(2) = pv(2) - PartInfo.GetVolume(1, nPartGeneral + iT);
+        pv(2) = pv(2) - sum(MobileC.GetVolume(:, iT));
         % Calculate the remaining concentrations
         cRemaining(:, iT + 1, :) = mRemaining(:, iT + 1, :) ./ repmat(pv, [1, 1, SpeciesInfo.n]);
         isPvZero = (pv == 0);
         cRemaining(isPvZero, iT + 1, :) = 0;
         % Update masses of solutes per particle
-        mOutTotal(1, iT, SpeciesInfo.iFlush) = PartInfo.GetMass(1, nPartGeneral + iT, ...
-            SpeciesInfo.iFlush);
+        mOutTotal(1, iT, SpeciesInfo.iFlush) = sum(MobileC.GetMass(:, iT, SpeciesInfo.iFlush), 1);
         
         % Some checks
         if any(RealLt(reshape(cRemaining(:, iT + 1, iFlushSpecies), 1, []), 0, ...
@@ -168,7 +166,7 @@ function ModelOutput = Compute(TimeParams, RainInfo, ModelDim, ModelParams, prBa
     ModelOutput.nT = nT;
     ModelOutput.mIni = mIni;
     ModelOutput.qIn = rainData;
-    ModelOutput.qOutTotal = PartInfo.GetVolume(1, nPartGeneral + (1:nT));
+    ModelOutput.qOutTotal = sum(MobileC.GetVolume(), 1);
     ModelOutput.mOutTotal = mOutTotal;
     ModelOutput.cRemaining = cRemaining;
     ModelOutput.mRemaining = mRemaining;
